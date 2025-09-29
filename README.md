@@ -1,50 +1,65 @@
-# Welcome to your Expo app 👋
+# Driver App
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A **React Native Expo** app that connects drivers with mechanics, garages, and roadside services in real-time.  
 
-## Get started
+This app allows users to request emergency or normal roadside assistance, discover nearby services, track mechanics, and make payments seamlessly.
 
-1. Install dependencies
+---
 
-   ```bash
-   npm install
-   ```
+## Features & Checklist
 
-2. Start the app
+### 1. User Registration & Profile
+- [ ] Sign up & login (phone, email, Google, social)
+- [ ] Manage profile (username, phone)
+- [ ] Emergency contact details
 
-   ```bash
-   npx expo start
-   ```
+### 2. Service Requests
+- [ ] Request priority (emergency, normal, other)
+- [ ] Problem description (flat tire, fuel delivery, etc.)
+- [ ] Price estimation
+- [ ] Real-time GPS location tracking (auto/manual)
+- [ ] Matching and dispatching (nearest mechanic)
+- [ ] Upload photo/video of issue
+- [ ] Scheduled service booking (maintenance, inspection)
 
-In the output, you'll find options to open the app in a
+### 3. Discovery
+- [ ] Find nearby mechanics, garages, shops, towing, gas stations
+- [ ] Filter by distance, ratings, specialization, availability
+- [ ] Mechanic profile (skills, certifications, reviews)
+- [ ] Map + List view
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+### 4. Real-Time Tracking & Updates
+- [ ] Track mechanic en route
+- [ ] Live ETA updates
+- [ ] Push/SMS notifications
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+### 5. Services Page
+- [ ] Clickable service cards (fuel delivery, towing, jump start, winching, etc.)
 
-## Get a fresh project
+### 6. Notification Center
+- [ ] System updates
+- [ ] Mechanic accepted request
 
-When you're ready, run:
+### 7. In-App Communication
+- [ ] Secure chat or call with mechanics
+- [ ] Share location/details
 
-```bash
-npm run reset-project
-```
+### 8. Payments
+- [ ] Multiple payment options (M-Pesa, cards, PayPal, bank, cash)
+- [ ] Upfront cost estimate / service quotation
+- [ ] Receipt/invoice after completion
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+### 9. Service History
+- [ ] Log of all past repairs/maintenance
 
-## Learn more
+---
 
-To learn more about developing your project with Expo, look at the following resources:
+## Tech Stack
+- React Native Expo
+- React Navigation
+- Redux/Context API (state management)
+- Firebase / Supabase (auth, real-time DB)
+- Google Maps API (location services)
+- Payment gateways (M-Pesa API, Stripe, PayPal)
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+---
