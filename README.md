@@ -9,9 +9,9 @@ This app allows users to request emergency or normal roadside assistance, discov
 ## Features & Checklist
 
 ### 1. User Registration & Profile
-- [ ] Sign up & login (phone, email, Google, social)
-- [ ] Manage profile (username, phone)
-- [ ] Emergency contact details
+- [x] Sign up & login (phone, email, Google, social)
+- [x] Manage profile (username, phone)
+- [x] Emergency contact details
 
 ### 2. Service Requests
 - [ ] Request priority (emergency, normal, other)
@@ -45,7 +45,7 @@ This app allows users to request emergency or normal roadside assistance, discov
 - [ ] Share location/details
 
 ### 8. Payments
-- [ ] Multiple payment options (M-Pesa, cards, PayPal, bank, cash)
+- [ ] payment options
 - [ ] Upfront cost estimate / service quotation
 - [ ] Receipt/invoice after completion
 
@@ -57,9 +57,6 @@ This app allows users to request emergency or normal roadside assistance, discov
 ## Tech Stack
 - React Native Expo
 - React Navigation
-- Redux/Context API (state management)
-- Firebase / Supabase (auth, real-time DB)
-- Google Maps API (location services)
-- Payment gateways (M-Pesa API, Stripe, PayPal)
-
+- Google Maps API
+- Payment gateways
 ---
