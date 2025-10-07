@@ -1,18 +1,17 @@
 // app/(tabs)/emergency.tsx
-import React, { useState, useRef } from 'react';
+import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+import React, { useRef, useState } from 'react';
 import {
-    View,
-    Text,
-    StyleSheet,
-    TouchableOpacity,
-    ScrollView,
     Alert,
     Animated,
     Dimensions,
-    Image
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View
 } from 'react-native';
-import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 
 const { width } = Dimensions.get('window');
 
@@ -190,7 +189,7 @@ export default function EmergencyScreen() {
 
                     <View style={styles.locationCard}>
                         <View style={styles.locationHeader}>
-                            <Ionicons name="location" size={24} color="#2563eb" />
+                            <Ionicons name="location" size={24} color="#075538" />
                             <View style={styles.locationText}>
                                 <Text style={styles.locationTitle}>Automatic Location</Text>
                                 <Text style={styles.locationDescription}>
@@ -205,7 +204,7 @@ export default function EmergencyScreen() {
                         >
                             <View style={[
                                 styles.toggleTrack,
-                                useAutoLocation && { backgroundColor: '#2563eb' }
+                                useAutoLocation && { backgroundColor: '#075538' }
                             ]}>
                                 <View style={[
                                     styles.toggleThumb,
@@ -217,7 +216,7 @@ export default function EmergencyScreen() {
 
                     {!useAutoLocation && (
                         <TouchableOpacity style={styles.manualLocationButton}>
-                            <Ionicons name="pin" size={20} color="#2563eb" />
+                            <Ionicons name="pin" size={20} color="#075538" />
                             <Text style={styles.manualLocationText}>Select location manually</Text>
                         </TouchableOpacity>
                     )}
@@ -467,7 +466,7 @@ const styles = StyleSheet.create({
         marginLeft: 8,
         fontSize: 14,
         fontWeight: '500',
-        color: '#2563eb',
+        color: '#075538',
     },
     spacer: {
         height: 100,
