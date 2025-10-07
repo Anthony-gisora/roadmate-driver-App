@@ -1,20 +1,19 @@
 // app/(tabs)/profile.tsx
-import React, { useState, useRef } from 'react';
-import {
-    View,
-    Text,
-    StyleSheet,
-    ScrollView,
-    TouchableOpacity,
-    Image,
-    Animated,
-    Modal,
-    TextInput,
-    Alert,
-    Switch
-} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import React, { useRef, useState } from 'react';
+import {
+    Alert,
+    Animated,
+    Modal,
+    ScrollView,
+    StyleSheet,
+    Switch,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View
+} from 'react-native';
 
 export default function ProfileScreen() {
     const router = useRouter();
@@ -154,7 +153,7 @@ export default function ProfileScreen() {
 
     const StatCard = ({ value, label, icon }: { value: string; label: string; icon: string }) => (
         <View style={styles.statCard}>
-            <Ionicons name={icon as any} size={24} color="#2563eb" />
+            <Ionicons name={icon as any} size={24} color="#075538" />
             <Text style={styles.statValue}>{value}</Text>
             <Text style={styles.statLabel}>{label}</Text>
         </View>
@@ -164,7 +163,7 @@ export default function ProfileScreen() {
         <View style={styles.historyCard}>
             <View style={styles.historyHeader}>
                 <View style={styles.serviceType}>
-                    <Ionicons name="car-sport" size={16} color="#2563eb" />
+                    <Ionicons name="car-sport" size={16} color="#075538" />
                     <Text style={styles.serviceTypeText}>{service.type}</Text>
                 </View>
                 <Text style={styles.servicePrice}>{service.price}</Text>
@@ -196,7 +195,7 @@ export default function ProfileScreen() {
     const VehicleCard = ({ vehicle }: { vehicle: any }) => (
         <View style={styles.vehicleCard}>
             <View style={styles.vehicleHeader}>
-                <Ionicons name="car" size={24} color="#2563eb" />
+                <Ionicons name="car" size={24} color="#075538" />
                 <View style={styles.vehicleInfo}>
                     <Text style={styles.vehicleName}>{vehicle.year} {vehicle.make} {vehicle.model}</Text>
                     <Text style={styles.vehicleDetails}>{vehicle.color} • {vehicle.license}</Text>
@@ -238,7 +237,7 @@ export default function ProfileScreen() {
                             setEditModalVisible(true);
                         }}
                     >
-                        <Ionicons name="pencil" size={16} color="#2563eb" />
+                        <Ionicons name="pencil" size={16} color="#075538" />
                     </TouchableOpacity>
                 </View>
 
@@ -274,7 +273,7 @@ export default function ProfileScreen() {
                             setEmergencyModalVisible(true);
                         }}
                     >
-                        <Ionicons name="pencil" size={16} color="#2563eb" />
+                        <Ionicons name="pencil" size={16} color="#075538" />
                     </TouchableOpacity>
                 </View>
 
@@ -295,7 +294,7 @@ export default function ProfileScreen() {
                 <View style={styles.sectionHeader}>
                     <Text style={styles.sectionTitle}>My Vehicles</Text>
                     <TouchableOpacity style={styles.addButton}>
-                        <Ionicons name="add" size={20} color="#2563eb" />
+                        <Ionicons name="add" size={20} color="#075538" />
                     </TouchableOpacity>
                 </View>
 
@@ -341,7 +340,7 @@ export default function ProfileScreen() {
                 <View style={styles.settingsCard}>
                     <View style={styles.settingRow}>
                         <View style={styles.settingInfo}>
-                            <Ionicons name="notifications" size={24} color="#2563eb" />
+                            <Ionicons name="notifications" size={24} color="#075538" />
                             <View style={styles.settingText}>
                                 <Text style={styles.settingTitle}>Push Notifications</Text>
                                 <Text style={styles.settingDescription}>Receive service updates and alerts</Text>
@@ -350,14 +349,14 @@ export default function ProfileScreen() {
                         <Switch
                             value={notificationsEnabled}
                             onValueChange={setNotificationsEnabled}
-                            trackColor={{ false: '#cbd5e1', true: '#2563eb' }}
+                            trackColor={{ false: '#cbd5e1', true: '#075538' }}
                             thumbColor="#fff"
                         />
                     </View>
 
                     <View style={styles.settingRow}>
                         <View style={styles.settingInfo}>
-                            <Ionicons name="location" size={24} color="#2563eb" />
+                            <Ionicons name="location" size={24} color="#075538" />
                             <View style={styles.settingText}>
                                 <Text style={styles.settingTitle}>Location Services</Text>
                                 <Text style={styles.settingDescription}>Share location for faster assistance</Text>
@@ -366,7 +365,7 @@ export default function ProfileScreen() {
                         <Switch
                             value={locationEnabled}
                             onValueChange={setLocationEnabled}
-                            trackColor={{ false: '#cbd5e1', true: '#2563eb' }}
+                            trackColor={{ false: '#cbd5e1', true: '#075538' }}
                             thumbColor="#fff"
                         />
                     </View>
@@ -378,19 +377,19 @@ export default function ProfileScreen() {
 
                 <View style={styles.settingsCard}>
                     <TouchableOpacity style={styles.menuItem}>
-                        <Ionicons name="help-circle" size={24} color="#2563eb" />
+                        <Ionicons name="help-circle" size={24} color="#075538" />
                         <Text style={styles.menuText}>Help & Support</Text>
                         <Ionicons name="chevron-forward" size={20} color="#64748b" />
                     </TouchableOpacity>
 
                     <TouchableOpacity style={styles.menuItem}>
-                        <Ionicons name="document-text" size={24} color="#2563eb" />
+                        <Ionicons name="document-text" size={24} color="#075538" />
                         <Text style={styles.menuText}>Terms of Service</Text>
                         <Ionicons name="chevron-forward" size={20} color="#64748b" />
                     </TouchableOpacity>
 
                     <TouchableOpacity style={styles.menuItem}>
-                        <Ionicons name="lock-closed" size={24} color="#2563eb" />
+                        <Ionicons name="lock-closed" size={24} color="#075538" />
                         <Text style={styles.menuText}>Privacy Policy</Text>
                         <Ionicons name="chevron-forward" size={20} color="#64748b" />
                     </TouchableOpacity>
@@ -430,7 +429,7 @@ export default function ProfileScreen() {
                     <Ionicons
                         name="person"
                         size={20}
-                        color={activeTab === 'profile' ? '#2563eb' : '#64748b'}
+                        color={activeTab === 'profile' ? '#075538' : '#64748b'}
                     />
                     <Text style={[styles.tabText, activeTab === 'profile' && styles.tabTextActive]}>
                         Profile
@@ -444,7 +443,7 @@ export default function ProfileScreen() {
                     <Ionicons
                         name="time"
                         size={20}
-                        color={activeTab === 'history' ? '#2563eb' : '#64748b'}
+                        color={activeTab === 'history' ? '#075538' : '#64748b'}
                     />
                     <Text style={[styles.tabText, activeTab === 'history' && styles.tabTextActive]}>
                         History
@@ -458,7 +457,7 @@ export default function ProfileScreen() {
                     <Ionicons
                         name="settings"
                         size={20}
-                        color={activeTab === 'settings' ? '#2563eb' : '#64748b'}
+                        color={activeTab === 'settings' ? '#075538' : '#64748b'}
                     />
                     <Text style={[styles.tabText, activeTab === 'settings' && styles.tabTextActive]}>
                         Settings
@@ -622,7 +621,7 @@ const styles = StyleSheet.create({
         width: 80,
         height: 80,
         borderRadius: 40,
-        backgroundColor: '#2563eb',
+        backgroundColor: '#075538',
         justifyContent: 'center',
         alignItems: 'center',
         marginRight: 16,
@@ -666,7 +665,7 @@ const styles = StyleSheet.create({
     },
     tabActive: {
         borderBottomWidth: 2,
-        borderBottomColor: '#2563eb',
+        borderBottomColor: '#075538',
     },
     tabText: {
         fontSize: 14,
@@ -674,7 +673,7 @@ const styles = StyleSheet.create({
         color: '#64748b',
     },
     tabTextActive: {
-        color: '#2563eb',
+        color: '#075538',
     },
     content: {
         flex: 1,
@@ -799,7 +798,7 @@ const styles = StyleSheet.create({
     },
     emergencyPhone: {
         fontSize: 16,
-        color: '#2563eb',
+        color: '#075538',
         fontWeight: '500',
     },
     vehiclesContainer: {
@@ -1039,7 +1038,7 @@ const styles = StyleSheet.create({
         borderTopColor: '#e2e8f0',
     },
     saveButton: {
-        backgroundColor: '#2563eb',
+        backgroundColor: '#075538',
         padding: 16,
         borderRadius: 12,
         alignItems: 'center',

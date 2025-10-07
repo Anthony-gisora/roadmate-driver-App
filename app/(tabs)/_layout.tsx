@@ -1,8 +1,8 @@
 // app/(tabs)/_layout.tsx
-import React from 'react';
-import { Tabs } from 'expo-router';
-import { StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { Tabs } from 'expo-router';
+import React from 'react';
+import { StyleSheet, View } from 'react-native';
 
 export default function TabLayout() {
     return (
@@ -13,7 +13,7 @@ export default function TabLayout() {
                     tabBarStyle: styles.tabBar,
                     tabBarBackground: () => <View style={styles.tabBarBackground} />,
                     tabBarShowLabel: true,
-                    tabBarActiveTintColor: '#2563eb',
+                    tabBarActiveTintColor: '#075538',
                     tabBarInactiveTintColor: '#6b7280',
                     tabBarLabelStyle: styles.tabBarLabel,
                 }}>
