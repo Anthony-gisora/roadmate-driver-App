@@ -1,20 +1,20 @@
 // app/signup.tsx
+import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
-    View,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    StyleSheet,
     Alert,
+    Animated,
     KeyboardAvoidingView,
     Platform,
     ScrollView,
-    Animated
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View
 } from "react-native";
-import { useRouter } from "expo-router";
 import { z } from "zod";
-import { Ionicons } from "@expo/vector-icons";
 
 const signupSchema = z.object({
     fullName: z.string().min(2, "Full name must be at least 2 characters"),
@@ -130,7 +130,7 @@ export default function Signup() {
                     ]}
                 >
                     <View style={styles.logoContainer}>
-                        <Ionicons name="car-sport" size={50} color="#2563eb" />
+                        <Ionicons name="car-sport" size={50} color="#075538" />
                     </View>
                     <Text style={styles.title}>Join Driver Assist App</Text>
                     <Text style={styles.subtitle}>
@@ -401,7 +401,7 @@ const styles = StyleSheet.create({
         justifyContent: "center",
         alignItems: "center",
         marginBottom: 16,
-        shadowColor: "#2563eb",
+        shadowColor: "#075538",
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.1,
         shadowRadius: 12,
@@ -486,12 +486,12 @@ const styles = StyleSheet.create({
         marginLeft: 4,
     },
     button: {
-        backgroundColor: "#2563eb",
+        backgroundColor: "#075538",
         padding: 16,
         borderRadius: 12,
         marginTop: 8,
         marginBottom: 16,
-        shadowColor: "#2563eb",
+        shadowColor: "#075538",
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.3,
         shadowRadius: 8,
@@ -528,7 +528,7 @@ const styles = StyleSheet.create({
         marginBottom: 20,
     },
     link: {
-        color: "#2563eb",
+        color: "#075538",
         fontWeight: "500",
     },
     divider: {
@@ -583,7 +583,7 @@ const styles = StyleSheet.create({
         fontSize: 14,
     },
     loginText: {
-        color: "#2563eb",
+        color: "#075538",
         fontSize: 14,
         fontWeight: "600",
     },
