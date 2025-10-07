@@ -372,15 +372,15 @@ export default function HomeScreen() {
 
               <View style={styles.serviceActions}>
                 <TouchableOpacity style={styles.actionButton}>
-                  <Ionicons name="chatbubble" size={20} color="#2563eb" />
+                  <Ionicons name="chatbubble" size={20} color="#075538" />
                   <Text style={styles.actionText}>Message</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.actionButton}>
-                  <Ionicons name="call" size={20} color="#2563eb" />
+                  <Ionicons name="call" size={20} color="#075538" />
                   <Text style={styles.actionText}>Call</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.actionButton}>
-                  <Ionicons name="location" size={20} color="#2563eb" />
+                  <Ionicons name="location" size={20} color="#075538" />
                   <Text style={styles.actionText}>Track</Text>
                 </TouchableOpacity>
               </View>
@@ -471,7 +471,7 @@ export default function HomeScreen() {
           ]}
         >
           <View style={styles.safetyCard}>
-            <Ionicons name="shield-checkmark" size={32} color="#2563eb" />
+            <Ionicons name="shield-checkmark" size={32} color="#075538" />
             <View style={styles.safetyContent}>
               <Text style={styles.safetyTitle}>Safety First</Text>
               <Text style={styles.safetyDescription}>
@@ -579,7 +579,7 @@ const styles = StyleSheet.create({
   },
   seeAllText: {
     fontSize: 14,
-    color: '#2563eb',
+    color: '#075538',
     fontWeight: '500',
   },
   emergencyCard: {
@@ -687,7 +687,7 @@ const styles = StyleSheet.create({
   etaText: {
     fontSize: 12,
     fontWeight: '500',
-    color: '#2563eb',
+    color: '#075538',
   },
   progressContainer: {
     marginBottom: 16,
@@ -719,7 +719,7 @@ const styles = StyleSheet.create({
   },
   actionText: {
     fontSize: 12,
-    color: '#2563eb',
+    color: '#075538',
     marginTop: 4,
     fontWeight: '500',
   },
@@ -859,7 +859,7 @@ const styles = StyleSheet.create({
   },
   contactPhone: {
     fontSize: 14,
-    color: '#2563eb',
+    color: '#075538',
     fontWeight: '500',
   },
   safetyCard: {
