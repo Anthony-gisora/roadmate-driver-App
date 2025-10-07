@@ -1,20 +1,19 @@
 // app/(tabs)/services.tsx
-import React, { useState, useRef } from 'react';
+import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+import React, { useRef, useState } from 'react';
 import {
-    View,
-    Text,
-    StyleSheet,
-    ScrollView,
-    TouchableOpacity,
-    TextInput,
     Animated,
     Dimensions,
     FlatList,
     Modal,
-    Image
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
 
 const { width } = Dimensions.get('window');
 
@@ -168,7 +167,7 @@ export default function ServicesScreen() {
             <Ionicons
                 name={item.icon as any}
                 size={20}
-                color={selectedService === item.id ? '#2563eb' : '#64748b'}
+                color={selectedService === item.id ? '#075538' : '#64748b'}
             />
             <Text style={[
                 styles.serviceTypeText,
@@ -276,7 +275,7 @@ export default function ServicesScreen() {
                             <Ionicons
                                 name="list"
                                 size={20}
-                                color={activeView === 'list' ? '#2563eb' : '#64748b'}
+                                color={activeView === 'list' ? '#075538' : '#64748b'}
                             />
                         </TouchableOpacity>
                         <TouchableOpacity
@@ -286,7 +285,7 @@ export default function ServicesScreen() {
                             <Ionicons
                                 name="map"
                                 size={20}
-                                color={activeView === 'map' ? '#2563eb' : '#64748b'}
+                                color={activeView === 'map' ? '#075538' : '#64748b'}
                             />
                         </TouchableOpacity>
                     </View>
@@ -307,7 +306,7 @@ export default function ServicesScreen() {
                         style={styles.filterToggle}
                         onPress={() => setShowFilters(!showFilters)}
                     >
-                        <Ionicons name="filter" size={20} color="#2563eb" />
+                        <Ionicons name="filter" size={20} color="#075538" />
                     </TouchableOpacity>
                 </View>
             </View>
@@ -443,17 +442,17 @@ export default function ServicesScreen() {
 
                             <View style={styles.statsContainer}>
                                 <View style={styles.stat}>
-                                    <Ionicons name="time" size={20} color="#2563eb" />
+                                    <Ionicons name="time" size={20} color="#075538" />
                                     <Text style={styles.statValue}>{selectedMechanic.responseTime}</Text>
                                     <Text style={styles.statLabel}>Avg. Response</Text>
                                 </View>
                                 <View style={styles.stat}>
-                                    <Ionicons name="location" size={20} color="#2563eb" />
+                                    <Ionicons name="location" size={20} color="#075538" />
                                     <Text style={styles.statValue}>{selectedMechanic.distance}</Text>
                                     <Text style={styles.statLabel}>Distance</Text>
                                 </View>
                                 <View style={styles.stat}>
-                                    <Ionicons name="checkmark-circle" size={20} color="#2563eb" />
+                                    <Ionicons name="checkmark-circle" size={20} color="#075538" />
                                     <Text style={styles.statValue}>{selectedMechanic.availability}</Text>
                                     <Text style={styles.statLabel}>Status</Text>
                                 </View>
@@ -571,7 +570,7 @@ const styles = StyleSheet.create({
     },
     serviceTypeButtonActive: {
         backgroundColor: '#eff6ff',
-        borderColor: '#2563eb',
+        borderColor: '#075538',
     },
     serviceTypeText: {
         fontSize: 14,
@@ -579,7 +578,7 @@ const styles = StyleSheet.create({
         color: '#64748b',
     },
     serviceTypeTextActive: {
-        color: '#2563eb',
+        color: '#075538',
     },
     filtersContainer: {
         backgroundColor: '#fff',
@@ -610,8 +609,8 @@ const styles = StyleSheet.create({
         gap: 6,
     },
     filterButtonActive: {
-        backgroundColor: '#2563eb',
-        borderColor: '#2563eb',
+        backgroundColor: '#075538',
+        borderColor: '#075538',
     },
     filterText: {
         fontSize: 12,
@@ -760,7 +759,7 @@ const styles = StyleSheet.create({
     },
     showListButton: {
         marginTop: 20,
-        backgroundColor: '#2563eb',
+        backgroundColor: '#075538',
         paddingHorizontal: 20,
         paddingVertical: 12,
         borderRadius: 12,
@@ -895,7 +894,7 @@ const styles = StyleSheet.create({
     skillText: {
         fontSize: 12,
         fontWeight: '500',
-        color: '#2563eb',
+        color: '#075538',
     },
     certificationItem: {
         flexDirection: 'row',
@@ -965,7 +964,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: '#2563eb',
+        backgroundColor: '#075538',
         padding: 16,
         borderRadius: 12,
         gap: 8,
