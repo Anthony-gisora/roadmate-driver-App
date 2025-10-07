@@ -1,20 +1,19 @@
 // app/(tabs)/notifications.tsx
-import React, { useState, useRef, useEffect } from 'react';
-import {
-    View,
-    Text,
-    StyleSheet,
-    ScrollView,
-    TouchableOpacity,
-    TextInput,
-    Animated,
-    Modal,
-    FlatList,
-    Alert,
-    Image
-} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import React, { useEffect, useRef, useState } from 'react';
+import {
+    Alert,
+    Animated,
+    FlatList,
+    Modal,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View
+} from 'react-native';
 
 export default function NotificationsScreen() {
     const router = useRouter();
@@ -251,7 +250,7 @@ export default function NotificationsScreen() {
 
     const getNotificationIcon = (type: string, priority: string) => {
         const color = priority === 'high' ? '#dc2626' :
-            priority === 'medium' ? '#f59e0b' : '#2563eb';
+            priority === 'medium' ? '#f59e0b' : '#075538';
 
         switch (type) {
             case 'mechanic_accepted':
@@ -307,7 +306,7 @@ export default function NotificationsScreen() {
                             if (chat) handleOpenChat(chat);
                         }}
                     >
-                        <Ionicons name="chatbubble" size={16} color="#2563eb" />
+                        <Ionicons name="chatbubble" size={16} color="#075538" />
                         <Text style={styles.replyText}>Reply</Text>
                     </TouchableOpacity>
                 )}
@@ -494,13 +493,13 @@ export default function NotificationsScreen() {
                                     style={styles.chatActionButton}
                                     onPress={handleCallMechanic}
                                 >
-                                    <Ionicons name="call" size={20} color="#2563eb" />
+                                    <Ionicons name="call" size={20} color="#075538" />
                                 </TouchableOpacity>
                                 <TouchableOpacity
                                     style={styles.chatActionButton}
                                     onPress={handleShareLocation}
                                 >
-                                    <Ionicons name="location" size={20} color="#2563eb" />
+                                    <Ionicons name="location" size={20} color="#075538" />
                                 </TouchableOpacity>
                             </View>
                         </View>
@@ -536,7 +535,7 @@ export default function NotificationsScreen() {
                                 <Ionicons
                                     name="send"
                                     size={20}
-                                    color={messageText.trim() ? "#2563eb" : "#cbd5e1"}
+                                    color={messageText.trim() ? "#075538" : "#cbd5e1"}
                                 />
                             </TouchableOpacity>
                         </View>
@@ -584,7 +583,7 @@ const styles = StyleSheet.create({
     },
     markAllText: {
         fontSize: 14,
-        color: '#2563eb',
+        color: '#075538',
         fontWeight: '500',
     },
     tabContainer: {
@@ -603,7 +602,7 @@ const styles = StyleSheet.create({
     },
     tabActive: {
         borderBottomWidth: 2,
-        borderBottomColor: '#2563eb',
+        borderBottomColor: '#075538',
     },
     tabText: {
         fontSize: 14,
@@ -611,7 +610,7 @@ const styles = StyleSheet.create({
         color: '#64748b',
     },
     tabTextActive: {
-        color: '#2563eb',
+        color: '#075538',
     },
     tabBadge: {
         backgroundColor: '#dc2626',
@@ -646,7 +645,7 @@ const styles = StyleSheet.create({
     },
     unreadNotification: {
         borderLeftWidth: 4,
-        borderLeftColor: '#2563eb',
+        borderLeftColor: '#075538',
     },
     notificationHeader: {
         flexDirection: 'row',
@@ -683,7 +682,7 @@ const styles = StyleSheet.create({
         width: 8,
         height: 8,
         borderRadius: 4,
-        backgroundColor: '#2563eb',
+        backgroundColor: '#075538',
         marginLeft: 8,
     },
     mechanicInfo: {
@@ -692,7 +691,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#f8fafc',
         borderRadius: 12,
         borderLeftWidth: 3,
-        borderLeftColor: '#2563eb',
+        borderLeftColor: '#075538',
     },
     mechanicName: {
         fontSize: 14,
@@ -718,7 +717,7 @@ const styles = StyleSheet.create({
     replyText: {
         fontSize: 12,
         fontWeight: '500',
-        color: '#2563eb',
+        color: '#075538',
     },
     chatCard: {
         backgroundColor: '#fff',
@@ -784,7 +783,7 @@ const styles = StyleSheet.create({
         width: 8,
         height: 8,
         borderRadius: 4,
-        backgroundColor: '#2563eb',
+        backgroundColor: '#075538',
     },
     emptyState: {
         alignItems: 'center',
@@ -859,7 +858,7 @@ const styles = StyleSheet.create({
     },
     userMessage: {
         alignSelf: 'flex-end',
-        backgroundColor: '#2563eb',
+        backgroundColor: '#075538',
         borderBottomRightRadius: 4,
     },
     mechanicMessage: {
