@@ -4,7 +4,10 @@ A **React Native Expo** app that connects drivers with mechanics, garages, and r
 
 This app allows users to request emergency or normal roadside assistance, discover nearby services, track mechanics, and make payments seamlessly.
 
-https://roadmateassist.onrender.com
+Backend URL: https://roadmateassist.onrender.com
+
+Primary colour: #075538
+Accent colour: #ced46a
 
 ---
 

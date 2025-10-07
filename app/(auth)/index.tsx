@@ -1,20 +1,20 @@
 // app/login.tsx
+import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
-    View,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    StyleSheet,
     Alert,
+    Animated,
     KeyboardAvoidingView,
     Platform,
     ScrollView,
-    Animated
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View
 } from "react-native";
-import { useRouter } from "expo-router";
 import { z } from "zod";
-import { Ionicons } from "@expo/vector-icons";
 
 const loginSchema = z.object({
     email: z.string().email("Invalid email address"),
@@ -100,7 +100,7 @@ export default function Login() {
                     ]}
                 >
                     <View style={styles.logoContainer}>
-                        <Ionicons name="car-sport" size={60} color="#2563eb" />
+                        <Ionicons name="car-sport" size={60} color="#075538" />
                     </View>
                     <Text style={styles.title}>Welcome Back!</Text>
                     <Text style={styles.subtitle}>
@@ -330,16 +330,16 @@ const styles = StyleSheet.create({
         marginBottom: 20,
     },
     forgotPasswordText: {
-        color: "#2563eb",
+        color: "#075538",
         fontSize: 14,
         fontWeight: "500",
     },
     button: {
-        backgroundColor: "#2563eb",
+        backgroundColor: "#075538",
         padding: 16,
         borderRadius: 12,
         marginBottom: 20,
-        shadowColor: "#2563eb",
+        shadowColor: "#075538",
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.3,
         shadowRadius: 8,
@@ -420,7 +420,7 @@ const styles = StyleSheet.create({
         fontSize: 14,
     },
     signUpText: {
-        color: "#2563eb",
+        color: "#075538",
         fontSize: 14,
         fontWeight: "600",
     },
