@@ -1,21 +1,21 @@
 // app/forgot-password.tsx
+import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
-    View,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    StyleSheet,
     Alert,
+    Animated,
+    Dimensions,
     KeyboardAvoidingView,
     Platform,
     ScrollView,
-    Animated,
-    Dimensions
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View
 } from "react-native";
-import { useRouter } from "expo-router";
 import { z } from "zod";
-import { Ionicons } from "@expo/vector-icons";
 
 const { width } = Dimensions.get("window");
 
@@ -214,7 +214,7 @@ export default function ForgotPassword() {
                 { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }
             ]}
         >
-            <Ionicons name="mail-outline" size={80} color="#2563eb" style={styles.stepIcon} />
+            <Ionicons name="mail-outline" size={80} color="#075538" style={styles.stepIcon} />
             <Text style={styles.stepTitle}>Reset Your Password</Text>
             <Text style={styles.stepDescription}>
                 Enter your email address and we'll send you a verification code to reset your password.
@@ -269,7 +269,7 @@ export default function ForgotPassword() {
                 { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }
             ]}
         >
-            <Ionicons name="key-outline" size={80} color="#2563eb" style={styles.stepIcon} />
+            <Ionicons name="key-outline" size={80} color="#075538" style={styles.stepIcon} />
             <Text style={styles.stepTitle}>Check Your Email</Text>
             <Text style={styles.stepDescription}>
                 We sent a 6-digit code to {email}. Enter it below to continue.
@@ -332,7 +332,7 @@ export default function ForgotPassword() {
                 { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }
             ]}
         >
-            <Ionicons name="lock-closed-outline" size={80} color="#2563eb" style={styles.stepIcon} />
+            <Ionicons name="lock-closed-outline" size={80} color="#075538" style={styles.stepIcon} />
             <Text style={styles.stepTitle}>Create New Password</Text>
             <Text style={styles.stepDescription}>
                 Your new password must be different from previously used passwords.
@@ -435,7 +435,7 @@ export default function ForgotPassword() {
                         style={styles.backButton}
                         onPress={() => router.back()}
                     >
-                        <Ionicons name="arrow-back" size={24} color="#2563eb" />
+                        <Ionicons name="arrow-back" size={24} color="#075538" />
                     </TouchableOpacity>
                     <Text style={styles.headerTitle}>Forgot Password</Text>
                 </View>
@@ -494,7 +494,7 @@ const styles = StyleSheet.create({
     },
     progressFill: {
         height: "100%",
-        backgroundColor: "#2563eb",
+        backgroundColor: "#075538",
         borderRadius: 3,
     },
     stepsContainer: {
@@ -514,7 +514,7 @@ const styles = StyleSheet.create({
         marginBottom: 8,
     },
     stepCircleActive: {
-        backgroundColor: "#2563eb",
+        backgroundColor: "#075538",
     },
     stepCircleInactive: {
         backgroundColor: "#f1f5f9",
@@ -527,7 +527,7 @@ const styles = StyleSheet.create({
         textAlign: "center",
     },
     stepTextActive: {
-        color: "#2563eb",
+        color: "#075538",
     },
     stepTextInactive: {
         color: "#9ca3af",
@@ -597,11 +597,11 @@ const styles = StyleSheet.create({
         marginLeft: 4,
     },
     button: {
-        backgroundColor: "#2563eb",
+        backgroundColor: "#075538",
         padding: 16,
         borderRadius: 12,
         marginTop: 8,
-        shadowColor: "#2563eb",
+        shadowColor: "#075538",
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.3,
         shadowRadius: 8,
@@ -640,7 +640,7 @@ const styles = StyleSheet.create({
         fontSize: 14,
     },
     resendLink: {
-        color: "#2563eb",
+        color: "#075538",
         fontSize: 14,
         fontWeight: "600",
     },
@@ -654,7 +654,7 @@ const styles = StyleSheet.create({
         fontSize: 14,
     },
     supportLink: {
-        color: "#2563eb",
+        color: "#075538",
         fontSize: 14,
         fontWeight: "600",
     },
