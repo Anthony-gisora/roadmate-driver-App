@@ -1,8 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios, {
-    AxiosInstance,
-    AxiosResponse,
-    InternalAxiosRequestConfig,
+  AxiosInstance,
+  AxiosResponse,
+  InternalAxiosRequestConfig,
 } from 'axios';
 
 // Token storage keys
@@ -20,6 +20,7 @@ async function getAuthToken(): Promise<string | null> {
 // Base URLs
 const DEFAULT_DEV_BASE_URL = 'http://localhost:3000';
 const DEFAULT_PROD_BASE_URL = 'https://roadmateassist.onrender.com';
+const DEFAULT_IMAGE_URL = 'https://roadmateassist.onrender.com/api/images'
 
 function getBaseUrl(): string {
   return __DEV__ ? DEFAULT_DEV_BASE_URL : DEFAULT_PROD_BASE_URL;
@@ -51,4 +52,5 @@ apiClient.interceptors.response.use(
   (error) => Promise.reject(error)
 );
 
-export default apiClient;
+export { apiClient, DEFAULT_IMAGE_URL, DEFAULT_PROD_BASE_URL };
+
