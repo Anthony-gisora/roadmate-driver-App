@@ -27,7 +27,7 @@ const tokenCache = {
 export default function TabLayout() {
     return (
         <ClerkProvider
-            publishableKey="your-clerk-publishable-key"
+            publishableKey="pk_test_c3RpcnJlZC1tdWRmaXNoLTM2LmNsZXJrLmFjY291bnRzLmRldiQ"
             tokenCache={tokenCache}>
             <View style={styles.container}>
             <Tabs
