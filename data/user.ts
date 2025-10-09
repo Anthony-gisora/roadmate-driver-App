@@ -1,5 +1,4 @@
 import { apiClient } from "@/hooks/api-client";
-import { createUser, signIn } from "@clerk/clerk-expo";
 
 const login = async (email: string, password: string) => {
   try {
@@ -30,12 +29,12 @@ const login = async (email: string, password: string) => {
 const register = async (email: string, password: string) => {
   const clerkUser = await createUser({ emailAddress: [email], password });
 
-  const response = await apiClient.post("/auth/register", {
-    clerkId: clerkUser.id,
-    email,
-  });
+  // const response = await apiClient.post("/auth/register", {
+  //   clerkId: clerkUser.id,
+  //   email,
+  // });
 
-  return response.data;
+  return clerkUser;
 };
 
 const requestPasswordReset = async (email: string) => {
@@ -72,3 +71,4 @@ const resetPassword = async (email: string, code: string, newPassword: string) =
 };
 
 export { login, register, requestPasswordReset, resetPassword };
+

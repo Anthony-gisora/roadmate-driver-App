@@ -1,35 +1,12 @@
 // app/(tabs)/_layout.tsx
-import { ClerkProvider } from "@clerk/clerk-expo";
 import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
-import * as SecureStore from "expo-secure-store";
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 
-const tokenCache = {
-  async getToken(key: string) {
-    try {
-      return SecureStore.getItemAsync(key);
-    } catch (err) {
-      return null;
-    }
-  },
-  async saveToken(key: string, value: string) {
-    try {
-      return SecureStore.setItemAsync(key, value);
-    } catch (err) {
-      return;
-    }
-  },
-};
-
-
 export default function TabLayout() {
     return (
-        <ClerkProvider
-            publishableKey="pk_test_c3RpcnJlZC1tdWRmaXNoLTM2LmNsZXJrLmFjY291bnRzLmRldiQ"
-            tokenCache={tokenCache}>
-            <View style={styles.container}>
+        <View style={styles.container}>
             <Tabs
                 screenOptions={{
                     headerShown: false,
@@ -131,7 +108,6 @@ export default function TabLayout() {
             {/* Curved top border */}
             <View style={styles.curvedBorder} />
         </View>
-        </ClerkProvider>
     );
 }
 

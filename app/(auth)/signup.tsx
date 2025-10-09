@@ -1,4 +1,5 @@
 // app/signup.tsx
+import { useSignUp } from "@clerk/clerk-expo";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
@@ -14,6 +15,7 @@ import {
     TouchableOpacity,
     View
 } from "react-native";
+import { useToast } from "react-native-toast-notifications";
 import { z } from "zod";
 
 const signupSchema = z.object({
@@ -44,6 +46,8 @@ export default function Signup() {
     const [isLoading, setIsLoading] = useState(false);
     const [secureTextEntry, setSecureTextEntry] = useState(true);
     const [secureConfirmTextEntry, setSecureConfirmTextEntry] = useState(true);
+      const { signUp, setActive, isLoaded } = useSignUp();
+      const toast = useToast();
 
     // Animation values
     const fadeAnim = React.useRef(new Animated.Value(0)).current;
@@ -89,14 +93,26 @@ export default function Signup() {
         setIsLoading(true);
 
         // Simulate API call
-        setTimeout(() => {
-            setIsLoading(false);
-            Alert.alert(
-                "Success! 🎉",
-                "Your account has been created successfully!",
-                [{ text: "Continue", onPress: () => router.replace("(tabs)") }]
-            );
-        }, 2000);
+        if (!isLoaded) return;
+        try {
+            await signUp.create({
+                emailAddress: formData.email,
+                password: formData.password,
+            });
+
+            await signUp.prepareEmailAddressVerification();
+            // At this point, Clerk has sent a verification email
+            
+            router.replace({
+                pathname: "/verify-email",
+                params: { email: formData.email }
+            })
+        } catch (err: any) {
+            toast.show(err.errors?.[0]?.message || err.message, { type: 'danger' });
+            console.error("Sign-up error:", err.errors?.[0]?.message || err.message);
+        }
+
+        setIsLoading(false);
     };
 
     const handleSocialSignup = (provider: string) => {

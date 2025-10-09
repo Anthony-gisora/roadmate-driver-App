@@ -1,4 +1,5 @@
 // app/login.tsx
+import { useSignIn } from "@clerk/clerk-expo";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
@@ -14,6 +15,7 @@ import {
     TouchableOpacity,
     View
 } from "react-native";
+import { useToast } from "react-native-toast-notifications";
 import { z } from "zod";
 
 const loginSchema = z.object({
@@ -28,6 +30,8 @@ export default function Login() {
     const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
     const [isLoading, setIsLoading] = useState(false);
     const [secureTextEntry, setSecureTextEntry] = useState(true);
+    const { signIn, setActive, isLoaded } = useSignIn();
+    const toast = useToast();
 
     // Animation values
     const fadeAnim = React.useRef(new Animated.Value(0)).current;
@@ -65,11 +69,27 @@ export default function Login() {
         setErrors({});
         setIsLoading(true);
 
-        // Simulate API call
-        setTimeout(() => {
-            setIsLoading(false);
-            router.replace("(tabs)/emergency");
-        }, 1500);
+        if (!isLoaded) return;
+
+        try {
+            const result = await signIn.create({
+                identifier: email,
+                password,
+            });
+
+            if (result.status === "complete") {
+                await setActive({ session: result.createdSessionId });
+                router.replace("/(tabs)/emergency");
+            } else {
+                toast.show('Additional steps required.', { type: 'danger' });
+                console.warn("Additional steps required.");
+            }
+        } catch (err: any) {
+            toast.show(err.errors?.[0]?.message || err.message, { type: 'danger' });
+            console.error("Login error:", err.errors?.[0]?.message || err.message);
+        }
+
+        setIsLoading(false);
     };
 
     const handleForgotPassword = () => {
