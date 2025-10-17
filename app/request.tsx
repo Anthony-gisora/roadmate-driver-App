@@ -1,17 +1,17 @@
 // app/request.tsx
-import React, { useState, useEffect } from 'react';
+import { Ionicons } from '@expo/vector-icons';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import React, { useEffect, useState } from 'react';
 import {
-    View,
-    Text,
-    StyleSheet,
-    ScrollView,
-    TouchableOpacity,
+    Alert,
     Animated,
     Dimensions,
-    Alert
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View
 } from 'react-native';
-import { useRouter, useLocalSearchParams } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 
 const { width } = Dimensions.get('window');
 
@@ -56,7 +56,7 @@ export default function RequestScreen() {
             setProgress(50);
         }, 2000);
 
-        // Simulate progress
+        // Simulate progress (make the request)
         const progressTimer = setInterval(() => {
             setProgress(prev => {
                 if (prev >= 100) {
@@ -73,6 +73,7 @@ export default function RequestScreen() {
         };
     }, []);
 
+    //update price estimates
     const estimatedPrice = () => {
         const basePrices: { [key: string]: number } = {
             'flat-tire': 25,
