@@ -549,7 +549,7 @@ export default function NotificationsScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#f8fafc',
+        backgroundColor: '#075538',
     },
     header: {
         backgroundColor: '#fff',
