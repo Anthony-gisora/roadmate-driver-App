@@ -18,8 +18,8 @@ async function getAuthToken(): Promise<string | null> {
 }
 
 // Base URLs
-const DEFAULT_DEV_BASE_URL = 'http://localhost:3000';
-const DEFAULT_PROD_BASE_URL = 'https://roadmateassist.onrender.com';
+const DEFAULT_DEV_BASE_URL = 'http://localhost:5000/api';
+const DEFAULT_PROD_BASE_URL = 'https://roadmateassist.onrender.com/api';
 const DEFAULT_IMAGE_URL = 'https://roadmateassist.onrender.com/api/images'
 
 function getBaseUrl(): string {

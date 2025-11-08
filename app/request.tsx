@@ -1,17 +1,12 @@
 // app/request.tsx
-import { Ionicons } from '@expo/vector-icons';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
-import {
-    Alert,
-    Animated,
-    Dimensions,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
-} from 'react-native';
+import {Ionicons} from '@expo/vector-icons';
+import {useLocalSearchParams, useRouter} from 'expo-router';
+import React, {useEffect, useState} from 'react';
+import {Alert, Animated, Dimensions, ScrollView, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
+import {apiClient} from "@/hooks/api-client";
+import {useUser} from "@clerk/clerk-expo";
+import {getLocation} from "@/hooks/location";
+import {useToast} from "react-native-toast-notifications";
 
 const { width } = Dimensions.get('window');
 
@@ -21,9 +16,13 @@ export default function RequestScreen() {
     const [progress, setProgress] = useState(0);
     const [mechanic, setMechanic] = useState<any>(null);
     const [eta, setEta] = useState<string>('5-10 min');
+    const { user } = useUser();
+    const toast = useToast();
 
     const progressAnim = new Animated.Value(0);
     const slideAnim = new Animated.Value(50);
+
+    const { priority, problem, useAutoLocation,timestamp, loc } = params;
 
     const problemIcons: { [key: string]: string } = {
         'flat-tire': 'car-outline',
@@ -43,35 +42,62 @@ export default function RequestScreen() {
     };
 
     useEffect(() => {
-        // Simulate finding mechanic
-        const timer = setTimeout(() => {
-            setMechanic({
-                name: 'Mike Johnson',
-                rating: 4.8,
-                reviews: 127,
-                distance: '1.2 km',
-                specialization: params.problem === 'flat-tire' ? 'Tire Specialist' : 'General Mechanic',
-                image: '👨‍🔧',
-            });
-            setProgress(50);
-        }, 2000);
+        //get some user details
+        const driverId = user?.id;
+        const requestType = problem;
+        const details = {priority,timestamp};
+        let location: string | string[] = loc ?? "";
 
-        // Simulate progress (make the request)
-        const progressTimer = setInterval(() => {
-            setProgress(prev => {
-                if (prev >= 100) {
-                    clearInterval(progressTimer);
-                    return 100;
-                }
-                return prev + 10;
-            });
-        }, 1500);
-
-        return () => {
-            clearTimeout(timer);
-            clearInterval(progressTimer);
+        const fetchLocation = async () => {
+            if (useAutoLocation === "true") {
+                location = await getLocation() ?? "";
+            }
         };
-    }, []);
+
+        if (useAutoLocation === "true") {
+            fetchLocation();
+        }
+
+
+        // Simulate finding mechanic
+        apiClient.post('/req/requests', {
+            driverId,requestType,details,location
+        })
+            .then((res) => {
+                console.log(res);
+                setProgress(15);
+                if(res.data?.mech){
+                    //mech found assign here
+                    setMechanic({
+                        name: 'Mike Johnson',
+                        rating: 4.8,
+                        reviews: 127,
+                        distance: '1.2 km',
+                        specialization: params.problem === 'flat-tire' ? 'Tire Specialist' : 'General Mechanic',
+                        image: '👨‍🔧',
+                    });
+                    //update progress
+                    setProgress(50);
+
+                    //make another api call to save request to database
+
+
+                    //update progress now to full
+                    setProgress(100);
+                }else{
+                    //mech not found
+                    toast.show('No mechanic found is available at the moment', { type: 'danger' });
+                    setProgress(0);
+                }
+            })
+            .catch((res) => {
+                console.log(res);
+                const error = res.response.data.message ?? res.message;
+                toast.show(`Error occurred: ${error}`, { type: 'danger' });
+                setProgress(0);
+            });
+
+    }, [useAutoLocation]);
 
     //update price estimates
     const estimatedPrice = () => {

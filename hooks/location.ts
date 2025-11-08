@@ -16,7 +16,7 @@ export async function getLocation() {
     const { coords } = await Location.getCurrentPositionAsync({
       accuracy: Location.Accuracy.High,
     });
-    return coords;
+    return `${coords.latitude},${coords.longitude}`;
   } catch (err) {
     Alert.alert('Location Error', 'Unable to retrieve your location.');
     return null;
