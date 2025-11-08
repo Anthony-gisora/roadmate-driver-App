@@ -4,15 +4,15 @@ import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import {
-    Alert,
-    Animated,
-    Dimensions,
-    KeyboardAvoidingView,
-    Platform,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
+  Alert,
+  Animated,
+  Dimensions,
+  KeyboardAvoidingView,
+  Platform,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from 'react-native';
 
 // We need to import TextInput from react-native
@@ -24,6 +24,7 @@ const { width } = Dimensions.get('window');
 export default function VerifyEmailScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
+  const { id, username } = useLocalSearchParams();
   const { isLoaded, signUp, setActive } = useSignUp();
   const { signIn } = useSignIn();
   
@@ -148,6 +149,11 @@ export default function VerifyEmailScreen() {
     setIsLoading(true);
 
     try {
+      await signUp.update({
+        username: username.toString(),
+        firstName: username.toString().split(' ')[0],
+        lastName: username.toString().split(' ')[1],
+      });
       // Attempt to complete sign up
       const completeSignUp = await signUp?.attemptEmailAddressVerification({
         code: fullCode,
@@ -186,6 +192,7 @@ export default function VerifyEmailScreen() {
       throw new Error('Sign in not available');
     }
 
+    await signIn.create({ identifier: email })
     const signInAttempt = await signIn.attemptFirstFactor({
       strategy: 'email_code',
       code: fullCode,

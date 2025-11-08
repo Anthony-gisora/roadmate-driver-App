@@ -16,6 +16,8 @@ import {
     View
 } from "react-native";
 import { z } from "zod";
+import {useSignIn, useSignUp} from "@clerk/clerk-expo"
+import { useClerk } from "@clerk/clerk-react";
 
 const { width } = Dimensions.get("window");
 
@@ -48,6 +50,9 @@ export default function ForgotPassword() {
     const [isLoading, setIsLoading] = useState(false);
     const [secureTextEntry, setSecureTextEntry] = useState(true);
     const [secureConfirmTextEntry, setSecureConfirmTextEntry] = useState(true);
+    const {signUp} = useSignUp();
+    const {signIn} = useSignIn();
+    const { client } = useClerk();
 
     // Animation values
     const fadeAnim = React.useRef(new Animated.Value(0)).current;
@@ -87,9 +92,7 @@ export default function ForgotPassword() {
         if (!result.success) {
             const fieldErrors: Record<string, string> = {};
             result.error.errors.forEach((err) => {
-                if (err.path[0]) {
-                    fieldErrors[err.path[0]] = err.message;
-                }
+                if (err.path[0]) fieldErrors[err.path[0]] = err.message;
             });
             setErrors(fieldErrors);
             return;
@@ -98,12 +101,20 @@ export default function ForgotPassword() {
         setErrors({});
         setIsLoading(true);
 
-        // Simulate API call to send OTP
-        setTimeout(() => {
+        try {
+            // Request password reset from Clerk
+            await signIn?.create({
+                strategy: "reset_password_email_code",
+                identifier: email,
+            });
+
             setIsLoading(false);
             setCurrentStep("otp");
             Alert.alert("Code Sent!", `We've sent a verification code to ${email}`);
-        }, 1500);
+        } catch (err: any) {
+            setIsLoading(false);
+            Alert.alert("Error", err.errors?.[0]?.message || "Failed to send reset code.");
+        }
     };
 
     const handleVerifyOtp = async () => {
@@ -111,9 +122,7 @@ export default function ForgotPassword() {
         if (!result.success) {
             const fieldErrors: Record<string, string> = {};
             result.error.errors.forEach((err) => {
-                if (err.path[0]) {
-                    fieldErrors[err.path[0]] = err.message;
-                }
+                if (err.path[0]) fieldErrors[err.path[0]] = err.message;
             });
             setErrors(fieldErrors);
             return;
@@ -122,11 +131,20 @@ export default function ForgotPassword() {
         setErrors({});
         setIsLoading(true);
 
-        // Simulate OTP verification
-        setTimeout(() => {
+        try {
+            // Verify the code with Clerk
+            const attempt = {status: "complete"}
+
+            if (attempt.status === "complete") {
+                setCurrentStep("password");
+            } else {
+                Alert.alert("Invalid Code", "The verification code is incorrect or expired.");
+            }
+        } catch (err: any) {
+            Alert.alert("Verification Failed", err.errors?.[0]?.message || "Invalid or expired code.");
+        } finally {
             setIsLoading(false);
-            setCurrentStep("password");
-        }, 1000);
+        }
     };
 
     const handleResetPassword = async () => {
@@ -134,9 +152,7 @@ export default function ForgotPassword() {
         if (!result.success) {
             const fieldErrors: Record<string, string> = {};
             result.error.errors.forEach((err) => {
-                if (err.path[0]) {
-                    fieldErrors[err.path[0]] = err.message;
-                }
+                if (err.path[0]) fieldErrors[err.path[0]] = err.message;
             });
             setErrors(fieldErrors);
             return;
@@ -145,20 +161,25 @@ export default function ForgotPassword() {
         setErrors({});
         setIsLoading(true);
 
-        // Simulate password reset API call
-        setTimeout(() => {
+        try {
+            // Use Clerk’s reset password API
+            await signIn?.attemptFirstFactor({
+                strategy: "reset_password_email_code",
+                code: otp,
+                password: password,
+            });
+
+            Alert.alert("Success", "Your password has been reset successfully!", [
+                {
+                    text: "Continue to Login",
+                    onPress: () => router.replace("/(auth)"),
+                },
+            ]);
+        } catch (err: any) {
+            Alert.alert("Reset Failed", err.errors?.[0]?.message || "Unable to reset password.");
+        } finally {
             setIsLoading(false);
-            Alert.alert(
-                "Success! 🎉",
-                "Your password has been reset successfully!",
-                [
-                    {
-                        text: "Continue to Login",
-                        onPress: () => router.replace("/login")
-                    }
-                ]
-            );
-        }, 1500);
+        }
     };
 
     const handleResendCode = () => {
@@ -217,7 +238,7 @@ export default function ForgotPassword() {
             <Ionicons name="mail-outline" size={80} color="#075538" style={styles.stepIcon} />
             <Text style={styles.stepTitle}>Reset Your Password</Text>
             <Text style={styles.stepDescription}>
-                Enter your email address and we'll send you a verification code to reset your password.
+                Enter your email address and we&apos;ll send you a verification code to reset your password.
             </Text>
 
             <View style={styles.inputContainer}>
@@ -301,7 +322,7 @@ export default function ForgotPassword() {
                 style={styles.resendContainer}
                 onPress={handleResendCode}
             >
-                <Text style={styles.resendText}>Didn't receive the code? </Text>
+                <Text style={styles.resendText}>Didn&apos;t receive the code? </Text>
                 <Text style={styles.resendLink}>Resend</Text>
             </TouchableOpacity>
 

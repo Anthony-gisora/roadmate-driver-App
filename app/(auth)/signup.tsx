@@ -1,4 +1,3 @@
-// app/signup.tsx
 import { useSignUp } from "@clerk/clerk-expo";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -46,8 +45,12 @@ export default function Signup() {
     const [isLoading, setIsLoading] = useState(false);
     const [secureTextEntry, setSecureTextEntry] = useState(true);
     const [secureConfirmTextEntry, setSecureConfirmTextEntry] = useState(true);
-      const { signUp, setActive, isLoaded } = useSignUp();
-      const toast = useToast();
+    const [verificationStep, setVerificationStep] = useState(false);
+    const [verificationCode, setVerificationCode] = useState("");
+    const [isVerifying, setIsVerifying] = useState(false);
+    
+    const { signUp, setActive, isLoaded } = useSignUp();
+    const toast = useToast();
 
     // Animation values
     const fadeAnim = React.useRef(new Animated.Value(0)).current;
@@ -92,27 +95,81 @@ export default function Signup() {
         setErrors({});
         setIsLoading(true);
 
-        // Simulate API call
         if (!isLoaded) return;
+        
         try {
+            // Create the sign up attempt
             await signUp.create({
                 emailAddress: formData.email,
                 password: formData.password,
             });
 
-            await signUp.prepareEmailAddressVerification();
-            // At this point, Clerk has sent a verification email
+            // Send verification email
+            await signUp.prepareEmailAddressVerification({ strategy: "email_code" });
             
-            router.replace({
-                pathname: "/verify-email",
-                params: { email: formData.email }
-            })
+            // Move to verification step
+            setVerificationStep(true);
+            toast.show("Verification code sent to your email", { type: "success" });
+            
         } catch (err: any) {
-            toast.show(err.errors?.[0]?.message || err.message, { type: 'danger' });
-            console.error("Sign-up error:", err.errors?.[0]?.message || err.message);
+            toast.show(err.errors?.[0]?.message || err.message || "An error occurred during sign up", { 
+                type: 'danger' 
+            });
+            console.error("Sign-up error:", err);
         }
 
         setIsLoading(false);
+    };
+
+    const handleVerification = async () => {
+        if (!isLoaded || !signUp) {
+            toast.show("System not ready. Please try again.", { type: "danger" });
+            return;
+        }
+
+        if (!verificationCode.trim()) {
+            toast.show("Please enter verification code", { type: "danger" });
+            return;
+        }
+
+        setIsVerifying(true);
+
+        try {
+            // Attempt verification
+            const signUpAttempt = await signUp.attemptEmailAddressVerification({
+                code: verificationCode,
+            });
+
+            if (signUpAttempt.status === "complete") {
+                // Set the user as active
+                await setActive({ session: signUpAttempt.createdSessionId });
+                
+                toast.show("Account verified successfully!", { type: "success" });
+                
+                // Navigate to the main app
+                router.replace("/(tabs)/home");
+            } else {
+                toast.show("Verification failed. Please try again.", { type: "danger" });
+            }
+        } catch (err: any) {
+            console.error("Verification error:", err);
+            toast.show(err.errors?.[0]?.message || err.message || "Invalid verification code", { 
+                type: "danger" 
+            });
+        }
+
+        setIsVerifying(false);
+    };
+
+    const handleResendCode = async () => {
+        if (!isLoaded) return;
+
+        try {
+            await signUp.prepareEmailAddressVerification({ strategy: "email_code" });
+            toast.show("Verification code resent to your email", { type: "success" });
+        } catch (err: any) {
+            toast.show("Failed to resend code. Please try again.", { type: "danger" });
+        }
     };
 
     const handleSocialSignup = (provider: string) => {
@@ -126,6 +183,110 @@ export default function Signup() {
         </View>
     );
 
+    // Render verification screen
+    if (verificationStep) {
+        return (
+            <KeyboardAvoidingView
+                style={styles.container}
+                behavior={Platform.OS === "ios" ? "padding" : "height"}
+            >
+                <ScrollView
+                    contentContainerStyle={styles.scrollContainer}
+                    showsVerticalScrollIndicator={false}
+                >
+                    <Animated.View
+                        style={[
+                            styles.header,
+                            {
+                                opacity: fadeAnim,
+                                transform: [{ translateY: slideAnim }]
+                            }
+                        ]}
+                    >
+                        <View style={styles.logoContainer}>
+                            <Ionicons name="mail-outline" size={50} color="#075538" />
+                        </View>
+                        <Text style={styles.title}>Verify Your Email</Text>
+                        <Text style={styles.subtitle}>
+                            We sent a verification code to{"\n"}
+                            <Text style={{ fontWeight: "600" }}>{formData.email}</Text>
+                        </Text>
+                    </Animated.View>
+
+                    <Animated.View
+                        style={[
+                            styles.formContainer,
+                            {
+                                opacity: fadeAnim,
+                                transform: [{ translateY: slideAnim }]
+                            }
+                        ]}
+                    >
+                        {/* Verification Code Input */}
+                        <View style={styles.inputContainer}>
+                            <Ionicons name="key-outline" size={20} color="#6b7280" style={styles.inputIcon} />
+                            <TextInput
+                                style={styles.input}
+                                placeholder="Enter verification code"
+                                placeholderTextColor="#9ca3af"
+                                value={verificationCode}
+                                onChangeText={setVerificationCode}
+                                keyboardType="number-pad"
+                                autoCapitalize="none"
+                                autoCorrect={false}
+                            />
+                        </View>
+
+                        <Text style={styles.verificationHelp}>
+                            Check your email inbox for the 6-digit verification code
+                        </Text>
+
+                        {/* Verify Button */}
+                        <TouchableOpacity
+                            style={[styles.button, isVerifying && styles.buttonDisabled]}
+                            onPress={handleVerification}
+                            disabled={isVerifying}
+                        >
+                            {isVerifying ? (
+                                <View style={styles.loadingContainer}>
+                                    <Ionicons name="refresh" size={20} color="#fff" style={styles.spinning} />
+                                    <Text style={styles.buttonText}>Verifying...</Text>
+                                </View>
+                            ) : (
+                                <View style={styles.buttonContent}>
+                                    <Text style={styles.buttonText}>Verify Email</Text>
+                                    <Ionicons name="checkmark-circle-outline" size={20} color="#fff" />
+                                </View>
+                            )}
+                        </TouchableOpacity>
+
+                        {/* Resend Code */}
+                        <TouchableOpacity
+                            style={styles.resendButton}
+                            onPress={handleResendCode}
+                            disabled={isVerifying}
+                        >
+                            <Text style={styles.resendText}>
+                                Didn&apos;t receive the code?{" "}
+                                <Text style={styles.resendLink}>Resend</Text>
+                            </Text>
+                        </TouchableOpacity>
+
+                        {/* Back to Signup */}
+                        <TouchableOpacity
+                            style={styles.backButton}
+                            onPress={() => setVerificationStep(false)}
+                        >
+                            <Ionicons name="arrow-back" size={16} color="#64748b" />
+                            <Text style={styles.backText}>Back to sign up</Text>
+                        </TouchableOpacity>
+                    </Animated.View>
+                </ScrollView>
+            </KeyboardAvoidingView>
+        );
+    }
+
+    // Original signup form
     return (
         <KeyboardAvoidingView
             style={styles.container}
@@ -602,5 +763,36 @@ const styles = StyleSheet.create({
         color: "#075538",
         fontSize: 14,
         fontWeight: "600",
+    },
+    // Verification specific styles
+    verificationHelp: {
+        textAlign: "center",
+        fontSize: 14,
+        color: "#64748b",
+        marginBottom: 20,
+        lineHeight: 20,
+    },
+    resendButton: {
+        alignItems: "center",
+        marginBottom: 16,
+    },
+    resendText: {
+        color: "#64748b",
+        fontSize: 14,
+    },
+    resendLink: {
+        color: "#075538",
+        fontWeight: "600",
+    },
+    backButton: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: 12,
+    },
+    backText: {
+        color: "#64748b",
+        fontSize: 14,
+        marginLeft: 8,
     },
 });

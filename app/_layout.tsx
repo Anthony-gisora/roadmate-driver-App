@@ -1,4 +1,5 @@
 // app/_layout.tsx
+import { useColorScheme } from '@/hooks/use-color-scheme';
 import { ClerkProvider, SignedIn, SignedOut } from "@clerk/clerk-expo";
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack } from 'expo-router';
@@ -6,8 +7,6 @@ import * as SecureStore from "expo-secure-store";
 import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
 import { ToastProvider } from 'react-native-toast-notifications';
-
-import { useColorScheme } from '@/hooks/use-color-scheme';
 
 export const unstable_settings = {
     initialRouteName: '/',
