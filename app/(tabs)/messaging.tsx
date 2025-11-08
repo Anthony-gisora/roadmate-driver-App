@@ -13,6 +13,8 @@ import {
     TouchableOpacity,
     View
 } from 'react-native';
+import ChatModal from "@/components/chat-modal";
+import {useUser} from "@clerk/clerk-expo";
 
 export default function NotificationsScreen() {
     const router = useRouter();
@@ -20,6 +22,7 @@ export default function NotificationsScreen() {
     const [chatModalVisible, setChatModalVisible] = useState(false);
     const [selectedChat, setSelectedChat] = useState<any>(null);
     const [messageText, setMessageText] = useState('');
+    const {user} = useUser();
     const [notifications, setNotifications] = useState([
         {
             id: '1',
@@ -462,85 +465,13 @@ export default function NotificationsScreen() {
             </ScrollView>
 
             {/* Chat Modal */}
-            <Modal
+            <ChatModal
                 visible={chatModalVisible}
-                animationType="slide"
-                presentationStyle="pageSheet"
-                onRequestClose={() => setChatModalVisible(false)}
-            >
-                {selectedChat && (
-                    <View style={styles.modalContainer}>
-                        {/* Chat Header */}
-                        <View style={styles.chatHeaderModal}>
-                            <TouchableOpacity
-                                style={styles.backButton}
-                                onPress={() => setChatModalVisible(false)}
-                            >
-                                <Ionicons name="arrow-back" size={24} color="#1e293b" />
-                            </TouchableOpacity>
+                onClose={() => setChatModalVisible(false)}
+                selectedChat={selectedChat}
+                userId={user!.id}
+            />
 
-                            <View style={styles.chatPartnerInfo}>
-                                <Text style={styles.chatAvatar}>{selectedChat.mechanic.image}</Text>
-                                <View style={styles.chatPartnerDetails}>
-                                    <Text style={styles.chatPartnerName}>{selectedChat.mechanic.name}</Text>
-                                    <Text style={styles.chatPartnerStatus}>Online</Text>
-                                </View>
-                            </View>
-
-                            <View style={styles.chatActions}>
-                                <TouchableOpacity
-                                    style={styles.chatActionButton}
-                                    onPress={handleCallMechanic}
-                                >
-                                    <Ionicons name="call" size={20} color="#075538" />
-                                </TouchableOpacity>
-                                <TouchableOpacity
-                                    style={styles.chatActionButton}
-                                    onPress={handleShareLocation}
-                                >
-                                    <Ionicons name="location" size={20} color="#075538" />
-                                </TouchableOpacity>
-                            </View>
-                        </View>
-
-                        {/* Messages */}
-                        <FlatList
-                            data={messages}
-                            keyExtractor={(item) => item.id}
-                            renderItem={({ item }) => <MessageBubble message={item} />}
-                            style={styles.messagesContainer}
-                            contentContainerStyle={styles.messagesContent}
-                            inverted={false}
-                        />
-
-                        {/* Message Input */}
-                        <View style={styles.inputContainer}>
-                            <TextInput
-                                style={styles.messageInput}
-                                placeholder="Type a message..."
-                                placeholderTextColor="#9ca3af"
-                                value={messageText}
-                                onChangeText={setMessageText}
-                                multiline
-                            />
-                            <TouchableOpacity
-                                style={[
-                                    styles.sendButton,
-                                    !messageText.trim() && styles.sendButtonDisabled
-                                ]}
-                                onPress={handleSendMessage}
-                                disabled={!messageText.trim()}
-                            >
-                                <Ionicons
-                                    name="send"
-                                    size={20}
-                                    color={messageText.trim() ? "#075538" : "#cbd5e1"}
-                                />
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-                )}
-            </Modal>
         </View>
     );
 }
