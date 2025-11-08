@@ -42,62 +42,63 @@ export default function RequestScreen() {
     };
 
     useEffect(() => {
-        //get some user details
-        const driverId = user?.id;
-        const requestType = problem;
-        const details = {priority,timestamp};
-        let location: string | string[] = loc ?? "";
+        // Only run when all dependencies are ready
+        if (!user?.id || !problem) return;
 
-        const fetchLocation = async () => {
+        const sendRequest = async () => {
+            setProgress(0);
+            const driverId = user.id;
+            const requestType = problem;
+            const details = {
+                priority: priority.toString(),
+                timestamp: timestamp.toString(),
+            };
+            let location: string | string[] = loc ?? "";
+
             if (useAutoLocation === "true") {
-                location = await getLocation() ?? "";
+                location = (await getLocation()) ?? "";
+            }
+
+            try {
+                setProgress(15);
+                const res = await apiClient.post("/req/requests", {
+                    driverId,
+                    requestType,
+                    details: JSON.stringify(details),
+                    location,
+                });
+
+                console.log(res);
+
+                if (res.data?.mech) {
+                    setMechanic({
+                        name: "Mike Johnson",
+                        rating: 4.8,
+                        reviews: 127,
+                        distance: "1.2 km",
+                        specialization: problem === "flat-tire" ? "Tire Specialist" : "General Mechanic",
+                        image: "👨‍🔧",
+                    });
+                    setProgress(50);
+
+                    // You can make additional API calls here
+
+                    setProgress(100);
+                } else {
+                    toast.show("No mechanic found is available at the moment", { type: "danger" });
+                    setProgress(0);
+                }
+            } catch (err: any) {
+                console.log(err);
+                const error = err.response?.data?.message ?? err.message;
+                toast.show(`Error occurred: ${error}`, { type: "danger" });
+                setProgress(0);
             }
         };
 
-        if (useAutoLocation === "true") {
-            fetchLocation();
-        }
+        sendRequest();
+    }, [useAutoLocation, user?.id, problem]);
 
-
-        // Simulate finding mechanic
-        apiClient.post('/req/requests', {
-            driverId,requestType,details,location
-        })
-            .then((res) => {
-                console.log(res);
-                setProgress(15);
-                if(res.data?.mech){
-                    //mech found assign here
-                    setMechanic({
-                        name: 'Mike Johnson',
-                        rating: 4.8,
-                        reviews: 127,
-                        distance: '1.2 km',
-                        specialization: params.problem === 'flat-tire' ? 'Tire Specialist' : 'General Mechanic',
-                        image: '👨‍🔧',
-                    });
-                    //update progress
-                    setProgress(50);
-
-                    //make another api call to save request to database
-
-
-                    //update progress now to full
-                    setProgress(100);
-                }else{
-                    //mech not found
-                    toast.show('No mechanic found is available at the moment', { type: 'danger' });
-                    setProgress(0);
-                }
-            })
-            .catch((res) => {
-                console.log(res);
-                const error = res.response.data.message ?? res.message;
-                toast.show(`Error occurred: ${error}`, { type: 'danger' });
-                setProgress(0);
-            });
-
-    }, [useAutoLocation]);
 
     //update price estimates
     const estimatedPrice = () => {
