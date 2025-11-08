@@ -1,4 +1,3 @@
-// app/forgot-password.tsx
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";

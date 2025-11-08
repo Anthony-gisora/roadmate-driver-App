@@ -1,4 +1,3 @@
-// app/_layout.tsx
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { ClerkProvider, SignedIn, SignedOut } from "@clerk/clerk-expo";
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';

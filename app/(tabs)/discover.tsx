@@ -1,4 +1,3 @@
-// app/(tabs)/services.tsx
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useRef, useState } from 'react';
