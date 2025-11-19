@@ -1,3 +1,4 @@
+import SelectLocationMap from '@/components/select-location';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useRef, useState } from 'react';
@@ -8,17 +9,23 @@ import {
     ScrollView,
     StyleSheet,
     Text,
+    TextInput,
     TouchableOpacity,
     View
 } from 'react-native';
 
-const { width } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
 
 export default function EmergencyScreen() {
     const router = useRouter();
+    const [currentStep, setCurrentStep] = useState(1);
     const [selectedPriority, setSelectedPriority] = useState<'emergency' | 'normal' | 'other' | null>(null);
     const [selectedProblem, setSelectedProblem] = useState<string | null>(null);
+    const [otherDescription, setOtherDescription] = useState('');
     const [useAutoLocation, setUseAutoLocation] = useState(true);
+    const handleSelect = (coords: { latitude: number; longitude: number }) => {
+        Alert.alert("Selected", `${coords.latitude}, ${coords.longitude}`);
+    };
 
     const slideAnim = useRef(new Animated.Value(0)).current;
     const pulseAnim = useRef(new Animated.Value(1)).current;
@@ -35,7 +42,6 @@ export default function EmergencyScreen() {
     ];
 
     React.useEffect(() => {
-        // Pulsing animation for emergency button
         Animated.loop(
             Animated.sequence([
                 Animated.timing(pulseAnim, {
@@ -52,20 +58,34 @@ export default function EmergencyScreen() {
         ).start();
     }, []);
 
-    const handleRequestAssistance = () => {
-        if (!selectedPriority) {
+    const handleNextStep = () => {
+        if (currentStep === 1 && !selectedPriority) {
             Alert.alert('Select Priority', 'Please select the priority level for your request.');
             return;
         }
-        if (!selectedProblem) {
+        if (currentStep === 2 && !selectedProblem) {
             Alert.alert('Select Problem', 'Please select the type of problem you are experiencing.');
             return;
         }
+        if (currentStep === 2 && selectedProblem === 'other' && !otherDescription.trim()) {
+            Alert.alert('Describe Problem', 'Please describe your problem.');
+            return;
+        }
+        setCurrentStep(currentStep + 1);
+    };
 
+    const handlePreviousStep = () => {
+        if (currentStep > 1) {
+            setCurrentStep(currentStep - 1);
+        }
+    };
+
+    const handleRequestAssistance = () => {
         // Prepare request data
         const requestData = {
             priority: selectedPriority,
             problem: selectedProblem,
+            otherDescription: selectedProblem === 'other' ? otherDescription : '',
             useAutoLocation,
             timestamp: new Date().toISOString(),
         };
@@ -109,12 +129,144 @@ export default function EmergencyScreen() {
         </TouchableOpacity>
     );
 
+    const renderStepContent = () => {
+        switch (currentStep) {
+            case 1:
+                return (
+                    <View style={styles.stepContainer}>
+                        <Text style={styles.stepTitle}>Get Assistance Now!</Text>
+                        <Text style={styles.stepDescription}>Select the priority level for your request</Text>
+
+                        <View style={styles.priorityContainer}>
+                            <PriorityCard
+                                type="emergency"
+                                title="Emergency"
+                                description="Immediate danger or safety concern"
+                                icon="warning"
+                                color="#dc2626"
+                            />
+                            <PriorityCard
+                                type="normal"
+                                title="Standard"
+                                description="Need assistance within the hour"
+                                icon="time"
+                                color="#f59e0b"
+                            />
+                            <PriorityCard
+                                type="other"
+                                title="Scheduled"
+                                description="Plan for later today or tomorrow"
+                                icon="calendar"
+                                color="#10b981"
+                            />
+                        </View>
+                    </View>
+                );
+
+            case 2:
+                return (
+                    <View style={styles.stepContainer}>
+                        <Text style={styles.stepTitle}>What&apos;s the problem?</Text>
+                        <Text style={styles.stepDescription}>Select the type of assistance needed</Text>
+
+                        <View style={styles.problemsGrid}>
+                            {problems.map((problem) => (
+                                <TouchableOpacity
+                                    key={problem.id}
+                                    style={[
+                                        styles.problemCard,
+                                        selectedProblem === problem.id && { borderColor: problem.color, backgroundColor: `${problem.color}10` }
+                                    ]}
+                                    onPress={() => setSelectedProblem(problem.id)}
+                                >
+                                    <View style={[styles.problemIcon, { backgroundColor: problem.color }]}>
+                                        <Ionicons name={problem.icon as any} size={20} color="#fff" />
+                                    </View>
+                                    <Text style={styles.problemText}>{problem.name}</Text>
+                                    {selectedProblem === problem.id && (
+                                        <View style={[styles.problemCheck, { backgroundColor: problem.color }]}>
+                                            <Ionicons name="checkmark" size={12} color="#fff" />
+                                        </View>
+                                    )}
+                                </TouchableOpacity>
+                            ))}
+                        </View>
+
+                        {selectedProblem === 'other' && (
+                            <View style={styles.otherInputContainer}>
+                                <Text style={styles.otherInputLabel}>Please describe your problem</Text>
+                                <TextInput
+                                    style={styles.otherInput}
+                                    placeholder="Describe what's happening with your vehicle..."
+                                    multiline
+                                    numberOfLines={4}
+                                    value={otherDescription}
+                                    onChangeText={setOtherDescription}
+                                />
+                            </View>
+                        )}
+                    </View>
+                );
+
+            case 3:
+                return (
+                    <View style={styles.stepContainer}>
+                        <Text style={styles.stepTitle}>Where are you located?</Text>
+                        <Text style={styles.stepDescription}>Share your location for faster assistance</Text>
+
+                        <View style={styles.locationCard}>
+                            <View style={styles.locationHeader}>
+                                <Ionicons name="location" size={24} color="#075538" />
+                                <View style={styles.locationText}>
+                                    <Text style={styles.locationTitle}>Automatic Location</Text>
+                                    <Text style={styles.locationDescription}>
+                                        Use your current GPS location for accurate service dispatch
+                                    </Text>
+                                </View>
+                            </View>
+
+                            <TouchableOpacity
+                                style={styles.toggleButton}
+                                onPress={() => setUseAutoLocation(!useAutoLocation)}
+                            >
+                                <View style={[
+                                    styles.toggleTrack,
+                                    useAutoLocation && { backgroundColor: '#075538' }
+                                ]}>
+                                    <View style={[
+                                        styles.toggleThumb,
+                                        useAutoLocation && { transform: [{ translateX: 20 }] }
+                                    ]} />
+                                </View>
+                            </TouchableOpacity>
+                        </View>
+
+                        {!useAutoLocation && (
+                            <View style={styles.manualLocationContainer}>
+                                <SelectLocationMap onSelect={handleSelect}/>
+                            </View>
+                        )}
+                    </View>
+                );
+
+            default:
+                return null;
+        }
+    };
+
+    const getStepProgress = () => {
+        return (currentStep / 3) * 100;
+    };
+
     return (
         <View style={styles.container}>
             {/* Header */}
             <View style={styles.header}>
+                <View style={styles.progressBar}>
+                    <View style={[styles.progressFill, { width: `${getStepProgress()}%` }]} />
+                </View>
                 <Text style={styles.title}>Roadside Assistance</Text>
-                <Text style={styles.subtitle}>Get help when you need it most</Text>
+                <Text style={styles.subtitle}>Step {currentStep} of 3</Text>
             </View>
 
             <ScrollView
@@ -122,134 +274,53 @@ export default function EmergencyScreen() {
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={styles.scrollContent}
             >
-                {/* Priority Selection */}
-                <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Request Priority</Text>
-                    <Text style={styles.sectionDescription}>How urgent is your situation?</Text>
-
-                    <View style={styles.priorityContainer}>
-                        <PriorityCard
-                            type="emergency"
-                            title="Emergency"
-                            description="Immediate danger or safety concern"
-                            icon="warning"
-                            color="#dc2626"
-                        />
-                        <PriorityCard
-                            type="normal"
-                            title="Standard"
-                            description="Need assistance within the hour"
-                            icon="time"
-                            color="#f59e0b"
-                        />
-                        <PriorityCard
-                            type="other"
-                            title="Scheduled"
-                            description="Plan for later today or tomorrow"
-                            icon="calendar"
-                            color="#10b981"
-                        />
-                    </View>
-                </View>
-
-                {/* Problem Type Selection */}
-                <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>What&apos;s the problem?</Text>
-                    <Text style={styles.sectionDescription}>Select the type of assistance needed</Text>
-
-                    <View style={styles.problemsGrid}>
-                        {problems.map((problem) => (
-                            <TouchableOpacity
-                                key={problem.id}
-                                style={[
-                                    styles.problemCard,
-                                    selectedProblem === problem.id && { borderColor: problem.color, backgroundColor: `${problem.color}10` }
-                                ]}
-                                onPress={() => setSelectedProblem(problem.id)}
-                            >
-                                <View style={[styles.problemIcon, { backgroundColor: problem.color }]}>
-                                    <Ionicons name={problem.icon as any} size={20} color="#fff" />
-                                </View>
-                                <Text style={styles.problemText}>{problem.name}</Text>
-                                {selectedProblem === problem.id && (
-                                    <View style={[styles.problemCheck, { backgroundColor: problem.color }]}>
-                                        <Ionicons name="checkmark" size={12} color="#fff" />
-                                    </View>
-                                )}
-                            </TouchableOpacity>
-                        ))}
-                    </View>
-                </View>
-
-                {/* Location Settings */}
-                <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Location Access</Text>
-                    <Text style={styles.sectionDescription}>Share your location for faster assistance</Text>
-
-                    <View style={styles.locationCard}>
-                        <View style={styles.locationHeader}>
-                            <Ionicons name="location" size={24} color="#075538" />
-                            <View style={styles.locationText}>
-                                <Text style={styles.locationTitle}>Automatic Location</Text>
-                                <Text style={styles.locationDescription}>
-                                    Use your current GPS location for accurate service dispatch
-                                </Text>
-                            </View>
-                        </View>
-
-                        <TouchableOpacity
-                            style={styles.toggleButton}
-                            onPress={() => setUseAutoLocation(!useAutoLocation)}
-                        >
-                            <View style={[
-                                styles.toggleTrack,
-                                useAutoLocation && { backgroundColor: '#075538' }
-                            ]}>
-                                <View style={[
-                                    styles.toggleThumb,
-                                    useAutoLocation && { transform: [{ translateX: 20 }] }
-                                ]} />
-                            </View>
-                        </TouchableOpacity>
-                    </View>
-
-                    {!useAutoLocation && (
-                        <TouchableOpacity style={styles.manualLocationButton}>
-                            <Ionicons name="pin" size={20} color="#075538" />
-                            <Text style={styles.manualLocationText}>Select location manually</Text>
-                        </TouchableOpacity>
-                    )}
-                </View>
-
-                {/* Spacer for button */}
+                {renderStepContent()}
                 <View style={styles.spacer} />
             </ScrollView>
 
-            {/* Fixed CTA Button */}
+            {/* Navigation Buttons - Fixed positioning */}
             <View style={styles.buttonContainer}>
-                <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
+                {currentStep > 1 && (
+                    <TouchableOpacity
+                        style={styles.backButton}
+                        onPress={handlePreviousStep}
+                    >
+                        <Ionicons name="chevron-back" size={20} color="#075538" />
+                        <Text style={styles.backButtonText}>Back</Text>
+                    </TouchableOpacity>
+                )}
+
+                {currentStep < 3 ? (
                     <TouchableOpacity
                         style={[
-                            styles.ctaButton,
-                            (!selectedPriority || !selectedProblem) && styles.ctaButtonDisabled
+                            styles.nextButton,
+                            ((currentStep === 1 && !selectedPriority) ||
+                             (currentStep === 2 && (!selectedProblem || (selectedProblem === 'other' && !otherDescription.trim())))) &&
+                            styles.nextButtonDisabled
                         ]}
-                        onPress={handleRequestAssistance}
-                        disabled={!selectedPriority || !selectedProblem}
+                        onPress={handleNextStep}
+                        disabled={
+                            (currentStep === 1 && !selectedPriority) ||
+                            (currentStep === 2 && (!selectedProblem || (selectedProblem === 'other' && !otherDescription.trim())))
+                        }
                     >
-                        <Ionicons name="shield-checkmark" size={24} color="#fff" />
-                        <Text style={styles.ctaButtonText}>Request Assistance</Text>
-                        <View style={styles.emergencyBadge}>
-                            <Ionicons name="flash" size={16} color="#fff" />
-                        </View>
+                        <Text style={styles.nextButtonText}>Continue</Text>
+                        <Ionicons name="chevron-forward" size={20} color="#fff" />
                     </TouchableOpacity>
-                </Animated.View>
-
-                <Text style={styles.ctaDescription}>
-                    {selectedPriority === 'emergency'
-                        ? 'Emergency services will be dispatched immediately'
-                        : 'We will find the nearest available mechanic'
-                    }
-                </Text>
+                ) : (
+                    <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
+                        <TouchableOpacity
+                            style={styles.ctaButton}
+                            onPress={handleRequestAssistance}
+                        >
+                            <Ionicons name="shield-checkmark" size={24} color="#fff" />
+                            <Text style={styles.ctaButtonText}>Request Assistance</Text>
+                            <View style={styles.emergencyBadge}>
+                                <Ionicons name="flash" size={16} color="#fff" />
+                            </View>
+                        </TouchableOpacity>
+                    </Animated.View>
+                )}
             </View>
         </View>
     );
@@ -272,36 +343,51 @@ const styles = StyleSheet.create({
         shadowRadius: 8,
         elevation: 4,
     },
+    progressBar: {
+        height: 4,
+        backgroundColor: '#e2e8f0',
+        borderRadius: 2,
+        marginBottom: 16,
+        overflow: 'hidden',
+    },
+    progressFill: {
+        height: '100%',
+        backgroundColor: '#075538',
+        borderRadius: 2,
+    },
     title: {
-        fontSize: 32,
+        fontSize: 28,
         fontWeight: 'bold',
         color: '#1e293b',
-        marginBottom: 8,
+        marginBottom: 4,
     },
     subtitle: {
         fontSize: 16,
         color: '#64748b',
-        lineHeight: 22,
     },
     scrollView: {
         flex: 1,
     },
     scrollContent: {
         padding: 20,
+        paddingBottom: 100, // Add padding at bottom to account for button container
     },
-    section: {
-        marginBottom: 32,
+    stepContainer: {
+        flex: 1,
     },
-    sectionTitle: {
-        fontSize: 20,
+    stepTitle: {
+        fontSize: 24,
         fontWeight: 'bold',
         color: '#1e293b',
         marginBottom: 8,
+        textAlign: 'center',
     },
-    sectionDescription: {
-        fontSize: 14,
+    stepDescription: {
+        fontSize: 16,
         color: '#64748b',
-        marginBottom: 16,
+        textAlign: 'center',
+        marginBottom: 32,
+        lineHeight: 22,
     },
     priorityContainer: {
         gap: 12,
@@ -355,9 +441,10 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         flexWrap: 'wrap',
         gap: 12,
+        justifyContent: 'center',
     },
     problemCard: {
-        width: (width - 64) / 2,
+        width: (width - 64) / 3,
         backgroundColor: '#fff',
         padding: 16,
         borderRadius: 16,
@@ -393,6 +480,29 @@ const styles = StyleSheet.create({
         borderRadius: 10,
         justifyContent: 'center',
         alignItems: 'center',
+    },
+    otherInputContainer: {
+        marginTop: 24,
+        padding: 16,
+        backgroundColor: '#fff',
+        borderRadius: 16,
+        borderWidth: 2,
+        borderColor: '#e2e8f0',
+    },
+    otherInputLabel: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: '#1e293b',
+        marginBottom: 12,
+    },
+    otherInput: {
+        borderWidth: 1,
+        borderColor: '#cbd5e1',
+        borderRadius: 12,
+        padding: 16,
+        fontSize: 16,
+        textAlignVertical: 'top',
+        minHeight: 120,
     },
     locationCard: {
         flexDirection: 'row',
@@ -450,32 +560,80 @@ const styles = StyleSheet.create({
         shadowRadius: 2,
         elevation: 2,
     },
-    manualLocationButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: '#fff',
-        padding: 12,
-        borderRadius: 12,
+    manualLocationContainer: {
+        marginTop: 16,
+    },
+    mapPlaceholder: {
+        height: 200,
+        backgroundColor: '#f1f5f9',
+        borderRadius: 16,
         borderWidth: 2,
         borderColor: '#e2e8f0',
-        marginTop: 12,
+        borderStyle: 'dashed',
+        justifyContent: 'center',
+        alignItems: 'center',
     },
-    manualLocationText: {
-        marginLeft: 8,
+    mapPlaceholderText: {
+        marginTop: 12,
         fontSize: 14,
+        color: '#64748b',
         fontWeight: '500',
-        color: '#075538',
     },
     spacer: {
-        height: 100,
+        height: 20, // Reduced spacer since we have paddingBottom
     },
     buttonContainer: {
         position: 'absolute',
-        bottom: 60,
+        bottom: 80, // Increased from 20 to be higher
         left: 20,
         right: 20,
+        flexDirection: 'row',
         alignItems: 'center',
+        justifyContent: 'space-between',
+        backgroundColor: '#f8fafc', // Add background to ensure visibility
+        paddingVertical: 10,
+        paddingHorizontal: 5,
+    },
+    backButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 16,
+        paddingHorizontal: 20,
+        borderRadius: 12,
+        backgroundColor: '#f1f5f9',
+    },
+    backButtonText: {
+        color: '#075538',
+        fontSize: 16,
+        fontWeight: '600',
+        marginLeft: 4,
+    },
+    nextButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#075538',
+        paddingVertical: 16,
+        paddingHorizontal: 24,
+        borderRadius: 16,
+        shadowColor: '#075538',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+        elevation: 4,
+        flex: 1,
+        justifyContent: 'center',
+        marginLeft: 'auto',
+        maxWidth: 200, // Limit maximum width
+    },
+    nextButtonDisabled: {
+        backgroundColor: '#9ca3af',
+        shadowColor: '#6b7280',
+    },
+    nextButtonText: {
+        color: '#fff',
+        fontSize: 16,
+        fontWeight: 'bold',
+        marginRight: 8,
     },
     ctaButton: {
         flexDirection: 'row',
@@ -490,11 +648,7 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.3,
         shadowRadius: 16,
         elevation: 8,
-        width: width - 40,
-    },
-    ctaButtonDisabled: {
-        backgroundColor: '#9ca3af',
-        shadowColor: '#6b7280',
+        flex: 1,
     },
     ctaButtonText: {
         color: '#fff',
@@ -518,12 +672,5 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.2,
         shadowRadius: 4,
         elevation: 4,
-    },
-    ctaDescription: {
-        marginTop: 12,
-        fontSize: 12,
-        color: '#64748b',
-        textAlign: 'center',
-        maxWidth: 300,
     },
 });
