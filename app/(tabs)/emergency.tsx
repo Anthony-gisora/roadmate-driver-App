@@ -3,6 +3,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useRef, useState } from 'react';
 import {
+    Image,
     Alert,
     Animated,
     Dimensions,
@@ -24,6 +25,7 @@ export default function EmergencyScreen() {
     const [otherDescription, setOtherDescription] = useState('');
     const [useAutoLocation, setUseAutoLocation] = useState(true);
     const handleSelect = (coords: { latitude: number; longitude: number }) => {
+        console.log(coords);
         Alert.alert("Selected", `${coords.latitude}, ${coords.longitude}`);
     };
 
@@ -262,11 +264,17 @@ export default function EmergencyScreen() {
         <View style={styles.container}>
             {/* Header */}
             <View style={styles.header}>
-                <View style={styles.progressBar}>
-                    <View style={[styles.progressFill, { width: `${getStepProgress()}%` }]} />
+                <Image
+                    source={require('@/assets/images/icon.png')}
+                    style={styles.logo}
+                />
+                <View style={{ flex: 1 }}>
+                    <View style={styles.progressBar}>
+                        <View style={[styles.progressFill, { width: `${getStepProgress()}%` }]} />
+                    </View>
+                    <Text style={styles.title}>RoadMate Assist</Text>
+                    <Text style={styles.subtitle}>Step {currentStep} of 3</Text>
                 </View>
-                <Text style={styles.title}>Roadside Assistance</Text>
-                <Text style={styles.subtitle}>Step {currentStep} of 3</Text>
             </View>
 
             <ScrollView
@@ -672,5 +680,11 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.2,
         shadowRadius: 4,
         elevation: 4,
+    },
+    logo: {
+        width: 50, // adjust size as needed
+        height: 50,
+        marginRight: 12,
+        resizeMode: 'contain',
     },
 });

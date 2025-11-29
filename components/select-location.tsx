@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { Platform, View } from 'react-native';
+import { View, Platform } from 'react-native';
 import { WebView } from 'react-native-webview';
 
 interface Props {
@@ -16,16 +16,17 @@ const SelectLocationMap: React.FC<Props> = ({ onSelect }) => {
         onSelect({ latitude: data.lat, longitude: data.lng });
       }
     } catch (err) {
-      console.error("Failed to parse message from WebView", err);
+      console.error('Failed to parse message from WebView', err);
     }
   };
 
-  // HTML for the map
   const html = `
     <!DOCTYPE html>
     <html>
     <head>
-      <meta name="viewport" content="initial-scale=1.0, width=device-width" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+      <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
       <style>
         html, body, #map { height: 100%; margin: 0; padding: 0; }
         .pin {
@@ -36,6 +37,7 @@ const SelectLocationMap: React.FC<Props> = ({ onSelect }) => {
           margin-top: -32px;
           font-size: 32px;
           pointer-events: none;
+          z-index: 1000;
         }
         #selectBtn {
           position: absolute;
@@ -47,74 +49,58 @@ const SelectLocationMap: React.FC<Props> = ({ onSelect }) => {
           color: white;
           font-weight: bold;
           border-radius: 8px;
+          z-index: 1001;
           cursor: pointer;
-          z-index: 10;
         }
       </style>
-      <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAGxso4wjswucd6jqwl"></script>
     </head>
     <body>
       <div id="map"></div>
       <div class="pin">📍</div>
       <div id="selectBtn">Select Location</div>
       <script>
-        const map = new google.maps.Map(document.getElementById('map'), {
-          center: { lat: -1.2921, lng: 36.8219 },
-          zoom: 14,
-        });
+        const map = L.map('map').setView([-1.2921, 36.8219], 14);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
 
         document.getElementById('selectBtn').addEventListener('click', () => {
           const center = map.getCenter();
-          if (window.ReactNativeWebView) {
-            window.ReactNativeWebView.postMessage(JSON.stringify({
-              lat: center.lat(),
-              lng: center.lng()
-            }));
-          } else {
-            const event = new CustomEvent('locationSelected', {
-              detail: { lat: center.lat(), lng: center.lng() }
-            });
-            window.dispatchEvent(event);
+        
+          try {
+            if (window.ReactNativeWebView && window.ReactNativeWebView.postMessage) {
+              window.ReactNativeWebView.postMessage(JSON.stringify({
+                lat: center.lat,
+                lng: center.lng
+              }));
+              console.log('Message sent to React Native');
+            } else {
+              console.warn('ReactNativeWebView not ready');
+            }
+          } catch (err) {
+            console.error('Failed to post message:', err);
           }
         });
+
       </script>
     </body>
     </html>
   `;
 
-  // Listen for web events unconditionally
-  useEffect(() => {
-    if (Platform.OS === 'web') {
-      const handleWebSelect = (e: any) => {
-        const { lat, lng } = e.detail;
-        onSelect({ latitude: lat, longitude: lng });
-      };
-      window.addEventListener('locationSelected', handleWebSelect);
-      return () => window.removeEventListener('locationSelected', handleWebSelect);
-    }
-  }, [onSelect]);
-
-  // Render for web
   if (Platform.OS === 'web') {
-    return (
-      <iframe
-        title="Select Location"
-        srcDoc={html}
-        style={{ flex: 1, width: '100%', height: '100%', border: 0 }}
-      />
-    );
+    return <iframe title="Select Location" srcDoc={html} style={{ flex: 1, width: '100%', height: '100%', border: 0 }} />;
   }
 
-  // Render for mobile (iOS/Android)
   return (
-    <View style={{ flex: 1 }}>
-      <WebView
-        ref={webviewRef}
-        originWhitelist={['*']}
-        source={{ html }}
-        onMessage={handleMessage}
-      />
-    </View>
+      <View style={{ flex: 1 }}>
+        <WebView
+            ref={webviewRef}
+            originWhitelist={['*']}
+            source={{ html }}
+            onMessage={handleMessage}
+        />
+      </View>
   );
 };
 

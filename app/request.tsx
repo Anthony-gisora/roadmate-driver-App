@@ -6,6 +6,7 @@ import {apiClient} from "@/hooks/api-client";
 import {useUser} from "@clerk/clerk-expo";
 import {getLocation} from "@/hooks/location";
 import {useToast} from "react-native-toast-notifications";
+import LiveMechanicMap from "@/components/live-mech-map";
 
 const { width } = Dimensions.get('window');
 
@@ -40,6 +41,19 @@ export default function RequestScreen() {
         'other': '#10b981',
     };
 
+    function getETA(distanceKm: number): string {
+        const averageSpeed = 40; // km/h
+        const totalMinutes = (distanceKm / averageSpeed) * 60;
+
+        if (totalMinutes < 60) {
+            return `${Math.round(totalMinutes)} mins`;
+        }
+
+        const hours = Math.floor(totalMinutes / 60);
+        const minutes = Math.round(totalMinutes % 60);
+        return `${hours} hr${hours > 1 ? 's' : ''} ${minutes} mins`;
+    }
+
     useEffect(() => {
         // Only run when all dependencies are ready
         if (!user?.id || !problem) return;
@@ -60,33 +74,49 @@ export default function RequestScreen() {
 
             try {
                 setProgress(15);
-                const res = await apiClient.post("/req/requests", {
-                    driverId,
-                    requestType,
-                    details: JSON.stringify(details),
-                    location,
-                });
+                //connect to socket get nearest mech
+                const lat = location.toString().split(',')[0];
+                const lng = location.toString().split(',')[1];
 
-                console.log(res);
+                await apiClient.get(`/online-mechanics?lat=${lat}&lng=${lng}`)
+                    .then((res)=>{
+                        console.log(res.data.nearest);
+                        setProgress(50);
+                        const mechanic = res.data.nearest;
+                        const distance = Number(mechanic.distance);
 
-                if (res.data?.mech) {
-                    setMechanic({
-                        name: "Mike Johnson",
-                        rating: 4.8,
-                        reviews: 127,
-                        distance: "1.2 km",
-                        specialization: problem === "flat-tire" ? "Tire Specialist" : "General Mechanic",
-                        image: "👨‍🔧",
-                    });
-                    setProgress(50);
+                        //estimate ETA
+                        setEta(getETA(distance));
 
-                    // You can make additional API calls here
+                        setMechanic({
+                            id: mechanic.clerkUid,
+                            name: mechanic.name,
+                            rating: 4.8,
+                            reviews: 60,
+                            distance: `${distance.toFixed(2) }KM`,
+                            specialization: problem === "flat-tire" ? "Tire Specialist" : "General Mechanic",
+                            image: "👨‍🔧",
+                        });
 
-                    setProgress(100);
-                } else {
-                    toast.show("No mechanic found is available at the moment", { type: "danger" });
-                    setProgress(0);
-                }
+                        apiClient.post("/req/requests", {
+                            driverId,
+                            requestType,
+                            details: JSON.stringify(details),
+                            location,
+                            mechanicId: mechanic.clerkUid
+                        })
+                        .then((res) => {
+                            console.log(res);
+                            setProgress(100);
+                        })
+                        .catch((err)=>{
+                            console.log(err);
+                        })
+                    })
+                    .catch((err)=>{
+                        setProgress(0);
+                        toast.show("No mechanic is available at the moment", { type: "danger" });
+                    })
             } catch (err: any) {
                 console.log(err);
                 const error = err.response?.data?.message ?? err.message;
@@ -115,7 +145,7 @@ export default function RequestScreen() {
         const basePrice = basePrices[params.problem as string] || 50;
         const priorityMultiplier = params.priority === 'emergency' ? 1.5 : 1;
 
-        return `$${(basePrice * priorityMultiplier).toFixed(2)}`;
+        return `KES${(basePrice * priorityMultiplier).toFixed(2)}`;
     };
 
     return (
@@ -237,26 +267,16 @@ export default function RequestScreen() {
                     </View>
                 )}
 
-                {/* Tracking Map Placeholder */}
-                <View style={styles.mapCard}>
-                    <Text style={styles.cardTitle}>Live Tracking</Text>
-                    <View style={styles.mapPlaceholder}>
-                        <Ionicons name="map" size={48} color="#cbd5e1" />
-                        <Text style={styles.mapText}>Mechanic is on the way</Text>
-                        <Text style={styles.mapSubtext}>Live tracking will begin shortly</Text>
-                    </View>
-                </View>
-
                 {/* Emergency Contacts */}
                 <View style={styles.contactsCard}>
-                    <Text style={styles.cardTitle}>Emergency Contacts</Text>
+                    <Text style={styles.cardTitle}>Live Tracking</Text>
                     <Text style={styles.contactsDescription}>
-                        Your emergency contact has been notified
+                        View Live location updates on the homepage by clicking the active request
                     </Text>
 
                     <TouchableOpacity style={styles.emergencyButton}>
-                        <Ionicons name="call" size={20} color="#dc2626" />
-                        <Text style={styles.emergencyButtonText}>Call Emergency Services</Text>
+                        <Ionicons name="call" size={20} color="#00ff9d" />
+                        <Text style={styles.emergencyButtonText}>Track location</Text>
                     </TouchableOpacity>
                 </View>
             </ScrollView>
@@ -552,16 +572,16 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         padding: 16,
-        backgroundColor: '#fef2f2',
+        backgroundColor: '#ffffff',
         borderWidth: 2,
-        borderColor: '#fecaca',
+        borderColor: '#00ff9d',
         borderRadius: 12,
     },
     emergencyButtonText: {
         marginLeft: 8,
         fontSize: 16,
         fontWeight: '600',
-        color: '#dc2626',
+        color: '#00ff9d',
     },
     actionContainer: {
         position: 'absolute',
