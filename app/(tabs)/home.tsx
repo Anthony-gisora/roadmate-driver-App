@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import {useUser} from '@clerk/clerk-expo';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import {
@@ -12,13 +13,17 @@ import {
     TouchableOpacity,
     View
 } from 'react-native';
+import {apiClient} from "@/hooks/api-client";
+import {useToast} from "react-native-toast-notifications";
 
 const { width } = Dimensions.get('window');
 
 export default function HomeScreen() {
   const router = useRouter();
+  const toast = useToast();
   const [refreshing, setRefreshing] = useState(false);
   const [activeService, setActiveService] = useState<any>(null);
+  const user = useUser();
   
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(50)).current;
@@ -30,19 +35,6 @@ export default function HomeScreen() {
     memberSince: 2024,
     savedAmount: 156
   };
-
-  const activeServices = [
-    {
-      id: '1',
-      type: 'Flat Tire Repair',
-      mechanic: 'Mike Johnson',
-      status: 'In Progress',
-      eta: '5 min',
-      price: '$25',
-      progress: 75,
-      mechanicImage: '👨‍🔧'
-    }
-  ];
 
   const quickServices = [
     {
@@ -113,15 +105,38 @@ export default function HomeScreen() {
       id: '1',
       name: 'Sarah Wilson',
       relationship: 'Spouse',
-      phone: '+1 (555) 987-6543'
+      phone: '+254 987-6543'
     },
     {
       id: '2',
       name: 'Roadside Assistance',
       relationship: 'Emergency',
-      phone: '+1 (800) 555-HELP'
+      phone: '(254) 555-HELP'
     }
   ];
+
+  useEffect(() => {
+    apiClient.get(`/req/requests/${user?.user?.id}`)
+        .then((res)=>{
+          console.log(res);
+          const request = res.data?.data;
+          const mechanic = res.data?.mechanic;
+          
+          setActiveService({
+            id: '1',
+            type: request?.requestType,
+            mechanic: mechanic?.name,
+            status: request?.status,
+            eta: '5 min',
+            price: 'KES 2500',
+            progress: 75,
+            mechanicImage: '👨‍🔧'
+          })
+        })
+        .catch((res)=>{
+          console.log(res);
+        })
+  }, []);
 
   useEffect(() => {
     Animated.parallel([
@@ -272,7 +287,7 @@ export default function HomeScreen() {
         >
           <View style={styles.welcomeSection}>
             <View>
-              <Text style={styles.title}>Welcome Back! 👋</Text>
+              <Text style={styles.title}>Welcome {user?.user?.firstName}</Text>
               <Text style={styles.subtitle}>Ready to hit the road?</Text>
             </View>
             <TouchableOpacity style={styles.notificationButton}>
@@ -285,7 +300,7 @@ export default function HomeScreen() {
           <View style={styles.statsContainer}>
             <StatCard value={userStats.rating.toString()} label="Rating" icon="star" color="#f59e0b" />
             <StatCard value={userStats.trips.toString()} label="Trips" icon="car" color="#2563eb" />
-            <StatCard value={`$${userStats.savedAmount}`} label="Saved" icon="wallet" color="#10b981" />
+            <StatCard value={`KES ${userStats.savedAmount}`} label="Saved" icon="wallet" color="#10b981" />
           </View>
         </Animated.View>
 
@@ -325,7 +340,7 @@ export default function HomeScreen() {
         </Animated.View>
 
         {/* Active Service */}
-        {activeServices.length > 0 && (
+        {activeService != null && (
           <Animated.View 
             style={[
               styles.section,
@@ -342,18 +357,18 @@ export default function HomeScreen() {
             
             <View style={styles.activeServiceCard}>
               <View style={styles.serviceHeader}>
-                <Text style={styles.serviceType}>{activeServices[0].type}</Text>
-                <Text style={styles.servicePrice}>{activeServices[0].price}</Text>
+                <Text style={styles.serviceType}>{activeService.type}</Text>
+                <Text style={styles.servicePrice}>{activeService.price}</Text>
               </View>
               
               <View style={styles.mechanicInfoRow}>
-                <Text style={styles.mechanicImage}>{activeServices[0].mechanicImage}</Text>
+                <Text style={styles.mechanicImage}>{activeService.mechanicImage}</Text>
                 <View style={styles.mechanicDetails}>
-                  <Text style={styles.mechanicName}>{activeServices[0].mechanic}</Text>
-                  <Text style={styles.serviceStatus}>{activeServices[0].status}</Text>
+                  <Text style={styles.mechanicName}>{activeService.mechanic}</Text>
+                  <Text style={styles.serviceStatus}>{activeService.status}</Text>
                 </View>
                 <View style={styles.etaBadge}>
-                  <Text style={styles.etaText}>ETA: {activeServices[0].eta}</Text>
+                  <Text style={styles.etaText}>ETA: {activeService.eta}</Text>
                 </View>
               </View>
 
@@ -362,25 +377,17 @@ export default function HomeScreen() {
                   <View 
                     style={[
                       styles.progressFill,
-                      { width: `${activeServices[0].progress}%` }
+                      { width: `${activeService.progress}%` }
                     ]} 
                   />
                 </View>
-                <Text style={styles.progressText}>{activeServices[0].progress}% Complete</Text>
+                <Text style={styles.progressText}>{activeService.progress}% Complete</Text>
               </View>
 
               <View style={styles.serviceActions}>
                 <TouchableOpacity style={styles.actionButton}>
-                  <Ionicons name="chatbubble" size={20} color="#075538" />
-                  <Text style={styles.actionText}>Message</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.actionButton}>
-                  <Ionicons name="call" size={20} color="#075538" />
-                  <Text style={styles.actionText}>Call</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.actionButton}>
-                  <Ionicons name="location" size={20} color="#075538" />
-                  <Text style={styles.actionText}>Track</Text>
+                  <Ionicons name="chatbubble" size={20} color="#00ff9d" />
+                  <Text style={styles.actionText}>Message Mechanic</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -709,12 +716,23 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   serviceActions: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
   },
   actionButton: {
+    flexDirection: 'row',
     alignItems: 'center',
-    padding: 8,
+    justifyContent: 'center',
+    padding: 16,
+    backgroundColor: '#ffffff',
+    borderWidth: 2,
+    borderColor: '#00ff9d',
+    borderRadius: 12,
   },
   actionText: {
     fontSize: 12,

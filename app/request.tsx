@@ -110,12 +110,13 @@ export default function RequestScreen() {
                             setProgress(100);
                         })
                         .catch((err)=>{
+                            toast.show(err.response.data?.message ?? 'An error occurred', { type: "danger" });
                             console.log(err);
                         })
                     })
                     .catch((err)=>{
                         setProgress(0);
-                        toast.show("No mechanic is available at the moment", { type: "danger" });
+                        toast.show(err.message ?? "No mechanic is available at the moment", { type: "danger" });
                     })
             } catch (err: any) {
                 console.log(err);
@@ -132,14 +133,14 @@ export default function RequestScreen() {
     //update price estimates
     const estimatedPrice = () => {
         const basePrices: { [key: string]: number } = {
-            'flat-tire': 25,
-            'fuel': 15,
-            'battery': 40,
-            'lockout': 35,
-            'towing': 80,
-            'engine': 60,
-            'accident': 100,
-            'other': 50,
+            'flat-tire': 500,
+            'fuel': 500,
+            'battery': 400,
+            'lockout': 650,
+            'towing': 1500,
+            'engine': 4500,
+            'accident': 3500,
+            'other': 500,
         };
 
         const basePrice = basePrices[params.problem as string] || 50;

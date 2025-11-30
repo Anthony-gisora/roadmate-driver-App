@@ -6,6 +6,9 @@ import * as SecureStore from "expo-secure-store";
 import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
 import { ToastProvider } from 'react-native-toast-notifications';
+import {useEffect} from "react";
+import {getSocket} from "@/hooks/socket";
+import {socketEvents} from "@/hooks/events-emitter";
 
 export const unstable_settings = {
     initialRouteName: '/',
@@ -30,6 +33,19 @@ const tokenCache = {
 
 export default function RootLayout() {
     const colorScheme = useColorScheme();
+    useEffect(() => {
+        getSocket();
+
+        const listener = (msg: any) => {
+            console.log("New message from anywhere in app:", msg);
+        };
+
+        socketEvents.on("newMessage", listener);
+
+        return () => {
+            socketEvents.off("newMessage", listener);
+        };
+    }, []);
 
     return (
         <ToastProvider>

@@ -1,170 +1,32 @@
+// app/(tabs)/notifications.tsx
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import {
-    Alert,
     Animated,
     FlatList,
-    Modal,
-    ScrollView,
     StyleSheet,
     Text,
-    TextInput,
     TouchableOpacity,
-    View
+    View,
+    RefreshControl
 } from 'react-native';
-import ChatModal from "@/components/chat-modal";
-import {useUser} from "@clerk/clerk-expo";
+import { useUser } from "@clerk/clerk-expo";
+import {ChatManager} from "@/hooks/chat-manager";
 
 export default function NotificationsScreen() {
     const router = useRouter();
-    const [activeTab, setActiveTab] = useState<'all' | 'updates' | 'messages'>('all');
-    const [chatModalVisible, setChatModalVisible] = useState(false);
-    const [selectedChat, setSelectedChat] = useState<any>(null);
-    const [messageText, setMessageText] = useState('');
-    const {user} = useUser();
-    const [notifications, setNotifications] = useState([
-        {
-            id: '1',
-            type: 'mechanic_accepted',
-            title: 'Mechanic Assigned',
-            description: 'Mike Johnson has accepted your roadside assistance request',
-            time: '2 min ago',
-            read: false,
-            priority: 'high',
-            mechanic: {
-                name: 'Mike Johnson',
-                specialization: 'Tire Specialist',
-                rating: 4.8,
-                eta: '5-10 min'
-            }
-        },
-        {
-            id: '2',
-            type: 'system_update',
-            title: 'Service Update',
-            description: 'Your tire repair service has been completed successfully',
-            time: '1 hour ago',
-            read: true,
-            priority: 'medium'
-        },
-        {
-            id: '3',
-            type: 'message',
-            title: 'New Message',
-            description: 'Mike Johnson: I\'m 5 minutes away from your location',
-            time: '5 min ago',
-            read: false,
-            priority: 'high',
-            mechanic: {
-                name: 'Mike Johnson',
-                specialization: 'Tire Specialist'
-            }
-        },
-        {
-            id: '4',
-            type: 'system_update',
-            title: 'Payment Processed',
-            description: 'Payment of $25.00 for tire repair has been processed',
-            time: '2 hours ago',
-            read: true,
-            priority: 'low'
-        },
-        {
-            id: '5',
-            type: 'mechanic_en_route',
-            title: 'Mechanic En Route',
-            description: 'Sarah Chen is on the way to your location',
-            time: '1 day ago',
-            read: true,
-            priority: 'medium',
-            mechanic: {
-                name: 'Sarah Chen',
-                specialization: 'Engine Expert',
-                eta: '15 min'
-            }
-        }
-    ]);
+    const { user } = useUser();
+    const [chats, setChats] = useState<any[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
 
-    const [chats, setChats] = useState([
-        {
-            id: '1',
-            mechanic: {
-                name: 'Mike Johnson',
-                specialization: 'Tire Specialist',
-                rating: 4.8,
-                image: '👨‍🔧'
-            },
-            lastMessage: 'I\'m 5 minutes away from your location',
-            timestamp: '2 min ago',
-            unread: true,
-            active: true
-        },
-        {
-            id: '2',
-            mechanic: {
-                name: 'Sarah Chen',
-                specialization: 'Engine Expert',
-                rating: 4.9,
-                image: '👩‍🔧'
-            },
-            lastMessage: 'Your engine diagnostics are complete',
-            timestamp: '1 hour ago',
-            unread: false,
-            active: false
-        },
-        {
-            id: '3',
-            mechanic: {
-                name: 'Carlos Rodriguez',
-                specialization: 'Towing & Recovery',
-                rating: 4.7,
-                image: '🚛'
-            },
-            lastMessage: 'I\'ve arrived at your location',
-            timestamp: '1 day ago',
-            unread: false,
-            active: false
-        }
-    ]);
-
-    const [messages, setMessages] = useState([
-        {
-            id: '1',
-            text: 'Hi John, I\'ve accepted your roadside assistance request',
-            sender: 'mechanic',
-            timestamp: '10:30 AM'
-        },
-        {
-            id: '2',
-            text: 'Great! How long until you arrive?',
-            sender: 'user',
-            timestamp: '10:31 AM'
-        },
-        {
-            id: '3',
-            text: 'I\'m about 5 minutes away from your location. Can you confirm your exact position?',
-            sender: 'mechanic',
-            timestamp: '10:32 AM'
-        },
-        {
-            id: '4',
-            text: 'Yes, I\'m on Main Street near the gas station',
-            sender: 'user',
-            timestamp: '10:33 AM'
-        },
-        {
-            id: '5',
-            text: 'Perfect, I can see you on the map. I\'ll be there in 2-3 minutes',
-            sender: 'mechanic',
-            timestamp: '10:34 AM'
-        }
-    ]);
-
+    // Animation values
     const fadeAnim = useRef(new Animated.Value(0)).current;
     const slideAnim = useRef(new Animated.Value(30)).current;
 
     useEffect(() => {
+        loadChats();
         Animated.parallel([
             Animated.timing(fadeAnim, {
                 toValue: 1,
@@ -179,299 +41,263 @@ export default function NotificationsScreen() {
         ]).start();
     }, []);
 
-    const filteredNotifications = notifications.filter(notification => {
-        if (activeTab === 'all') return true;
-        if (activeTab === 'updates') return notification.type !== 'message';
-        if (activeTab === 'messages') return notification.type === 'message';
-        return true;
-    });
+    const loadChats = async () => {
+        try {
+            setIsLoading(true);
+            const chatManager = ChatManager.getInstance();
+            const conversations = await chatManager.getChats();
 
-    const handleMarkAsRead = (id: string) => {
-        setNotifications(prev =>
-            prev.map(notif =>
-                notif.id === id ? { ...notif, read: true } : notif
-            )
-        );
-    };
+            // Transform conversations to chat format with mechanic data
+            const formattedChats = await Promise.all(
+                conversations.map(async (conv) => {
+                    // Get the last message details
+                    const messages = await chatManager.getMessages(conv.conversationId);
+                    const lastMessage = messages[messages.length - 1];
 
-    const handleMarkAllAsRead = () => {
-        setNotifications(prev =>
-            prev.map(notif => ({ ...notif, read: true }))
-        );
-    };
+                    // Determine the mechanic based on conversation members
+                    const mechanicId = conv.memberA === user?.id ? conv.memberB : conv.memberA;
+                    const mechanic = await getMechanicDetails(mechanicId);
 
-    const handleOpenChat = (chat: any) => {
-        setSelectedChat(chat);
-        setChatModalVisible(true);
-    };
+                    return {
+                        id: conv.conversationId,
+                        mechanic: {
+                            id: mechanicId,
+                            name: mechanic.name,
+                            specialization: mechanic.specialization,
+                            rating: mechanic.rating,
+                            image: mechanic.image,
+                            isOnline: Math.random() > 0.3 // Mock online status
+                        },
+                        lastMessage: lastMessage?.messageText || conv.lastMessage,
+                        timestamp: formatTimestamp(lastMessage?.timestamp || conv.lastTimestamp),
+                        unread: Math.random() > 0.5, // Mock unread status
+                        messageCount: messages.length
+                    };
+                })
+            );
 
-    const handleSendMessage = () => {
-        if (messageText.trim()) {
-            const newMessage = {
-                id: (messages.length + 1).toString(),
-                text: messageText,
-                sender: 'user',
-                timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-            };
-            setMessages(prev => [...prev, newMessage]);
-            setMessageText('');
-
-            // Simulate mechanic response
-            setTimeout(() => {
-                const responseMessage = {
-                    id: (messages.length + 2).toString(),
-                    text: 'Thanks for the update. I can see your location on the map.',
-                    sender: 'mechanic',
-                    timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                };
-                setMessages(prev => [...prev, responseMessage]);
-            }, 2000);
+            // Sort by last message timestamp
+            formattedChats.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+            setChats(formattedChats);
+        } catch (error) {
+            console.error('Error loading chats:', error);
+        } finally {
+            setIsLoading(false);
+            setRefreshing(false);
         }
     };
 
-    const handleCallMechanic = () => {
-        Alert.alert(
-            'Call Mechanic',
-            `Would you like to call ${selectedChat?.mechanic.name}?`,
-            [
-                { text: 'Cancel', style: 'cancel' },
-                { text: 'Call', onPress: () => {
-                        Alert.alert('Calling...', `Connecting to ${selectedChat?.mechanic.name}`);
-                    }}
-            ]
-        );
+    const getMechanicDetails = async (mechanicId: string) => {
+        // Mock mechanic data - in real app, you'd fetch from your backend
+        const mechanics = {
+            'mike_johnson': {
+                name: 'Mike Johnson',
+                specialization: 'Tire Specialist',
+                rating: 4.8,
+                image: '👨‍🔧'
+            },
+            'sarah_chen': {
+                name: 'Sarah Chen',
+                specialization: 'Engine Expert',
+                rating: 4.9,
+                image: '👩‍🔧'
+            },
+            'carlos_rodriguez': {
+                name: 'Carlos Rodriguez',
+                specialization: 'Towing & Recovery',
+                rating: 4.7,
+                image: '🚛'
+            },
+            'express_auto': {
+                name: 'Express Auto Care',
+                specialization: 'Full Service Garage',
+                rating: 4.6,
+                image: '🏢'
+            }
+        };
+
+        return mechanics[mechanicId as keyof typeof mechanics] || {
+            name: 'Unknown Mechanic',
+            specialization: 'General Repair',
+            rating: 4.5,
+            image: '🔧'
+        };
     };
 
-    const handleShareLocation = () => {
-        Alert.alert(
-            'Share Location',
-            'Your current location has been shared with the mechanic',
-            [{ text: 'OK' }]
-        );
-    };
+    const formatTimestamp = (timestamp: number) => {
+        const now = new Date();
+        const messageTime = new Date(timestamp);
+        const diffInHours = (now.getTime() - messageTime.getTime()) / (1000 * 60 * 60);
 
-    const getNotificationIcon = (type: string, priority: string) => {
-        const color = priority === 'high' ? '#dc2626' :
-            priority === 'medium' ? '#f59e0b' : '#075538';
-
-        switch (type) {
-            case 'mechanic_accepted':
-                return { name: 'checkmark-circle', color };
-            case 'system_update':
-                return { name: 'information-circle', color };
-            case 'message':
-                return { name: 'chatbubble', color };
-            case 'mechanic_en_route':
-                return { name: 'navigate', color };
-            default:
-                return { name: 'notifications', color };
+        if (diffInHours < 1) {
+            const minutes = Math.floor(diffInHours * 60);
+            return minutes < 1 ? 'now' : `${minutes}m ago`;
+        } else if (diffInHours < 24) {
+            return `${Math.floor(diffInHours)}h ago`;
+        } else {
+            return messageTime.toLocaleDateString();
         }
     };
 
-    const NotificationCard = ({ notification }: { notification: any }) => {
-        const icon = getNotificationIcon(notification.type, notification.priority);
+    const handleRefresh = () => {
+        setRefreshing(true);
+        loadChats();
+    };
+
+    const handleChatPress = (chat: any) => {
+        router.push({
+            pathname: '/chat/[id]',
+            params: {
+                id: chat.mechanic.id,
+                mechanicName: chat.mechanic.name,
+                mechanicImage: chat.mechanic.image
+            }
+        });
+    };
+
+    const ChatCard = ({ chat, index }: { chat: any; index: number }) => {
+        const translateY = fadeAnim.interpolate({
+            inputRange: [0, 1],
+            outputRange: [50 * (index + 1), 0],
+        });
+
+        const opacity = fadeAnim.interpolate({
+            inputRange: [0, 1],
+            outputRange: [0, 1],
+        });
 
         return (
-            <TouchableOpacity
+            <Animated.View
                 style={[
-                    styles.notificationCard,
-                    !notification.read && styles.unreadNotification
+                    styles.chatCard,
+                    {
+                        transform: [{ translateY }],
+                        opacity
+                    }
                 ]}
-                onPress={() => handleMarkAsRead(notification.id)}
             >
-                <View style={styles.notificationHeader}>
-                    <View style={[styles.iconContainer, { backgroundColor: `${icon.color}15` }]}>
-                        <Ionicons name={icon.name as any} size={20} color={icon.color} />
+                <TouchableOpacity
+                    style={styles.chatCardInner}
+                    onPress={() => handleChatPress(chat)}
+                >
+                    {/* Avatar with Online Status */}
+                    <View style={styles.avatarContainer}>
+                        <Text style={styles.avatarText}>{chat.mechanic.image}</Text>
+                        {chat.mechanic.isOnline && <View style={styles.onlineIndicator} />}
                     </View>
-                    <View style={styles.notificationContent}>
-                        <Text style={styles.notificationTitle}>{notification.title}</Text>
-                        <Text style={styles.notificationDescription}>{notification.description}</Text>
-                        <Text style={styles.notificationTime}>{notification.time}</Text>
-                    </View>
-                    {!notification.read && <View style={styles.unreadDot} />}
-                </View>
 
-                {notification.mechanic && (
-                    <View style={styles.mechanicInfo}>
-                        <Text style={styles.mechanicName}>{notification.mechanic.name}</Text>
-                        <Text style={styles.mechanicDetails}>
-                            {notification.mechanic.specialization} • ETA: {notification.mechanic.eta}
+                    {/* Chat Content */}
+                    <View style={styles.chatContent}>
+                        <View style={styles.chatHeader}>
+                            <Text style={styles.mechanicName} numberOfLines={1}>
+                                {chat.mechanic.name}
+                            </Text>
+                            <Text style={styles.timestamp}>
+                                {chat.timestamp}
+                            </Text>
+                        </View>
+
+                        <Text style={styles.specialization}>
+                            {chat.mechanic.specialization}
                         </Text>
-                    </View>
-                )}
 
-                {notification.type === 'message' && (
-                    <TouchableOpacity
-                        style={styles.replyButton}
-                        onPress={() => {
-                            const chat = chats.find(c => c.mechanic.name === notification.mechanic?.name);
-                            if (chat) handleOpenChat(chat);
-                        }}
-                    >
-                        <Ionicons name="chatbubble" size={16} color="#075538" />
-                        <Text style={styles.replyText}>Reply</Text>
-                    </TouchableOpacity>
-                )}
-            </TouchableOpacity>
+                        <View style={styles.lastMessageContainer}>
+                            <Text
+                                style={[
+                                    styles.lastMessage,
+                                    chat.unread && styles.unreadMessage
+                                ]}
+                                numberOfLines={2}
+                            >
+                                {chat.lastMessage}
+                            </Text>
+
+                            {chat.unread && (
+                                <View style={styles.unreadBadge}>
+                                    <Text style={styles.unreadBadgeText}>
+                                        {chat.messageCount > 99 ? '99+' : chat.messageCount}
+                                    </Text>
+                                </View>
+                            )}
+                        </View>
+                    </View>
+
+                    {/* Rating */}
+                    <View style={styles.ratingContainer}>
+                        <Ionicons name="star" size={16} color="#f59e0b" />
+                        <Text style={styles.ratingText}>{chat.mechanic.rating}</Text>
+                    </View>
+                </TouchableOpacity>
+            </Animated.View>
         );
     };
 
-    const ChatCard = ({ chat }: { chat: any }) => (
-        <TouchableOpacity
-            style={styles.chatCard}
-            onPress={() => handleOpenChat(chat)}
+    const EmptyState = () => (
+        <Animated.View
+            style={[
+                styles.emptyState,
+                { opacity: fadeAnim }
+            ]}
         >
-            <View style={styles.chatHeader}>
-                <Text style={styles.chatAvatar}>{chat.mechanic.image}</Text>
-                <View style={styles.chatInfo}>
-                    <View style={styles.chatNameRow}>
-                        <Text style={styles.chatName}>{chat.mechanic.name}</Text>
-                        {chat.active && (
-                            <View style={styles.activeBadge}>
-                                <Text style={styles.activeText}>Active</Text>
-                            </View>
-                        )}
-                    </View>
-                    <Text style={styles.chatSpecialization}>{chat.mechanic.specialization}</Text>
-                    <Text style={styles.chatLastMessage} numberOfLines={1}>
-                        {chat.lastMessage}
-                    </Text>
-                </View>
-                <View style={styles.chatMeta}>
-                    <Text style={styles.chatTime}>{chat.timestamp}</Text>
-                    {chat.unread && <View style={styles.chatUnread} />}
-                </View>
+            <View style={styles.emptyIllustration}>
+                <Ionicons name="chatbubble-ellipses" size={80} color="#cbd5e1" />
             </View>
-        </TouchableOpacity>
-    );
-
-    const MessageBubble = ({ message }: { message: any }) => (
-        <View style={[
-            styles.messageBubble,
-            message.sender === 'user' ? styles.userMessage : styles.mechanicMessage
-        ]}>
-            <Text style={[
-                styles.messageText,
-                message.sender === 'user' ? styles.userMessageText : styles.mechanicMessageText
-            ]}>
-                {message.text}
+            <Text style={styles.emptyTitle}>No messages yet</Text>
+            <Text style={styles.emptyDescription}>
+                Your conversations with mechanics will appear here once you start a service request.
             </Text>
-            <Text style={styles.messageTime}>{message.timestamp}</Text>
-        </View>
+        </Animated.View>
     );
 
     return (
         <View style={styles.container}>
             {/* Header */}
             <View style={styles.header}>
-                <View style={styles.headerTop}>
-                    <Text style={styles.title}>Notifications</Text>
-                    <TouchableOpacity
-                        style={styles.markAllButton}
-                        onPress={handleMarkAllAsRead}
-                    >
-                        <Text style={styles.markAllText}>Mark all as read</Text>
-                    </TouchableOpacity>
+                <View style={styles.headerContent}>
+                    <Text style={styles.title}>Messages</Text>
+                    <Text style={styles.subtitle}>
+                        Chat with your mechanics
+                    </Text>
                 </View>
-                <Text style={styles.subtitle}>Stay updated with your services</Text>
+                <View style={styles.headerDecoration} />
             </View>
 
-            {/* Navigation Tabs */}
-            <View style={styles.tabContainer}>
-                <TouchableOpacity
-                    style={[styles.tab, activeTab === 'all' && styles.tabActive]}
-                    onPress={() => setActiveTab('all')}
-                >
-                    <Text style={[styles.tabText, activeTab === 'all' && styles.tabTextActive]}>
-                        All
-                    </Text>
-                    {notifications.some(n => !n.read) && (
-                        <View style={styles.tabBadge}>
-                            <Text style={styles.tabBadgeText}>
-                                {notifications.filter(n => !n.read).length}
-                            </Text>
-                        </View>
-                    )}
-                </TouchableOpacity>
+            {/* Chat List */}
+            <Animated.View
+                style={[
+                    styles.content,
+                    { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }
+                ]}
+            >
+                {chats.length > 0 ? (
+                    <FlatList
+                        data={chats}
+                        keyExtractor={(item) => item.id}
+                        renderItem={({ item, index }) => (
+                            <ChatCard chat={item} index={index} />
+                        )}
+                        showsVerticalScrollIndicator={false}
+                        contentContainerStyle={styles.chatList}
+                        refreshControl={
+                            <RefreshControl
+                                refreshing={refreshing}
+                                onRefresh={handleRefresh}
+                                colors={['#075538']}
+                                tintColor="#075538"
+                            />
+                        }
+                    />
+                ) : (
+                    <EmptyState />
+                )}
+            </Animated.View>
 
-                <TouchableOpacity
-                    style={[styles.tab, activeTab === 'updates' && styles.tabActive]}
-                    onPress={() => setActiveTab('updates')}
-                >
-                    <Text style={[styles.tabText, activeTab === 'updates' && styles.tabTextActive]}>
-                        Updates
-                    </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                    style={[styles.tab, activeTab === 'messages' && styles.tabActive]}
-                    onPress={() => setActiveTab('messages')}
-                >
-                    <Text style={[styles.tabText, activeTab === 'messages' && styles.tabTextActive]}>
-                        Messages
-                    </Text>
-                    {chats.some(c => c.unread) && (
-                        <View style={styles.tabBadge}>
-                            <Text style={styles.tabBadgeText}>
-                                {chats.filter(c => c.unread).length}
-                            </Text>
-                        </View>
-                    )}
-                </TouchableOpacity>
+            {/* Floating Decorative Elements */}
+            <View style={styles.floatingElements}>
+                <View style={[styles.floatingCircle, styles.circle1]} />
+                <View style={[styles.floatingCircle, styles.circle2]} />
+                <View style={[styles.floatingCircle, styles.circle3]} />
             </View>
-
-            {/* Content */}
-            <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-                <Animated.View
-                    style={[
-                        styles.contentInner,
-                        { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }
-                    ]}
-                >
-                    {activeTab !== 'messages' ? (
-                        <>
-                            {filteredNotifications.length > 0 ? (
-                                filteredNotifications.map(notification => (
-                                    <NotificationCard key={notification.id} notification={notification} />
-                                ))
-                            ) : (
-                                <View style={styles.emptyState}>
-                                    <Ionicons name="notifications-off" size={64} color="#cbd5e1" />
-                                    <Text style={styles.emptyTitle}>No notifications</Text>
-                                    <Text style={styles.emptyDescription}>
-                                        You're all caught up! New updates will appear here.
-                                    </Text>
-                                </View>
-                            )}
-                        </>
-                    ) : (
-                        <>
-                            {chats.map(chat => (
-                                <ChatCard key={chat.id} chat={chat} />
-                            ))}
-
-                            {chats.length === 0 && (
-                                <View style={styles.emptyState}>
-                                    <Ionicons name="chatbubble" size={64} color="#cbd5e1" />
-                                    <Text style={styles.emptyTitle}>No messages</Text>
-                                    <Text style={styles.emptyDescription}>
-                                        Your conversations with mechanics will appear here.
-                                    </Text>
-                                </View>
-                            )}
-                        </>
-                    )}
-                </Animated.View>
-            </ScrollView>
-
-            {/* Chat Modal */}
-            <ChatModal
-                visible={chatModalVisible}
-                onClose={() => setChatModalVisible(false)}
-                selectedChat={selectedChat}
-                userId={user!.id}
-            />
-
         </View>
     );
 }
@@ -483,89 +309,53 @@ const styles = StyleSheet.create({
     },
     header: {
         backgroundColor: '#fff',
-        padding: 20,
+        paddingHorizontal: 24,
         paddingTop: 60,
-        borderBottomLeftRadius: 20,
-        borderBottomRightRadius: 20,
+        paddingBottom: 24,
+        borderBottomLeftRadius: 30,
+        borderBottomRightRadius: 30,
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
+        shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.1,
-        shadowRadius: 8,
-        elevation: 4,
+        shadowRadius: 12,
+        elevation: 8,
+        position: 'relative',
+        overflow: 'hidden',
     },
-    headerTop: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 8,
+    headerContent: {
+        zIndex: 2,
+    },
+    headerDecoration: {
+        position: 'absolute',
+        top: 0,
+        right: 0,
+        width: 200,
+        height: 200,
+        backgroundColor: '#075538',
+        opacity: 0.05,
+        borderRadius: 100,
+        transform: [{ translateX: 100 }, { translateY: -100 }],
     },
     title: {
-        fontSize: 28,
+        fontSize: 32,
         fontWeight: 'bold',
         color: '#1e293b',
+        marginBottom: 8,
     },
     subtitle: {
         fontSize: 16,
         color: '#64748b',
-    },
-    markAllButton: {
-        padding: 8,
-    },
-    markAllText: {
-        fontSize: 14,
-        color: '#075538',
-        fontWeight: '500',
-    },
-    tabContainer: {
-        flexDirection: 'row',
-        backgroundColor: '#fff',
-        borderBottomWidth: 1,
-        borderBottomColor: '#e2e8f0',
-    },
-    tab: {
-        flex: 1,
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        paddingVertical: 16,
-        gap: 8,
-    },
-    tabActive: {
-        borderBottomWidth: 2,
-        borderBottomColor: '#075538',
-    },
-    tabText: {
-        fontSize: 14,
-        fontWeight: '500',
-        color: '#64748b',
-    },
-    tabTextActive: {
-        color: '#075538',
-    },
-    tabBadge: {
-        backgroundColor: '#dc2626',
-        borderRadius: 10,
-        minWidth: 18,
-        height: 18,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    tabBadgeText: {
-        color: '#fff',
-        fontSize: 10,
-        fontWeight: 'bold',
+        opacity: 0.8,
     },
     content: {
         flex: 1,
+        paddingHorizontal: 20,
     },
-    contentInner: {
-        padding: 20,
+    chatList: {
+        paddingVertical: 16,
         paddingBottom: 100,
     },
-    notificationCard: {
-        backgroundColor: '#fff',
-        padding: 16,
-        borderRadius: 16,
+    chatCard: {
         marginBottom: 12,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
@@ -573,280 +363,179 @@ const styles = StyleSheet.create({
         shadowRadius: 8,
         elevation: 4,
     },
-    unreadNotification: {
+    chatCardInner: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#fff',
+        padding: 16,
+        borderRadius: 20,
         borderLeftWidth: 4,
         borderLeftColor: '#075538',
     },
-    notificationHeader: {
-        flexDirection: 'row',
-        alignItems: 'flex-start',
+    avatarContainer: {
+        position: 'relative',
+        marginRight: 16,
     },
-    iconContainer: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        justifyContent: 'center',
-        alignItems: 'center',
+    avatarText: {
+        fontSize: 32,
+        width: 56,
+        height: 56,
+        textAlign: 'center',
+        lineHeight: 56,
+        backgroundColor: '#f8fafc',
+        borderRadius: 28,
+        overflow: 'hidden',
+    },
+    onlineIndicator: {
+        position: 'absolute',
+        bottom: 2,
+        right: 2,
+        width: 12,
+        height: 12,
+        backgroundColor: '#10b981',
+        borderWidth: 2,
+        borderColor: '#fff',
+        borderRadius: 6,
+    },
+    chatContent: {
+        flex: 1,
         marginRight: 12,
     },
-    notificationContent: {
-        flex: 1,
-    },
-    notificationTitle: {
-        fontSize: 16,
-        fontWeight: 'bold',
-        color: '#1e293b',
+    chatHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'flex-start',
         marginBottom: 4,
-    },
-    notificationDescription: {
-        fontSize: 14,
-        color: '#64748b',
-        marginBottom: 4,
-        lineHeight: 20,
-    },
-    notificationTime: {
-        fontSize: 12,
-        color: '#94a3b8',
-    },
-    unreadDot: {
-        width: 8,
-        height: 8,
-        borderRadius: 4,
-        backgroundColor: '#075538',
-        marginLeft: 8,
-    },
-    mechanicInfo: {
-        marginTop: 12,
-        padding: 12,
-        backgroundColor: '#f8fafc',
-        borderRadius: 12,
-        borderLeftWidth: 3,
-        borderLeftColor: '#075538',
     },
     mechanicName: {
-        fontSize: 14,
-        fontWeight: '600',
+        fontSize: 18,
+        fontWeight: 'bold',
         color: '#1e293b',
-        marginBottom: 2,
+        flex: 1,
+        marginRight: 8,
     },
-    mechanicDetails: {
+    timestamp: {
         fontSize: 12,
-        color: '#64748b',
+        color: '#94a3b8',
+        fontWeight: '500',
     },
-    replyButton: {
+    specialization: {
+        fontSize: 14,
+        color: '#075538',
+        fontWeight: '500',
+        marginBottom: 6,
+    },
+    lastMessageContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        alignSelf: 'flex-start',
-        marginTop: 12,
-        paddingHorizontal: 12,
-        paddingVertical: 6,
-        backgroundColor: '#eff6ff',
-        borderRadius: 8,
-        gap: 4,
+        justifyContent: 'space-between',
     },
-    replyText: {
+    lastMessage: {
+        fontSize: 14,
+        color: '#64748b',
+        flex: 1,
+        marginRight: 8,
+        lineHeight: 18,
+    },
+    unreadMessage: {
+        color: '#1e293b',
+        fontWeight: '600',
+    },
+    unreadBadge: {
+        backgroundColor: '#dc2626',
+        borderRadius: 12,
+        minWidth: 20,
+        height: 20,
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: 6,
+    },
+    unreadBadgeText: {
+        color: '#fff',
+        fontSize: 10,
+        fontWeight: 'bold',
+    },
+    ratingContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#fff7ed',
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: '#fed7aa',
+    },
+    ratingText: {
         fontSize: 12,
-        fontWeight: '500',
-        color: '#075538',
+        fontWeight: 'bold',
+        color: '#ea580c',
+        marginLeft: 2,
     },
-    chatCard: {
-        backgroundColor: '#fff',
-        padding: 16,
-        borderRadius: 16,
-        marginBottom: 12,
+    emptyState: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: 40,
+        paddingTop: 60,
+    },
+    emptyIllustration: {
+        width: 120,
+        height: 120,
+        borderRadius: 60,
+        backgroundColor: '#f8fafc',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: 24,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.1,
         shadowRadius: 8,
         elevation: 4,
     },
-    chatHeader: {
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-    chatAvatar: {
-        fontSize: 32,
-        marginRight: 12,
-    },
-    chatInfo: {
-        flex: 1,
-    },
-    chatNameRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 8,
-    },
-    chatName: {
-        fontSize: 16,
-        fontWeight: 'bold',
-        color: '#1e293b',
-    },
-    activeBadge: {
-        backgroundColor: '#10b981',
-        paddingHorizontal: 6,
-        paddingVertical: 2,
-        borderRadius: 4,
-    },
-    activeText: {
-        fontSize: 10,
-        fontWeight: 'bold',
-        color: '#fff',
-    },
-    chatSpecialization: {
-        fontSize: 12,
-        color: '#64748b',
-        marginBottom: 4,
-    },
-    chatLastMessage: {
-        fontSize: 14,
-        color: '#64748b',
-    },
-    chatMeta: {
-        alignItems: 'flex-end',
-    },
-    chatTime: {
-        fontSize: 12,
-        color: '#94a3b8',
-        marginBottom: 4,
-    },
-    chatUnread: {
-        width: 8,
-        height: 8,
-        borderRadius: 4,
-        backgroundColor: '#075538',
-    },
-    emptyState: {
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: 40,
-    },
     emptyTitle: {
-        fontSize: 18,
+        fontSize: 20,
         fontWeight: 'bold',
-        color: '#475569',
-        marginTop: 16,
+        color: '#ffffff',
+        marginBottom: 12,
+        textAlign: 'center',
     },
     emptyDescription: {
         fontSize: 14,
-        color: '#64748b',
-        marginTop: 8,
+        color: '#ffffff',
         textAlign: 'center',
-    },
-    modalContainer: {
-        flex: 1,
-        backgroundColor: '#f8fafc',
-    },
-    chatHeaderModal: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: 20,
-        paddingTop: 60,
-        backgroundColor: '#fff',
-        borderBottomWidth: 1,
-        borderBottomColor: '#e2e8f0',
-    },
-    backButton: {
-        padding: 8,
-    },
-    chatPartnerInfo: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        flex: 1,
-        marginLeft: 12,
-    },
-    chatPartnerDetails: {
-        marginLeft: 12,
-    },
-    chatPartnerName: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        color: '#1e293b',
-    },
-    chatPartnerStatus: {
-        fontSize: 12,
-        color: '#10b981',
-    },
-    chatActions: {
-        flexDirection: 'row',
-        gap: 12,
-    },
-    chatActionButton: {
-        padding: 8,
-    },
-    messagesContainer: {
-        flex: 1,
-    },
-    messagesContent: {
-        padding: 20,
-    },
-    messageBubble: {
-        maxWidth: '80%',
-        padding: 12,
-        borderRadius: 16,
-        marginBottom: 12,
-    },
-    userMessage: {
-        alignSelf: 'flex-end',
-        backgroundColor: '#075538',
-        borderBottomRightRadius: 4,
-    },
-    mechanicMessage: {
-        alignSelf: 'flex-start',
-        backgroundColor: '#fff',
-        borderBottomLeftRadius: 4,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.1,
-        shadowRadius: 2,
-        elevation: 1,
-    },
-    messageText: {
-        fontSize: 16,
         lineHeight: 20,
     },
-    userMessageText: {
-        color: '#fff',
+    floatingElements: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        pointerEvents: 'none',
     },
-    mechanicMessageText: {
-        color: '#1e293b',
-    },
-    messageTime: {
-        fontSize: 10,
-        color: '#94a3b8',
-        marginTop: 4,
-        alignSelf: 'flex-end',
-    },
-    inputContainer: {
-        flexDirection: 'row',
-        alignItems: 'flex-end',
-        padding: 16,
+    floatingCircle: {
+        position: 'absolute',
+        borderRadius: 50,
         backgroundColor: '#fff',
-        borderTopWidth: 1,
-        borderTopColor: '#e2e8f0',
+        opacity: 0.1,
     },
-    messageInput: {
-        flex: 1,
-        backgroundColor: '#f8fafc',
-        borderWidth: 2,
-        borderColor: '#e2e8f0',
-        borderRadius: 24,
-        paddingHorizontal: 16,
-        paddingVertical: 12,
-        fontSize: 16,
-        color: '#1e293b',
-        maxHeight: 100,
+    circle1: {
+        width: 80,
+        height: 80,
+        top: '40%',
+        left: -20,
     },
-    sendButton: {
-        width: 44,
-        height: 44,
-        borderRadius: 22,
-        backgroundColor: '#eff6ff',
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginLeft: 12,
+    circle2: {
+        width: 60,
+        height: 60,
+        top: '20%',
+        right: -10,
     },
-    sendButtonDisabled: {
-        backgroundColor: '#f1f5f9',
+    circle3: {
+        width: 100,
+        height: 100,
+        bottom: '10%',
+        left: '50%',
+        transform: [{ translateX: -50 }],
     },
 });
