@@ -1,7 +1,7 @@
-import { useSignIn } from "@clerk/clerk-expo";
+import { useSignIn, useClerk } from "@clerk/clerk-expo";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, {useEffect, useState} from "react";
 import {
     Alert,
     Animated,
@@ -30,7 +30,19 @@ export default function Login() {
     const [isLoading, setIsLoading] = useState(false);
     const [secureTextEntry, setSecureTextEntry] = useState(true);
     const { signIn, setActive, isLoaded } = useSignIn();
+    const { signOut, openSignIn } = useClerk();
     const toast = useToast();
+
+    // Clear any existing session when the screen mounts
+    useEffect(() => {
+        (async () => {
+            try {
+                await signOut();
+            } catch (err) {
+                console.warn('Clerk signOut on mount failed:', err);
+            }
+        })();
+    }, [signOut]);
 
     // Animation values
     const fadeAnim = React.useRef(new Animated.Value(0)).current;

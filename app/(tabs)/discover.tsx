@@ -348,7 +348,7 @@ export default function ServicesScreen() {
                     contentContainerStyle={styles.listContent}
                     onScroll={Animated.event(
                         [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-                        { useNativeDriver: true }
+                        { useNativeDriver: false }
                     )}
                     ListEmptyComponent={
                         <View style={styles.emptyState}>
