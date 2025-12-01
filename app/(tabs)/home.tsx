@@ -115,6 +115,17 @@ export default function HomeScreen() {
     }
   ];
 
+  const handlePress = () => {
+    router.push({
+      pathname: '/messaging/[id]',
+      params: {
+        id: 1,
+        mechanicName: "john",
+        mechanicImage: ""
+      }
+    });
+  };
+
   useEffect(() => {
     apiClient.get(`/req/requests/${user?.user?.id}`)
         .then((res)=>{
@@ -136,7 +147,7 @@ export default function HomeScreen() {
         .catch((res)=>{
           console.log(res);
         })
-  }, []);
+  }, [user?.user?.id]);
 
   useEffect(() => {
     Animated.parallel([
@@ -385,7 +396,7 @@ export default function HomeScreen() {
               </View>
 
               <View style={styles.serviceActions}>
-                <TouchableOpacity style={styles.actionButton}>
+                <TouchableOpacity onPress={handlePress} style={styles.actionButton}>
                   <Ionicons name="chatbubble" size={20} color="#00ff9d" />
                   <Text style={styles.actionText}>Message Mechanic</Text>
                 </TouchableOpacity>

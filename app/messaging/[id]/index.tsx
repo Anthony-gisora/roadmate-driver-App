@@ -15,14 +15,17 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useUser } from '@clerk/clerk-expo';
 import {ChatManager} from "@/hooks/chat-manager";
+import {apiClient} from "@/hooks/api-client";
+import {sendMessage} from "@/hooks/socket";
 
 export default function ChatScreen() {
-    const { id, mechanicName, mechanicImage } = useLocalSearchParams();
+    const { id, mechanicName, mechanicImage, chatId } = useLocalSearchParams();
     const router = useRouter();
     const { user } = useUser();
     const [messages, setMessages] = useState<any[]>([]);
     const [messageText, setMessageText] = useState('');
     const [isLoading, setIsLoading] = useState(true);
+    let chatId2 = chatId;
 
     const flatListRef = useRef<FlatList>(null);
     const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -37,19 +40,77 @@ export default function ChatScreen() {
     }, []);
 
     const loadMessages = async () => {
-        try {
-            const chatManager = ChatManager.getInstance();
-            const conversationMessages = await chatManager.getMessages(id as string);
-            setMessages(conversationMessages);
-        } catch (error) {
-            console.error('Error loading messages:', error);
-        } finally {
-            setIsLoading(false);
+        // get all messages from backend and store locally if the chatId is not null
+        if(chatId2){
+            // chatId exists so maybe locally too
+            try {
+                const chatManager = ChatManager.getInstance();
+                const conversationMessages = await chatManager.getMessages(id as string);
+                setMessages(conversationMessages);
+                if (conversationMessages.length > 0){
+                    // chat exists but not locally, so fetch from backend
+                    apiClient.get(`/message/${chatId2}`)
+                        .then(res => {
+                            console.log(res);
+                            setMessages([...res.data]);
+                            chatManager.createChat({conversationId: chatId2 as string,
+                            memberA: user?.id as string,
+                            memberB: id as string})
+
+                            //save messages
+                            messages.forEach((message) => {
+                                chatManager.addMessage({
+                                    conversationId:chatId2 as string,
+                                    messageText: message?.messageText as string,
+                                    senderId: message?.senderId as string,
+                                    isViewing: true,
+                                })
+                            })
+                        })
+                        .catch((err) => {
+                            console.log(err);
+                        })
+                }
+            } catch (error) {
+                console.error('Error loading messages:', error);
+            } finally {
+                setIsLoading(false);
+            }
         }
     };
 
     const handleSendMessage = async () => {
         if (!messageText.trim()) return;
+        const chatManager = ChatManager.getInstance();
+        //check if chat exists
+        if(chatId2 == null){
+            //create the chat in the backend then save the chatId and save it locally
+            try{
+                const res = await apiClient.post("/conversation", {
+                    receiverId: id, currentUserId: user?.id as string,
+                })
+                //update chatId2
+                chatId2 = res?.data?.chatId as string;
+                console.log("chatId2", chatId2);
+
+                await chatManager.createChat({
+                    conversationId: res?.data?.chatId,
+                    memberA: user?.id as string,
+                    memberB: id as string,
+                });
+            }catch (e) {
+                console.error(e);
+            }
+
+        }
+
+        // send the message using sockets
+        sendMessage({
+            senderId: user?.id as string,
+            conversationId: chatId2 as string,
+            messageText: messageText,
+            otherUserId: id as string
+        });
 
         const newMessage = {
             id: Date.now().toString(),
@@ -67,7 +128,7 @@ export default function ChatScreen() {
         try {
             const chatManager = ChatManager.getInstance();
             await chatManager.addMessage({
-                conversationId: id as string,
+                conversationId: chatId2 as string,
                 messageText: messageText.trim(),
                 senderId: user!.id,
                 isViewing: true

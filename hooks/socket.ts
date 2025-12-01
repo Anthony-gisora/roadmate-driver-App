@@ -16,3 +16,13 @@ export const getSocket = () => {
     }
     return socket;
 };
+
+export const sendMessage = (payload: {
+    senderId: string;
+    conversationId: string;
+    messageText: string;
+    otherUserId: string;
+}) => {
+    const s = getSocket();
+    s.emit("sendMessage", payload);
+};

@@ -146,7 +146,7 @@ export default function NotificationsScreen() {
 
     const handleChatPress = (chat: any) => {
         router.push({
-            pathname: '/chat/[id]',
+            pathname: '/messaging/[id]',
             params: {
                 id: chat.mechanic.id,
                 mechanicName: chat.mechanic.name,

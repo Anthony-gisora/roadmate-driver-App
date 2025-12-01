@@ -78,10 +78,35 @@ export class ChatManager {
         }
     }
 
+    // Create a new chat
+    async createChat({
+                         conversationId,
+                         memberA,
+                         memberB
+                     }: {
+        conversationId: string;
+        memberA: string;
+        memberB: string;
+    }) {
+        const existing = await db.conversations.get(conversationId);
+        if (existing) return existing;
+
+        const newChat = {
+            conversationId,
+            memberA,
+            memberB,
+            lastMessage: '',
+            lastTimestamp: Date.now()
+        };
+
+        await db.conversations.add(newChat);
+        return newChat;
+    }
+
     private async playSound() {
         try {
             const { sound } = await Audio.Sound.createAsync(
-                require('./assets/notification.mp3') // add a notification sound file
+                require('../assets/audio/inchat.mp3')
             );
             await sound.playAsync();
         } catch (err) {
