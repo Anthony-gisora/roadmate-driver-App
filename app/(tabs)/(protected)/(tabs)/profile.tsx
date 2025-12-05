@@ -218,13 +218,6 @@ export default function ProfileScreen() {
                 { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }
             ]}
         >
-            {/* Stats Overview */}
-            <View style={styles.statsContainer}>
-                <StatCard value={userData.rating.toString()} label="Rating" icon="star" />
-                <StatCard value={userData.trips.toString()} label="Trips" icon="car" />
-                <StatCard value={userData.memberSince} label="Member Since" icon="calendar" />
-            </View>
-
             {/* Personal Information */}
             <View style={styles.section}>
                 <View style={styles.sectionHeader}>

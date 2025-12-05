@@ -15,13 +15,24 @@ import {
 } from 'react-native';
 import {apiClient} from "@/hooks/api-client";
 import {useToast} from "react-native-toast-notifications";
+import {db} from "@/data/db";
 
 const { width } = Dimensions.get('window');
+
+const emergencyContact = [
+  {
+    id: '2',
+    name: 'Roadmate Assist',
+    phone: '+254753407670',
+    relationship: 'Emergency'
+  }
+];
 
 export default function HomeScreen() {
   const router = useRouter();
   const toast = useToast();
   const [refreshing, setRefreshing] = useState(false);
+  const [emergencyContacts, setEmergencyContacts] = useState(emergencyContact);
   const [activeService, setActiveService] = useState<any>(null);
   const user = useUser();
   
@@ -67,54 +78,6 @@ export default function HomeScreen() {
     }
   ];
 
-  const nearbyMechanics = [
-    {
-      id: '1',
-      name: 'Mike Johnson',
-      specialization: 'Tire Specialist',
-      rating: 4.8,
-      distance: '1.2 km',
-      availability: 'Available Now',
-      image: '👨‍🔧',
-      responseTime: '5-10 min'
-    },
-    {
-      id: '2',
-      name: 'Sarah Chen',
-      specialization: 'Engine Expert',
-      rating: 4.9,
-      distance: '2.1 km',
-      availability: 'Available Now',
-      image: '👩‍🔧',
-      responseTime: '15-20 min'
-    },
-    {
-      id: '3',
-      name: 'Quick Fuel Co.',
-      specialization: 'Fuel Delivery',
-      rating: 4.7,
-      distance: '0.8 km',
-      availability: 'Available Now',
-      image: '⛽',
-      responseTime: '8-12 min'
-    }
-  ];
-
-  const emergencyContacts = [
-    {
-      id: '1',
-      name: 'Sarah Wilson',
-      relationship: 'Spouse',
-      phone: '+254 987-6543'
-    },
-    {
-      id: '2',
-      name: 'Roadside Assistance',
-      relationship: 'Emergency',
-      phone: '(254) 555-HELP'
-    }
-  ];
-
   const handlePress = () => {
     router.push({
       pathname: '/messaging/[id]',
@@ -127,12 +90,23 @@ export default function HomeScreen() {
   };
 
   useEffect(() => {
+    try{
+      db.getContacts().then((contactsFromDb) => {
+        setEmergencyContacts((prev) => {
+          const existingIds = new Set(prev.map(c => c.id));
+          const newContacts = contactsFromDb.filter(c => !existingIds.has(c.id));
+          return [...prev, ...newContacts];
+        });
+      }).catch((error)=>console.error(error));
+    }catch (e) {
+      console.error(e);
+    }
     apiClient.get(`/req/requests/${user?.user?.id}`)
         .then((res)=>{
           console.log(res);
           const request = res.data?.data;
           const mechanic = res.data?.mechanic;
-          
+
           setActiveService({
             id: '1',
             type: request?.requestType,
@@ -235,26 +209,6 @@ export default function HomeScreen() {
     </TouchableOpacity>
   );
 
-  const MechanicCard = ({ mechanic }: { mechanic: any }) => (
-    <TouchableOpacity style={styles.mechanicCard}>
-      <Text style={styles.mechanicImage}>{mechanic.image}</Text>
-      <View style={styles.mechanicInfo}>
-        <Text style={styles.mechanicName}>{mechanic.name}</Text>
-        <Text style={styles.mechanicSpecialization}>{mechanic.specialization}</Text>
-        <View style={styles.mechanicStats}>
-          <View style={styles.ratingContainer}>
-            <Ionicons name="star" size={14} color="#f59e0b" />
-            <Text style={styles.ratingText}>{mechanic.rating}</Text>
-          </View>
-          <Text style={styles.distanceText}>{mechanic.distance}</Text>
-        </View>
-      </View>
-      <View style={styles.availabilityBadge}>
-        <Text style={styles.availabilityText}>{mechanic.responseTime}</Text>
-      </View>
-    </TouchableOpacity>
-  );
-
   const EmergencyContactCard = ({ contact }: { contact: any }) => (
     <TouchableOpacity 
       style={styles.contactCard}
@@ -263,14 +217,14 @@ export default function HomeScreen() {
       <View style={styles.contactHeader}>
         <View style={styles.contactIcon}>
           <Ionicons 
-            name={contact.relationship === 'Emergency' ? "warning" : "person"} 
+            name={contact?.relationship === 'Emergency' ? "warning" : "person"}
             size={20} 
             color="#dc2626" 
           />
         </View>
         <View style={styles.contactInfo}>
-          <Text style={styles.contactName}>{contact.name}</Text>
-          <Text style={styles.contactRelationship}>{contact.relationship}</Text>
+          <Text style={styles.contactName}>{contact?.name}</Text>
+          <Text style={styles.contactRelationship}>{contact?.relationship}</Text>
         </View>
       </View>
       <Text style={styles.contactPhone}>{contact.phone}</Text>
@@ -282,6 +236,7 @@ export default function HomeScreen() {
       <ScrollView 
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 100 }}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
@@ -309,8 +264,8 @@ export default function HomeScreen() {
 
           {/* Stats Overview */}
           <View style={styles.statsContainer}>
-            <StatCard value={userStats.rating.toString()} label="Rating" icon="star" color="#f59e0b" />
-            <StatCard value={userStats.trips.toString()} label="Trips" icon="car" color="#2563eb" />
+            <StatCard value={`${userStats.rating.toString()} Yrs`} label="Member" icon="star" color="#f59e0b" />
+            <StatCard value={`${userStats.trips.toString()}`} label="Requests" icon="car" color="#2563eb" />
             <StatCard value={`KES ${userStats.savedAmount}`} label="Saved" icon="wallet" color="#10b981" />
           </View>
         </Animated.View>
@@ -431,51 +386,31 @@ export default function HomeScreen() {
           </ScrollView>
         </Animated.View>
 
-        {/* Nearby Mechanics */}
-        <Animated.View 
-          style={[
-            styles.section,
-            { 
-              opacity: fadeAnim,
-              transform: [{ translateY: slideAnim }]
-            }
-          ]}
-        >
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Nearby Mechanics</Text>
-            <TouchableOpacity>
-              <Text style={styles.seeAllText}>See All</Text>
-            </TouchableOpacity>
-          </View>
-          
-          <View style={styles.mechanicsContainer}>
-            {nearbyMechanics.map(mechanic => (
-              <MechanicCard key={mechanic.id} mechanic={mechanic} />
-            ))}
-          </View>
-        </Animated.View>
-
         {/* Emergency Contacts */}
-        <Animated.View 
-          style={[
-            styles.section,
-            { 
-              opacity: fadeAnim,
-              transform: [{ translateY: slideAnim }]
-            }
-          ]}
-        >
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Emergency Contacts</Text>
-            <Text style={styles.sectionDescription}>Quick access when needed</Text>
-          </View>
-          
-          <View style={styles.contactsContainer}>
-            {emergencyContacts.map(contact => (
-              <EmergencyContactCard key={contact.id} contact={contact} />
-            ))}
-          </View>
-        </Animated.View>
+            <Animated.View
+                style={[
+                  styles.section,
+                  {
+                    opacity: fadeAnim,
+                    transform: [{ translateY: slideAnim }]
+                  }
+                ]}
+            >
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>Emergency Contact</Text>
+                <Text style={styles.sectionDescription}>Quick access when needed</Text>
+              </View>
+              {emergencyContact != null && (
+
+              <View style={styles.contactsContainer}>
+                {emergencyContacts?.map(contact => (
+                    <EmergencyContactCard key={contact.id} contact={contact} />
+                ))}
+              </View>
+
+              )}
+            </Animated.View>
+
 
         {/* Safety Tips */}
         <Animated.View 
