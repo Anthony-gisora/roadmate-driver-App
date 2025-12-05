@@ -16,6 +16,7 @@ import {
 } from "react-native";
 import { useToast } from "react-native-toast-notifications";
 import { z } from "zod";
+import OAuthButton from "@/components/OauthButton";
 
 const loginSchema = z.object({
     email: z.string().email("Invalid email address"),
@@ -90,7 +91,7 @@ export default function Login() {
 
             if (result.status === "complete") {
                 await setActive({ session: result.createdSessionId });
-                router.replace("/(tabs)/emergency");
+                router.replace("/(tabs)/(protected)/(tabs)/emergency");
             } else {
                 toast.show('Additional steps required.', { type: 'danger' });
                 console.warn("Additional steps required.");
@@ -239,22 +240,8 @@ export default function Login() {
                     </View>
 
                     {/* Social Login Options */}
-                    <View style={styles.socialContainer}>
-                        <TouchableOpacity
-                            style={[styles.socialButton, styles.googleButton]}
-                            onPress={() => handleSocialLogin("Google")}
-                        >
-                            <Ionicons name="logo-google" size={20} color="#DB4437" />
-                            <Text style={styles.socialButtonText}>Google</Text>
-                        </TouchableOpacity>
-
-                        <TouchableOpacity
-                            style={[styles.socialButton, styles.appleButton]}
-                            onPress={() => handleSocialLogin("Apple")}
-                        >
-                            <Ionicons name="logo-apple" size={20} color="#000" />
-                            <Text style={styles.socialButtonText}>Apple</Text>
-                        </TouchableOpacity>
+                    <View style={{marginBottom: 24}}>
+                        <OAuthButton strategy="oauth_google">Sign in with Google</OAuthButton>
                     </View>
                 </Animated.View>
 

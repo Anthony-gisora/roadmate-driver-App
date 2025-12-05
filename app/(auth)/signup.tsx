@@ -291,7 +291,6 @@ export default function Signup() {
                     contentContainerStyle={styles.scrollContainer}
                     showsVerticalScrollIndicator={false}
                 >
-                    <div id="clerk-captcha"/>
                     <Animated.View
                         style={[
                             styles.verificationHeader,
@@ -403,6 +402,7 @@ export default function Signup() {
                         </TouchableOpacity>
                     </Animated.View>
                 </ScrollView>
+                <div id="clerk-captcha"/>
             </KeyboardAvoidingView>
         );
     }
@@ -417,7 +417,6 @@ export default function Signup() {
                 contentContainerStyle={styles.scrollContainer}
                 showsVerticalScrollIndicator={false}
             >
-                <div id="clerk-captcha"/>
                 {/* Header Section */}
                 <Animated.View
                     style={[
@@ -447,16 +446,6 @@ export default function Signup() {
                         }
                     ]}
                 >
-                    {/* OAuthButton component to handle OAuth sign-in */}
-                    <View style={{marginBottom: 24}}>
-                        <OAuthButton strategy="oauth_google">Sign in with Google</OAuthButton>
-                    </View>
-
-                    <View style={styles.divider}>
-                        <View style={styles.dividerLine}/>
-                        <Text style={styles.dividerText}>or</Text>
-                        <View style={styles.dividerLine}/>
-                    </View>
                 </Animated.View>
 
                 {/* Form Section */}
@@ -635,6 +624,7 @@ export default function Signup() {
                         </View>
                     )}
 
+                    <div id="clerk-captcha"/>
                     {/* Signup Button */}
                     <TouchableOpacity
                         style={[styles.signupButton, isLoading && styles.buttonDisabled]}
@@ -653,6 +643,17 @@ export default function Signup() {
                             </View>
                         )}
                     </TouchableOpacity>
+
+                    <View style={styles.divider}>
+                        <View style={styles.dividerLine}/>
+                        <Text style={styles.dividerText}>or</Text>
+                        <View style={styles.dividerLine}/>
+                    </View>
+
+                    {/* OAuthButton component to handle OAuth sign-in */}
+                    <View style={{marginBottom: 24}}>
+                        <OAuthButton strategy="oauth_google">Sign in with Google</OAuthButton>
+                    </View>
 
                     {/* Terms and Conditions */}
                     <Text style={styles.termsText}>
@@ -744,11 +745,11 @@ const styles = StyleSheet.create({
     dividerLine: {
         flex: 1,
         height: 1,
-        backgroundColor: "rgba(255, 255, 255, 0.2)",
+        backgroundColor: "#075538",
     },
     dividerText: {
         marginHorizontal: 12,
-        color: "rgba(255, 255, 255, 0.6)",
+        color: "#075538",
         fontSize: 14,
         fontWeight: "500",
     },

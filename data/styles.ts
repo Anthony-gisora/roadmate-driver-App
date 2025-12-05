@@ -53,7 +53,7 @@ export const styles = StyleSheet.create({
         color: '#1E293B', // Slate 800
     },
     button: {
-        backgroundColor: '#6366F1', // Indigo 500
+        backgroundColor: '#075538', // Indigo 500
         borderRadius: 12,
         height: 50,
         alignItems: 'center',

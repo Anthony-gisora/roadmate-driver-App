@@ -17,6 +17,7 @@ import {
 import { z } from "zod";
 import {useSignIn, useSignUp} from "@clerk/clerk-expo"
 import { useClerk } from "@clerk/clerk-react";
+import {useToast} from "react-native-toast-notifications";
 
 const { width } = Dimensions.get("window");
 
@@ -52,6 +53,7 @@ export default function ForgotPassword() {
     const {signUp} = useSignUp();
     const {signIn} = useSignIn();
     const { client } = useClerk();
+    const toast = useToast();
 
     // Animation values
     const fadeAnim = React.useRef(new Animated.Value(0)).current;
@@ -168,14 +170,11 @@ export default function ForgotPassword() {
                 password: password,
             });
 
-            Alert.alert("Success", "Your password has been reset successfully!", [
-                {
-                    text: "Continue to Login",
-                    onPress: () => router.replace("/(auth)"),
-                },
-            ]);
+            toast.show("Success Your password has been reset successfully!", { type: 'success' });
+
+            router.replace("/(auth)");
         } catch (err: any) {
-            Alert.alert("Reset Failed", err.errors?.[0]?.message || "Unable to reset password.");
+            toast.show(err.errors?.[0]?.message || "Unable to reset password.", { type: 'danger' });
         } finally {
             setIsLoading(false);
         }
