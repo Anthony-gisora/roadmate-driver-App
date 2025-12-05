@@ -1,7 +1,8 @@
-import { useSignUp } from "@clerk/clerk-expo";
+// app/signup.tsx
+import { useSignUp, useOAuth } from "@clerk/clerk-expo";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import {
     Alert,
     Animated,
@@ -12,10 +13,14 @@ import {
     Text,
     TextInput,
     TouchableOpacity,
-    View
+    View,
+    Dimensions
 } from "react-native";
 import { useToast } from "react-native-toast-notifications";
 import { z } from "zod";
+import * as WebBrowser from 'expo-web-browser';
+
+const { width } = Dimensions.get('window');
 
 const signupSchema = z.object({
     fullName: z.string().min(2, "Full name must be at least 2 characters"),
@@ -29,6 +34,9 @@ const signupSchema = z.object({
     message: "Passwords don't match",
     path: ["confirmPassword"],
 });
+
+// Configure WebBrowser for OAuth
+WebBrowser.maybeCompleteAuthSession();
 
 export default function Signup() {
     const router = useRouter();
@@ -46,15 +54,19 @@ export default function Signup() {
     const [secureTextEntry, setSecureTextEntry] = useState(true);
     const [secureConfirmTextEntry, setSecureConfirmTextEntry] = useState(true);
     const [verificationStep, setVerificationStep] = useState(false);
-    const [verificationCode, setVerificationCode] = useState("");
+    const [verificationCode, setVerificationCode] = useState(["", "", "", "", "", ""]);
     const [isVerifying, setIsVerifying] = useState(false);
-    
+
     const { signUp, setActive, isLoaded } = useSignUp();
+    const { startOAuthFlow } = useOAuth({ strategy: "oauth_google" });
     const toast = useToast();
 
     // Animation values
-    const fadeAnim = React.useRef(new Animated.Value(0)).current;
-    const slideAnim = React.useRef(new Animated.Value(50)).current;
+    const fadeAnim = useRef(new Animated.Value(0)).current;
+    const slideAnim = useRef(new Animated.Value(50)).current;
+    const pulseAnim = useRef(new Animated.Value(1)).current;
+
+    const inputRefs = useRef<(TextInput | null)[]>([]);
 
     React.useEffect(() => {
         Animated.parallel([
@@ -78,6 +90,33 @@ export default function Signup() {
         }
     };
 
+    const handleCodeChange = (text: string, index: number) => {
+        if (text.length <= 1) {
+            const newCode = [...verificationCode];
+            newCode[index] = text;
+            setVerificationCode(newCode);
+
+            // Auto-focus next input
+            if (text && index < 5) {
+                inputRefs.current[index + 1]?.focus();
+            }
+
+            // Auto-submit when all digits are entered
+            if (text && index === 5) {
+                const fullCode = newCode.join('');
+                if (fullCode.length === 6) {
+                    handleVerification(fullCode);
+                }
+            }
+        }
+    };
+
+    const handleKeyPress = (e: any, index: number) => {
+        if (e.nativeEvent.key === 'Backspace' && !verificationCode[index] && index > 0) {
+            inputRefs.current[index - 1]?.focus();
+        }
+    };
+
     const handleSignup = async () => {
         const result = signupSchema.safeParse(formData);
         if (!result.success) {
@@ -95,40 +134,64 @@ export default function Signup() {
         setErrors({});
         setIsLoading(true);
 
-        if (!isLoaded) return;
-        
+        if (!isLoaded) {
+            toast.show("System not ready. Please try again.", { type: "danger" });
+            setIsLoading(false);
+            return;
+        }
+
         try {
-            // Create the sign up attempt
+            // Create the sign up attempt with metadata
             await signUp.create({
                 emailAddress: formData.email,
                 password: formData.password,
+                firstName: formData.fullName.split(' ')[0],
+                lastName: formData.fullName.split(' ').slice(1).join(' '),
+                unsafeMetadata: {
+                    phone: formData.phone,
+                    emergencyContactName: formData.emergencyContactName,
+                    emergencyContactPhone: formData.emergencyContactPhone,
+                    fullName: formData.fullName
+                }
             });
 
             // Send verification email
             await signUp.prepareEmailAddressVerification({ strategy: "email_code" });
-            
+
             // Move to verification step
             setVerificationStep(true);
             toast.show("Verification code sent to your email", { type: "success" });
-            
+
         } catch (err: any) {
-            toast.show(err.errors?.[0]?.message || err.message || "An error occurred during sign up", { 
-                type: 'danger' 
-            });
-            console.error("Sign-up error:", err);
+            console.error("Sign-up error:", JSON.stringify(err, null, 2));
+
+            if (err.errors?.[0]?.code === 'form_identifier_exists') {
+                toast.show("Email already registered. Please sign in instead.", {
+                    type: 'warning'
+                });
+                setTimeout(() => router.replace('/login'), 1500);
+            } else if (err.errors?.[0]?.message) {
+                toast.show(err.errors[0].message, { type: 'danger' });
+            } else {
+                toast.show("An error occurred during sign up. Please try again.", {
+                    type: 'danger'
+                });
+            }
         }
 
         setIsLoading(false);
     };
 
-    const handleVerification = async () => {
+    const handleVerification = async (code?: string) => {
         if (!isLoaded || !signUp) {
             toast.show("System not ready. Please try again.", { type: "danger" });
             return;
         }
 
-        if (!verificationCode.trim()) {
-            toast.show("Please enter verification code", { type: "danger" });
+        const fullCode = code || verificationCode.join('');
+
+        if (fullCode.length !== 6) {
+            toast.show("Please enter the complete 6-digit code", { type: "danger" });
             return;
         }
 
@@ -137,49 +200,121 @@ export default function Signup() {
         try {
             // Attempt verification
             const signUpAttempt = await signUp.attemptEmailAddressVerification({
-                code: verificationCode,
+                code: fullCode,
             });
 
             if (signUpAttempt.status === "complete") {
                 // Set the user as active
                 await setActive({ session: signUpAttempt.createdSessionId });
-                
+
+                // Start pulse animation for success
+                Animated.sequence([
+                    Animated.timing(pulseAnim, {
+                        toValue: 1.2,
+                        duration: 200,
+                        useNativeDriver: true,
+                    }),
+                    Animated.timing(pulseAnim, {
+                        toValue: 1,
+                        duration: 200,
+                        useNativeDriver: true,
+                    }),
+                ]).start();
+
                 toast.show("Account verified successfully!", { type: "success" });
-                
-                // Navigate to the main app
-                router.replace("/(tabs)/home");
+
+                // Navigate to the main app after a brief delay
+                setTimeout(() => {
+                    router.replace("/(tabs)");
+                }, 800);
             } else {
                 toast.show("Verification failed. Please try again.", { type: "danger" });
             }
         } catch (err: any) {
             console.error("Verification error:", err);
-            toast.show(err.errors?.[0]?.message || err.message || "Invalid verification code", { 
-                type: "danger" 
-            });
+
+            if (err.errors?.[0]?.code === 'form_code_incorrect') {
+                toast.show("Invalid verification code. Please check and try again.", {
+                    type: 'danger'
+                });
+            } else {
+                toast.show("Verification failed. Please try again.", { type: "danger" });
+            }
         }
 
         setIsVerifying(false);
     };
 
     const handleResendCode = async () => {
-        if (!isLoaded) return;
+        if (!isLoaded || !signUp) return;
 
         try {
             await signUp.prepareEmailAddressVerification({ strategy: "email_code" });
-            toast.show("Verification code resent to your email", { type: "success" });
+            toast.show("New verification code sent to your email", { type: "success" });
+            setVerificationCode(["", "", "", "", "", ""]);
+            inputRefs.current[0]?.focus();
         } catch (err: any) {
             toast.show("Failed to resend code. Please try again.", { type: "danger" });
         }
     };
 
-    const handleSocialSignup = (provider: string) => {
-        Alert.alert("Social Signup", `${provider} signup would be implemented here`);
+    const handleGoogleSignup = async () => {
+        if (!isLoaded) return;
+
+        try {
+            const { createdSessionId, signUp: googleSignUp } = await startOAuthFlow({
+                redirectUrl: 'yourapp://oauth-callback',
+            });
+
+            if (createdSessionId) {
+                // Successfully signed in with Google
+                await setActive({ session: createdSessionId });
+                toast.show("Signed in with Google successfully!", { type: "success" });
+                router.replace("/(tabs)");
+            } else if (googleSignUp) {
+                // User needs to complete sign up (emergency contact info)
+                setVerificationStep(false);
+
+                // Pre-fill email if available from Google
+                if (googleSignUp.emailAddress) {
+                    setFormData(prev => ({
+                        ...prev,
+                        email: googleSignUp.emailAddress || ""
+                    }));
+                }
+
+                toast.show("Please complete your profile information", { type: "info" });
+            }
+        } catch (err: any) {
+            console.error("Google OAuth error:", err);
+
+            if (err.errors?.[0]?.code === 'oauth_callback') {
+                // User cancelled the OAuth flow
+                return;
+            }
+
+            toast.show("Failed to sign in with Google", { type: "danger" });
+        }
     };
 
     const SectionHeader = ({ title, icon }: { title: string; icon: string }) => (
         <View style={styles.sectionHeader}>
-            <Ionicons name={icon as any} size={20} color="#2563eb" />
+            <View style={styles.sectionIconContainer}>
+                <Ionicons name={icon as any} size={16} color="#075538" />
+            </View>
             <Text style={styles.sectionTitle}>{title}</Text>
+        </View>
+    );
+
+    const CodeInput = ({ index }: { index: number }) => (
+        <View style={styles.codeInputContainer}>
+            <Text style={styles.codeInput}>
+                {verificationCode[index]}
+            </Text>
+            <View style={[
+                styles.codeInputUnderline,
+                verificationCode[index] ? styles.codeInputUnderlineActive : {}
+            ]} />
         </View>
     );
 
@@ -196,45 +331,65 @@ export default function Signup() {
                 >
                     <Animated.View
                         style={[
-                            styles.header,
+                            styles.verificationHeader,
                             {
                                 opacity: fadeAnim,
                                 transform: [{ translateY: slideAnim }]
                             }
                         ]}
                     >
-                        <View style={styles.logoContainer}>
-                            <Ionicons name="mail-outline" size={50} color="#075538" />
+                        <View style={styles.verificationLogoContainer}>
+                            <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
+                                <Ionicons name="shield-checkmark" size={60} color="#075538" />
+                            </Animated.View>
                         </View>
-                        <Text style={styles.title}>Verify Your Email</Text>
-                        <Text style={styles.subtitle}>
-                            We sent a verification code to{"\n"}
-                            <Text style={{ fontWeight: "600" }}>{formData.email}</Text>
+                        <Text style={styles.verificationTitle}>Verify Your Email</Text>
+                        <Text style={styles.verificationSubtitle}>
+                            We sent a 6-digit code to
                         </Text>
+                        <Text style={styles.verificationEmail}>{formData.email}</Text>
                     </Animated.View>
 
                     <Animated.View
                         style={[
-                            styles.formContainer,
+                            styles.verificationFormContainer,
                             {
                                 opacity: fadeAnim,
                                 transform: [{ translateY: slideAnim }]
                             }
                         ]}
                     >
-                        {/* Verification Code Input */}
-                        <View style={styles.inputContainer}>
-                            <Ionicons name="key-outline" size={20} color="#6b7280" style={styles.inputIcon} />
-                            <TextInput
-                                style={styles.input}
-                                placeholder="Enter verification code"
-                                placeholderTextColor="#9ca3af"
-                                value={verificationCode}
-                                onChangeText={setVerificationCode}
-                                keyboardType="number-pad"
-                                autoCapitalize="none"
-                                autoCorrect={false}
-                            />
+                        {/* Code Input */}
+                        <Text style={styles.codeLabel}>Enter verification code</Text>
+
+                        <View style={styles.codeInputsContainer}>
+                            {verificationCode.map((_, index) => (
+                                <TouchableOpacity
+                                    key={index}
+                                    style={styles.codeInputWrapper}
+                                    onPress={() => inputRefs.current[index]?.focus()}
+                                >
+                                    <CodeInput index={index} />
+                                </TouchableOpacity>
+                            ))}
+                        </View>
+
+                        {/* Hidden TextInputs for keyboard */}
+                        <View style={styles.hiddenInputs}>
+                            {verificationCode.map((_, index) => (
+                                <TextInput
+                                    key={index}
+                                    ref={ref => inputRefs.current[index] = ref}
+                                    style={styles.hiddenInput}
+                                    value={verificationCode[index]}
+                                    onChangeText={(text) => handleCodeChange(text, index)}
+                                    onKeyPress={(e) => handleKeyPress(e, index)}
+                                    keyboardType="number-pad"
+                                    maxLength={1}
+                                    autoFocus={index === 0}
+                                    selectTextOnFocus
+                                />
+                            ))}
                         </View>
 
                         <Text style={styles.verificationHelp}>
@@ -243,8 +398,8 @@ export default function Signup() {
 
                         {/* Verify Button */}
                         <TouchableOpacity
-                            style={[styles.button, isVerifying && styles.buttonDisabled]}
-                            onPress={handleVerification}
+                            style={[styles.verifyButton, isVerifying && styles.buttonDisabled]}
+                            onPress={() => handleVerification()}
                             disabled={isVerifying}
                         >
                             {isVerifying ? (
@@ -267,7 +422,7 @@ export default function Signup() {
                             disabled={isVerifying}
                         >
                             <Text style={styles.resendText}>
-                                Didn&apos;t receive the code?{" "}
+                                Didn't receive the code?{" "}
                                 <Text style={styles.resendLink}>Resend</Text>
                             </Text>
                         </TouchableOpacity>
@@ -275,7 +430,10 @@ export default function Signup() {
                         {/* Back to Signup */}
                         <TouchableOpacity
                             style={styles.backButton}
-                            onPress={() => setVerificationStep(false)}
+                            onPress={() => {
+                                setVerificationStep(false);
+                                setVerificationCode(["", "", "", "", "", ""]);
+                            }}
                         >
                             <Ionicons name="arrow-back" size={16} color="#64748b" />
                             <Text style={styles.backText}>Back to sign up</Text>
@@ -307,12 +465,37 @@ export default function Signup() {
                     ]}
                 >
                     <View style={styles.logoContainer}>
-                        <Ionicons name="car-sport" size={50} color="#075538" />
+                        <Ionicons name="car-sport" size={50} color="#fff" />
                     </View>
-                    <Text style={styles.title}>Join Driver Assist App</Text>
+                    <Text style={styles.title}>Join Driver Assist</Text>
                     <Text style={styles.subtitle}>
                         Create your account and drive with confidence
                     </Text>
+                </Animated.View>
+
+                {/* Social Signup Buttons - Now at top */}
+                <Animated.View
+                    style={[
+                        styles.socialContainer,
+                        {
+                            opacity: fadeAnim,
+                            transform: [{ translateY: slideAnim }]
+                        }
+                    ]}
+                >
+                    <TouchableOpacity
+                        style={styles.googleButton}
+                        onPress={handleGoogleSignup}
+                    >
+                        <Ionicons name="logo-google" size={20} color="#DB4437" />
+                        <Text style={styles.googleButtonText}>Continue with Google</Text>
+                    </TouchableOpacity>
+
+                    <View style={styles.divider}>
+                        <View style={styles.dividerLine} />
+                        <Text style={styles.dividerText}>or</Text>
+                        <View style={styles.dividerLine} />
+                    </View>
                 </Animated.View>
 
                 {/* Form Section */}
@@ -330,11 +513,11 @@ export default function Signup() {
 
                     {/* Full Name */}
                     <View style={styles.inputContainer}>
-                        <Ionicons name="person-outline" size={20} color="#6b7280" style={styles.inputIcon} />
+                        <Ionicons name="person-outline" size={20} color="#64748b" style={styles.inputIcon} />
                         <TextInput
                             style={[styles.input, errors.fullName && styles.errorInput]}
                             placeholder="Full Name"
-                            placeholderTextColor="#9ca3af"
+                            placeholderTextColor="#94a3b8"
                             value={formData.fullName}
                             onChangeText={(text) => handleInputChange("fullName", text)}
                             autoCapitalize="words"
@@ -342,18 +525,18 @@ export default function Signup() {
                     </View>
                     {errors.fullName && (
                         <View style={styles.errorContainer}>
-                            <Ionicons name="warning-outline" size={14} color="#ef4444" />
+                            <Ionicons name="warning-outline" size={14} color="#dc2626" />
                             <Text style={styles.errorText}>{errors.fullName}</Text>
                         </View>
                     )}
 
                     {/* Email */}
                     <View style={styles.inputContainer}>
-                        <Ionicons name="mail-outline" size={20} color="#6b7280" style={styles.inputIcon} />
+                        <Ionicons name="mail-outline" size={20} color="#64748b" style={styles.inputIcon} />
                         <TextInput
                             style={[styles.input, errors.email && styles.errorInput]}
                             placeholder="Email Address"
-                            placeholderTextColor="#9ca3af"
+                            placeholderTextColor="#94a3b8"
                             value={formData.email}
                             onChangeText={(text) => handleInputChange("email", text)}
                             autoCapitalize="none"
@@ -362,18 +545,18 @@ export default function Signup() {
                     </View>
                     {errors.email && (
                         <View style={styles.errorContainer}>
-                            <Ionicons name="warning-outline" size={14} color="#ef4444" />
+                            <Ionicons name="warning-outline" size={14} color="#dc2626" />
                             <Text style={styles.errorText}>{errors.email}</Text>
                         </View>
                     )}
 
                     {/* Phone */}
                     <View style={styles.inputContainer}>
-                        <Ionicons name="call-outline" size={20} color="#6b7280" style={styles.inputIcon} />
+                        <Ionicons name="call-outline" size={20} color="#64748b" style={styles.inputIcon} />
                         <TextInput
                             style={[styles.input, errors.phone && styles.errorInput]}
                             placeholder="Phone Number"
-                            placeholderTextColor="#9ca3af"
+                            placeholderTextColor="#94a3b8"
                             value={formData.phone}
                             onChangeText={(text) => handleInputChange("phone", text)}
                             keyboardType="phone-pad"
@@ -381,7 +564,7 @@ export default function Signup() {
                     </View>
                     {errors.phone && (
                         <View style={styles.errorContainer}>
-                            <Ionicons name="warning-outline" size={14} color="#ef4444" />
+                            <Ionicons name="warning-outline" size={14} color="#dc2626" />
                             <Text style={styles.errorText}>{errors.phone}</Text>
                         </View>
                     )}
@@ -391,11 +574,11 @@ export default function Signup() {
 
                     {/* Password */}
                     <View style={styles.inputContainer}>
-                        <Ionicons name="lock-closed-outline" size={20} color="#6b7280" style={styles.inputIcon} />
+                        <Ionicons name="lock-closed-outline" size={20} color="#64748b" style={styles.inputIcon} />
                         <TextInput
                             style={[styles.input, errors.password && styles.errorInput]}
-                            placeholder="Password"
-                            placeholderTextColor="#9ca3af"
+                            placeholder="Password (min. 6 characters)"
+                            placeholderTextColor="#94a3b8"
                             value={formData.password}
                             onChangeText={(text) => handleInputChange("password", text)}
                             secureTextEntry={secureTextEntry}
@@ -407,24 +590,24 @@ export default function Signup() {
                             <Ionicons
                                 name={secureTextEntry ? "eye-outline" : "eye-off-outline"}
                                 size={20}
-                                color="#6b7280"
+                                color="#64748b"
                             />
                         </TouchableOpacity>
                     </View>
                     {errors.password && (
                         <View style={styles.errorContainer}>
-                            <Ionicons name="warning-outline" size={14} color="#ef4444" />
+                            <Ionicons name="warning-outline" size={14} color="#dc2626" />
                             <Text style={styles.errorText}>{errors.password}</Text>
                         </View>
                     )}
 
                     {/* Confirm Password */}
                     <View style={styles.inputContainer}>
-                        <Ionicons name="lock-closed-outline" size={20} color="#6b7280" style={styles.inputIcon} />
+                        <Ionicons name="lock-closed-outline" size={20} color="#64748b" style={styles.inputIcon} />
                         <TextInput
                             style={[styles.input, errors.confirmPassword && styles.errorInput]}
                             placeholder="Confirm Password"
-                            placeholderTextColor="#9ca3af"
+                            placeholderTextColor="#94a3b8"
                             value={formData.confirmPassword}
                             onChangeText={(text) => handleInputChange("confirmPassword", text)}
                             secureTextEntry={secureConfirmTextEntry}
@@ -436,13 +619,13 @@ export default function Signup() {
                             <Ionicons
                                 name={secureConfirmTextEntry ? "eye-outline" : "eye-off-outline"}
                                 size={20}
-                                color="#6b7280"
+                                color="#64748b"
                             />
                         </TouchableOpacity>
                     </View>
                     {errors.confirmPassword && (
                         <View style={styles.errorContainer}>
-                            <Ionicons name="warning-outline" size={14} color="#ef4444" />
+                            <Ionicons name="warning-outline" size={14} color="#dc2626" />
                             <Text style={styles.errorText}>{errors.confirmPassword}</Text>
                         </View>
                     )}
@@ -455,11 +638,11 @@ export default function Signup() {
 
                     {/* Emergency Contact Name */}
                     <View style={styles.inputContainer}>
-                        <Ionicons name="person-outline" size={20} color="#6b7280" style={styles.inputIcon} />
+                        <Ionicons name="person-outline" size={20} color="#64748b" style={styles.inputIcon} />
                         <TextInput
                             style={[styles.input, errors.emergencyContactName && styles.errorInput]}
                             placeholder="Emergency Contact Name"
-                            placeholderTextColor="#9ca3af"
+                            placeholderTextColor="#94a3b8"
                             value={formData.emergencyContactName}
                             onChangeText={(text) => handleInputChange("emergencyContactName", text)}
                             autoCapitalize="words"
@@ -467,18 +650,18 @@ export default function Signup() {
                     </View>
                     {errors.emergencyContactName && (
                         <View style={styles.errorContainer}>
-                            <Ionicons name="warning-outline" size={14} color="#ef4444" />
+                            <Ionicons name="warning-outline" size={14} color="#dc2626" />
                             <Text style={styles.errorText}>{errors.emergencyContactName}</Text>
                         </View>
                     )}
 
                     {/* Emergency Contact Phone */}
                     <View style={styles.inputContainer}>
-                        <Ionicons name="call-outline" size={20} color="#6b7280" style={styles.inputIcon} />
+                        <Ionicons name="call-outline" size={20} color="#64748b" style={styles.inputIcon} />
                         <TextInput
                             style={[styles.input, errors.emergencyContactPhone && styles.errorInput]}
                             placeholder="Emergency Contact Phone"
-                            placeholderTextColor="#9ca3af"
+                            placeholderTextColor="#94a3b8"
                             value={formData.emergencyContactPhone}
                             onChangeText={(text) => handleInputChange("emergencyContactPhone", text)}
                             keyboardType="phone-pad"
@@ -486,14 +669,14 @@ export default function Signup() {
                     </View>
                     {errors.emergencyContactPhone && (
                         <View style={styles.errorContainer}>
-                            <Ionicons name="warning-outline" size={14} color="#ef4444" />
+                            <Ionicons name="warning-outline" size={14} color="#dc2626" />
                             <Text style={styles.errorText}>{errors.emergencyContactPhone}</Text>
                         </View>
                     )}
 
                     {/* Signup Button */}
                     <TouchableOpacity
-                        style={[styles.button, isLoading && styles.buttonDisabled]}
+                        style={[styles.signupButton, isLoading && styles.buttonDisabled]}
                         onPress={handleSignup}
                         disabled={isLoading}
                     >
@@ -516,38 +699,12 @@ export default function Signup() {
                         <Text style={styles.link}>Terms of Service</Text> and{" "}
                         <Text style={styles.link}>Privacy Policy</Text>
                     </Text>
-
-                    {/* Divider */}
-                    <View style={styles.divider}>
-                        <View style={styles.dividerLine} />
-                        <Text style={styles.dividerText}>or sign up with</Text>
-                        <View style={styles.dividerLine} />
-                    </View>
-
-                    {/* Social Signup Options */}
-                    <View style={styles.socialContainer}>
-                        <TouchableOpacity
-                            style={[styles.socialButton, styles.googleButton]}
-                            onPress={() => handleSocialSignup("Google")}
-                        >
-                            <Ionicons name="logo-google" size={20} color="#DB4437" />
-                            <Text style={styles.socialButtonText}>Google</Text>
-                        </TouchableOpacity>
-
-                        <TouchableOpacity
-                            style={[styles.socialButton, styles.appleButton]}
-                            onPress={() => handleSocialSignup("Apple")}
-                        >
-                            <Ionicons name="logo-apple" size={20} color="#000" />
-                            <Text style={styles.socialButtonText}>Apple</Text>
-                        </TouchableOpacity>
-                    </View>
                 </Animated.View>
 
                 {/* Login Link */}
                 <View style={styles.footer}>
                     <Text style={styles.footerText}>Already have an account? </Text>
-                    <TouchableOpacity onPress={() => router.back()}>
+                    <TouchableOpacity onPress={() => router.replace('/login')}>
                         <Text style={styles.loginText}>Sign in</Text>
                     </TouchableOpacity>
                 </View>
@@ -559,7 +716,7 @@ export default function Signup() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: "#fff",
+        backgroundColor: "#075538",
     },
     scrollContainer: {
         flexGrow: 1,
@@ -574,29 +731,65 @@ const styles = StyleSheet.create({
         width: 80,
         height: 80,
         borderRadius: 40,
-        backgroundColor: "#eff6ff",
+        backgroundColor: "rgba(255, 255, 255, 0.1)",
         justifyContent: "center",
         alignItems: "center",
         marginBottom: 16,
-        shadowColor: "#075538",
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.1,
-        shadowRadius: 12,
-        elevation: 5,
+        borderWidth: 2,
+        borderColor: "rgba(255, 255, 255, 0.2)",
     },
     title: {
-        fontSize: 28,
+        fontSize: 32,
         fontWeight: "bold",
         marginBottom: 8,
         textAlign: "center",
-        color: "#1e293b",
+        color: "#fff",
     },
     subtitle: {
         fontSize: 16,
         textAlign: "center",
-        color: "#64748b",
+        color: "rgba(255, 255, 255, 0.8)",
         lineHeight: 22,
         maxWidth: 300,
+    },
+    socialContainer: {
+        marginBottom: 24,
+    },
+    googleButton: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "center",
+        backgroundColor: "#fff",
+        padding: 16,
+        borderRadius: 12,
+        marginBottom: 16,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+        elevation: 4,
+    },
+    googleButtonText: {
+        marginLeft: 12,
+        fontSize: 16,
+        fontWeight: "500",
+        color: "#374151",
+    },
+    divider: {
+        flexDirection: "row",
+        alignItems: "center",
+        marginBottom: 20,
+    },
+    dividerLine: {
+        flex: 1,
+        height: 1,
+        backgroundColor: "rgba(255, 255, 255, 0.2)",
+    },
+    dividerText: {
+        marginHorizontal: 12,
+        color: "rgba(255, 255, 255, 0.6)",
+        fontSize: 14,
+        fontWeight: "500",
     },
     formContainer: {
         backgroundColor: "#fff",
@@ -615,17 +808,25 @@ const styles = StyleSheet.create({
         marginBottom: 16,
         marginTop: 8,
     },
+    sectionIconContainer: {
+        width: 28,
+        height: 28,
+        borderRadius: 14,
+        backgroundColor: "#eff6ff",
+        justifyContent: "center",
+        alignItems: "center",
+        marginRight: 8,
+    },
     sectionTitle: {
         fontSize: 18,
         fontWeight: "600",
         color: "#1e293b",
-        marginLeft: 8,
     },
     sectionDescription: {
         fontSize: 14,
         color: "#64748b",
         marginBottom: 16,
-        marginLeft: 28,
+        marginLeft: 36,
     },
     inputContainer: {
         flexDirection: "row",
@@ -649,7 +850,7 @@ const styles = StyleSheet.create({
         padding: 12,
     },
     errorInput: {
-        borderColor: "#ef4444",
+        borderColor: "#dc2626",
     },
     errorContainer: {
         flexDirection: "row",
@@ -658,16 +859,31 @@ const styles = StyleSheet.create({
         marginLeft: 4,
     },
     errorText: {
-        color: "#ef4444",
+        color: "#dc2626",
         fontSize: 12,
         marginLeft: 4,
     },
-    button: {
+    signupButton: {
         backgroundColor: "#075538",
-        padding: 16,
+        padding: 18,
         borderRadius: 12,
         marginTop: 8,
         marginBottom: 16,
+        shadowColor: "#075538",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+        elevation: 4,
+    },
+    verifyButton: {
+        backgroundColor: "#075538",
+        padding: 18,
+        borderRadius: 12,
+        marginTop: 8,
+        marginBottom: 16,
+        width: '100%',
+        maxWidth: 280,
+        alignSelf: 'center',
         shadowColor: "#075538",
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.3,
@@ -708,68 +924,116 @@ const styles = StyleSheet.create({
         color: "#075538",
         fontWeight: "500",
     },
-    divider: {
-        flexDirection: "row",
-        alignItems: "center",
-        marginVertical: 20,
-    },
-    dividerLine: {
-        flex: 1,
-        height: 1,
-        backgroundColor: "#e2e8f0",
-    },
-    dividerText: {
-        marginHorizontal: 12,
-        color: "#64748b",
-        fontSize: 14,
-    },
-    socialContainer: {
-        flexDirection: "row",
-        justifyContent: "space-between",
-        gap: 12,
-    },
-    socialButton: {
-        flex: 1,
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: 12,
-        borderRadius: 12,
-        borderWidth: 1,
-        borderColor: "#e2e8f0",
-    },
-    googleButton: {
-        backgroundColor: "#fff",
-    },
-    appleButton: {
-        backgroundColor: "#fff",
-    },
-    socialButtonText: {
-        marginLeft: 8,
-        fontSize: 14,
-        fontWeight: "500",
-        color: "#374151",
-    },
     footer: {
         flexDirection: "row",
         justifyContent: "center",
         marginBottom: 20,
     },
     footerText: {
-        color: "#64748b",
+        color: "rgba(255, 255, 255, 0.8)",
         fontSize: 14,
     },
     loginText: {
-        color: "#075538",
+        color: "#fff",
         fontSize: 14,
         fontWeight: "600",
     },
     // Verification specific styles
+    verificationHeader: {
+        alignItems: "center",
+        marginBottom: 40,
+    },
+    verificationLogoContainer: {
+        width: 100,
+        height: 100,
+        borderRadius: 50,
+        backgroundColor: "rgba(255, 255, 255, 0.1)",
+        justifyContent: "center",
+        alignItems: "center",
+        marginBottom: 24,
+        borderWidth: 2,
+        borderColor: "rgba(255, 255, 255, 0.2)",
+    },
+    verificationTitle: {
+        fontSize: 28,
+        fontWeight: "bold",
+        color: "#fff",
+        marginBottom: 8,
+        textAlign: "center",
+    },
+    verificationSubtitle: {
+        fontSize: 16,
+        color: "rgba(255, 255, 255, 0.8)",
+        textAlign: "center",
+        marginBottom: 4,
+    },
+    verificationEmail: {
+        fontSize: 18,
+        fontWeight: "600",
+        color: "#fff",
+        textAlign: "center",
+    },
+    verificationFormContainer: {
+        backgroundColor: "#fff",
+        borderRadius: 20,
+        padding: 24,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 16,
+        elevation: 5,
+    },
+    codeLabel: {
+        fontSize: 16,
+        fontWeight: "600",
+        color: "#1e293b",
+        textAlign: "center",
+        marginBottom: 24,
+    },
+    codeInputsContainer: {
+        flexDirection: "row",
+        justifyContent: "center",
+        gap: 12,
+        marginBottom: 24,
+    },
+    codeInputWrapper: {
+        alignItems: "center",
+    },
+    codeInputContainer: {
+        alignItems: "center",
+    },
+    codeInput: {
+        fontSize: 24,
+        fontWeight: "bold",
+        color: "#1e293b",
+        marginBottom: 8,
+        minWidth: 40,
+        textAlign: "center",
+    },
+    codeInputUnderline: {
+        width: 40,
+        height: 3,
+        backgroundColor: "#e2e8f0",
+        borderRadius: 2,
+    },
+    codeInputUnderlineActive: {
+        backgroundColor: "#075538",
+    },
+    hiddenInputs: {
+        position: "absolute",
+        opacity: 0,
+        width: 0,
+        height: 0,
+    },
+    hiddenInput: {
+        width: 0,
+        height: 0,
+    },
     verificationHelp: {
         textAlign: "center",
         fontSize: 14,
         color: "#64748b",
-        marginBottom: 20,
+        marginBottom: 24,
         lineHeight: 20,
     },
     resendButton: {

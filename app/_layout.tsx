@@ -62,7 +62,7 @@ export default function RootLayout() {
                         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
                     </SignedIn>
 
-                    {/* Redirect signed out users */}
+                    {/* Redirect signed-out users */}
                     <SignedOut>
                         <Stack.Screen name="(auth)" options={{ headerShown: false }} />
                     </SignedOut>
