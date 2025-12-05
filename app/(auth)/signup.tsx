@@ -4,7 +4,6 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useState, useRef } from "react";
 import {
-    Alert,
     Animated,
     KeyboardAvoidingView,
     Platform,
@@ -19,6 +18,7 @@ import {
 import { useToast } from "react-native-toast-notifications";
 import { z } from "zod";
 import * as WebBrowser from 'expo-web-browser';
+import OAuthButton from "@/components/OauthButton";
 
 const { width } = Dimensions.get('window');
 
@@ -141,12 +141,13 @@ export default function Signup() {
         }
 
         try {
-            // Create the sign up attempt with metadata
+            // Create the sign-up attempt with metadata
             await signUp.create({
                 emailAddress: formData.email,
                 password: formData.password,
                 firstName: formData.fullName.split(' ')[0],
                 lastName: formData.fullName.split(' ').slice(1).join(' '),
+                username: formData.email.split("@")[0],
                 unsafeMetadata: {
                     phone: formData.phone,
                     emergencyContactName: formData.emergencyContactName,
@@ -169,7 +170,7 @@ export default function Signup() {
                 toast.show("Email already registered. Please sign in instead.", {
                     type: 'warning'
                 });
-                setTimeout(() => router.replace('/login'), 1500);
+                setTimeout(() => router.replace('/(auth)'), 1500);
             } else if (err.errors?.[0]?.message) {
                 toast.show(err.errors[0].message, { type: 'danger' });
             } else {
@@ -225,7 +226,7 @@ export default function Signup() {
 
                 // Navigate to the main app after a brief delay
                 setTimeout(() => {
-                    router.replace("/(tabs)");
+                    router.replace("/(tabs)/(protected)/(tabs)/emergency");
                 }, 800);
             } else {
                 toast.show("Verification failed. Please try again.", { type: "danger" });
@@ -255,45 +256,6 @@ export default function Signup() {
             inputRefs.current[0]?.focus();
         } catch (err: any) {
             toast.show("Failed to resend code. Please try again.", { type: "danger" });
-        }
-    };
-
-    const handleGoogleSignup = async () => {
-        if (!isLoaded) return;
-
-        try {
-            const { createdSessionId, signUp: googleSignUp } = await startOAuthFlow({
-                redirectUrl: 'yourapp://oauth-callback',
-            });
-
-            if (createdSessionId) {
-                // Successfully signed in with Google
-                await setActive({ session: createdSessionId });
-                toast.show("Signed in with Google successfully!", { type: "success" });
-                router.replace("/(tabs)");
-            } else if (googleSignUp) {
-                // User needs to complete sign up (emergency contact info)
-                setVerificationStep(false);
-
-                // Pre-fill email if available from Google
-                if (googleSignUp.emailAddress) {
-                    setFormData(prev => ({
-                        ...prev,
-                        email: googleSignUp.emailAddress || ""
-                    }));
-                }
-
-                toast.show("Please complete your profile information", { type: "info" });
-            }
-        } catch (err: any) {
-            console.error("Google OAuth error:", err);
-
-            if (err.errors?.[0]?.code === 'oauth_callback') {
-                // User cancelled the OAuth flow
-                return;
-            }
-
-            toast.show("Failed to sign in with Google", { type: "danger" });
         }
     };
 
@@ -329,18 +291,19 @@ export default function Signup() {
                     contentContainerStyle={styles.scrollContainer}
                     showsVerticalScrollIndicator={false}
                 >
+                    <div id="clerk-captcha"/>
                     <Animated.View
                         style={[
                             styles.verificationHeader,
                             {
                                 opacity: fadeAnim,
-                                transform: [{ translateY: slideAnim }]
+                                transform: [{translateY: slideAnim}]
                             }
                         ]}
                     >
                         <View style={styles.verificationLogoContainer}>
-                            <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
-                                <Ionicons name="shield-checkmark" size={60} color="#075538" />
+                            <Animated.View style={{transform: [{scale: pulseAnim}]}}>
+                                <Ionicons name="shield-checkmark" size={60} color="#075538"/>
                             </Animated.View>
                         </View>
                         <Text style={styles.verificationTitle}>Verify Your Email</Text>
@@ -355,7 +318,7 @@ export default function Signup() {
                             styles.verificationFormContainer,
                             {
                                 opacity: fadeAnim,
-                                transform: [{ translateY: slideAnim }]
+                                transform: [{translateY: slideAnim}]
                             }
                         ]}
                     >
@@ -369,7 +332,7 @@ export default function Signup() {
                                     style={styles.codeInputWrapper}
                                     onPress={() => inputRefs.current[index]?.focus()}
                                 >
-                                    <CodeInput index={index} />
+                                    <CodeInput index={index}/>
                                 </TouchableOpacity>
                             ))}
                         </View>
@@ -404,13 +367,13 @@ export default function Signup() {
                         >
                             {isVerifying ? (
                                 <View style={styles.loadingContainer}>
-                                    <Ionicons name="refresh" size={20} color="#fff" style={styles.spinning} />
+                                    <Ionicons name="refresh" size={20} color="#fff" style={styles.spinning}/>
                                     <Text style={styles.buttonText}>Verifying...</Text>
                                 </View>
                             ) : (
                                 <View style={styles.buttonContent}>
                                     <Text style={styles.buttonText}>Verify Email</Text>
-                                    <Ionicons name="checkmark-circle-outline" size={20} color="#fff" />
+                                    <Ionicons name="checkmark-circle-outline" size={20} color="#fff"/>
                                 </View>
                             )}
                         </TouchableOpacity>
@@ -422,7 +385,7 @@ export default function Signup() {
                             disabled={isVerifying}
                         >
                             <Text style={styles.resendText}>
-                                Didn't receive the code?{" "}
+                                Didn&apos;t receive the code?{" "}
                                 <Text style={styles.resendLink}>Resend</Text>
                             </Text>
                         </TouchableOpacity>
@@ -435,7 +398,7 @@ export default function Signup() {
                                 setVerificationCode(["", "", "", "", "", ""]);
                             }}
                         >
-                            <Ionicons name="arrow-back" size={16} color="#64748b" />
+                            <Ionicons name="arrow-back" size={16} color="#64748b"/>
                             <Text style={styles.backText}>Back to sign up</Text>
                         </TouchableOpacity>
                     </Animated.View>
@@ -454,18 +417,19 @@ export default function Signup() {
                 contentContainerStyle={styles.scrollContainer}
                 showsVerticalScrollIndicator={false}
             >
+                <div id="clerk-captcha"/>
                 {/* Header Section */}
                 <Animated.View
                     style={[
                         styles.header,
                         {
                             opacity: fadeAnim,
-                            transform: [{ translateY: slideAnim }]
+                            transform: [{translateY: slideAnim}]
                         }
                     ]}
                 >
                     <View style={styles.logoContainer}>
-                        <Ionicons name="car-sport" size={50} color="#fff" />
+                        <Ionicons name="car-sport" size={50} color="#fff"/>
                     </View>
                     <Text style={styles.title}>Join Driver Assist</Text>
                     <Text style={styles.subtitle}>
@@ -479,22 +443,19 @@ export default function Signup() {
                         styles.socialContainer,
                         {
                             opacity: fadeAnim,
-                            transform: [{ translateY: slideAnim }]
+                            transform: [{translateY: slideAnim}]
                         }
                     ]}
                 >
-                    <TouchableOpacity
-                        style={styles.googleButton}
-                        onPress={handleGoogleSignup}
-                    >
-                        <Ionicons name="logo-google" size={20} color="#DB4437" />
-                        <Text style={styles.googleButtonText}>Continue with Google</Text>
-                    </TouchableOpacity>
+                    {/* OAuthButton component to handle OAuth sign-in */}
+                    <View style={{marginBottom: 24}}>
+                        <OAuthButton strategy="oauth_google">Sign in with Google</OAuthButton>
+                    </View>
 
                     <View style={styles.divider}>
-                        <View style={styles.dividerLine} />
+                        <View style={styles.dividerLine}/>
                         <Text style={styles.dividerText}>or</Text>
-                        <View style={styles.dividerLine} />
+                        <View style={styles.dividerLine}/>
                     </View>
                 </Animated.View>
 
@@ -504,16 +465,16 @@ export default function Signup() {
                         styles.formContainer,
                         {
                             opacity: fadeAnim,
-                            transform: [{ translateY: slideAnim }]
+                            transform: [{translateY: slideAnim}]
                         }
                     ]}
                 >
                     {/* Personal Information Section */}
-                    <SectionHeader title="Personal Information" icon="person-outline" />
+                    <SectionHeader title="Personal Information" icon="person-outline"/>
 
                     {/* Full Name */}
                     <View style={styles.inputContainer}>
-                        <Ionicons name="person-outline" size={20} color="#64748b" style={styles.inputIcon} />
+                        <Ionicons name="person-outline" size={20} color="#64748b" style={styles.inputIcon}/>
                         <TextInput
                             style={[styles.input, errors.fullName && styles.errorInput]}
                             placeholder="Full Name"
@@ -525,14 +486,14 @@ export default function Signup() {
                     </View>
                     {errors.fullName && (
                         <View style={styles.errorContainer}>
-                            <Ionicons name="warning-outline" size={14} color="#dc2626" />
+                            <Ionicons name="warning-outline" size={14} color="#dc2626"/>
                             <Text style={styles.errorText}>{errors.fullName}</Text>
                         </View>
                     )}
 
                     {/* Email */}
                     <View style={styles.inputContainer}>
-                        <Ionicons name="mail-outline" size={20} color="#64748b" style={styles.inputIcon} />
+                        <Ionicons name="mail-outline" size={20} color="#64748b" style={styles.inputIcon}/>
                         <TextInput
                             style={[styles.input, errors.email && styles.errorInput]}
                             placeholder="Email Address"
@@ -545,14 +506,14 @@ export default function Signup() {
                     </View>
                     {errors.email && (
                         <View style={styles.errorContainer}>
-                            <Ionicons name="warning-outline" size={14} color="#dc2626" />
+                            <Ionicons name="warning-outline" size={14} color="#dc2626"/>
                             <Text style={styles.errorText}>{errors.email}</Text>
                         </View>
                     )}
 
                     {/* Phone */}
                     <View style={styles.inputContainer}>
-                        <Ionicons name="call-outline" size={20} color="#64748b" style={styles.inputIcon} />
+                        <Ionicons name="call-outline" size={20} color="#64748b" style={styles.inputIcon}/>
                         <TextInput
                             style={[styles.input, errors.phone && styles.errorInput]}
                             placeholder="Phone Number"
@@ -564,17 +525,17 @@ export default function Signup() {
                     </View>
                     {errors.phone && (
                         <View style={styles.errorContainer}>
-                            <Ionicons name="warning-outline" size={14} color="#dc2626" />
+                            <Ionicons name="warning-outline" size={14} color="#dc2626"/>
                             <Text style={styles.errorText}>{errors.phone}</Text>
                         </View>
                     )}
 
                     {/* Password Section */}
-                    <SectionHeader title="Security" icon="lock-closed-outline" />
+                    <SectionHeader title="Security" icon="lock-closed-outline"/>
 
                     {/* Password */}
                     <View style={styles.inputContainer}>
-                        <Ionicons name="lock-closed-outline" size={20} color="#64748b" style={styles.inputIcon} />
+                        <Ionicons name="lock-closed-outline" size={20} color="#64748b" style={styles.inputIcon}/>
                         <TextInput
                             style={[styles.input, errors.password && styles.errorInput]}
                             placeholder="Password (min. 6 characters)"
@@ -596,14 +557,14 @@ export default function Signup() {
                     </View>
                     {errors.password && (
                         <View style={styles.errorContainer}>
-                            <Ionicons name="warning-outline" size={14} color="#dc2626" />
+                            <Ionicons name="warning-outline" size={14} color="#dc2626"/>
                             <Text style={styles.errorText}>{errors.password}</Text>
                         </View>
                     )}
 
                     {/* Confirm Password */}
                     <View style={styles.inputContainer}>
-                        <Ionicons name="lock-closed-outline" size={20} color="#64748b" style={styles.inputIcon} />
+                        <Ionicons name="lock-closed-outline" size={20} color="#64748b" style={styles.inputIcon}/>
                         <TextInput
                             style={[styles.input, errors.confirmPassword && styles.errorInput]}
                             placeholder="Confirm Password"
@@ -625,20 +586,20 @@ export default function Signup() {
                     </View>
                     {errors.confirmPassword && (
                         <View style={styles.errorContainer}>
-                            <Ionicons name="warning-outline" size={14} color="#dc2626" />
+                            <Ionicons name="warning-outline" size={14} color="#dc2626"/>
                             <Text style={styles.errorText}>{errors.confirmPassword}</Text>
                         </View>
                     )}
 
                     {/* Emergency Contact Section */}
-                    <SectionHeader title="Emergency Contact" icon="medkit-outline" />
+                    <SectionHeader title="Emergency Contact" icon="medkit-outline"/>
                     <Text style={styles.sectionDescription}>
                         This contact will be notified in case of emergencies
                     </Text>
 
                     {/* Emergency Contact Name */}
                     <View style={styles.inputContainer}>
-                        <Ionicons name="person-outline" size={20} color="#64748b" style={styles.inputIcon} />
+                        <Ionicons name="person-outline" size={20} color="#64748b" style={styles.inputIcon}/>
                         <TextInput
                             style={[styles.input, errors.emergencyContactName && styles.errorInput]}
                             placeholder="Emergency Contact Name"
@@ -650,14 +611,14 @@ export default function Signup() {
                     </View>
                     {errors.emergencyContactName && (
                         <View style={styles.errorContainer}>
-                            <Ionicons name="warning-outline" size={14} color="#dc2626" />
+                            <Ionicons name="warning-outline" size={14} color="#dc2626"/>
                             <Text style={styles.errorText}>{errors.emergencyContactName}</Text>
                         </View>
                     )}
 
                     {/* Emergency Contact Phone */}
                     <View style={styles.inputContainer}>
-                        <Ionicons name="call-outline" size={20} color="#64748b" style={styles.inputIcon} />
+                        <Ionicons name="call-outline" size={20} color="#64748b" style={styles.inputIcon}/>
                         <TextInput
                             style={[styles.input, errors.emergencyContactPhone && styles.errorInput]}
                             placeholder="Emergency Contact Phone"
@@ -669,7 +630,7 @@ export default function Signup() {
                     </View>
                     {errors.emergencyContactPhone && (
                         <View style={styles.errorContainer}>
-                            <Ionicons name="warning-outline" size={14} color="#dc2626" />
+                            <Ionicons name="warning-outline" size={14} color="#dc2626"/>
                             <Text style={styles.errorText}>{errors.emergencyContactPhone}</Text>
                         </View>
                     )}
@@ -682,13 +643,13 @@ export default function Signup() {
                     >
                         {isLoading ? (
                             <View style={styles.loadingContainer}>
-                                <Ionicons name="refresh" size={20} color="#fff" style={styles.spinning} />
+                                <Ionicons name="refresh" size={20} color="#fff" style={styles.spinning}/>
                                 <Text style={styles.buttonText}>Creating Account...</Text>
                             </View>
                         ) : (
                             <View style={styles.buttonContent}>
                                 <Text style={styles.buttonText}>Create Account</Text>
-                                <Ionicons name="arrow-forward" size={20} color="#fff" />
+                                <Ionicons name="arrow-forward" size={20} color="#fff"/>
                             </View>
                         )}
                     </TouchableOpacity>
@@ -704,7 +665,7 @@ export default function Signup() {
                 {/* Login Link */}
                 <View style={styles.footer}>
                     <Text style={styles.footerText}>Already have an account? </Text>
-                    <TouchableOpacity onPress={() => router.replace('/login')}>
+                    <TouchableOpacity onPress={() => router.replace('/(auth)')}>
                         <Text style={styles.loginText}>Sign in</Text>
                     </TouchableOpacity>
                 </View>
