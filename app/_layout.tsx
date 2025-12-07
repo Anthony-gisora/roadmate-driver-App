@@ -1,8 +1,8 @@
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { ClerkProvider } from "@clerk/clerk-expo";
+import { ClerkProvider, useUser } from "@clerk/clerk-expo";
 import { tokenCache } from '@clerk/clerk-expo/token-cache'
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { Stack } from 'expo-router';
+import {Stack} from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
 import { ToastProvider } from 'react-native-toast-notifications';
@@ -16,6 +16,7 @@ export const unstable_settings = {
 
 export default function RootLayout() {
     const colorScheme = useColorScheme();
+
     useEffect(() => {
         getSocket();
 
@@ -31,7 +32,7 @@ export default function RootLayout() {
     }, []);
 
     return (
-            <ClerkProvider
+        <ClerkProvider
             publishableKey="pk_test_c3RpcnJlZC1tdWRmaXNoLTM2LmNsZXJrLmFjY291bnRzLmRldiQ"
             tokenCache={tokenCache}>
                 <ToastProvider>

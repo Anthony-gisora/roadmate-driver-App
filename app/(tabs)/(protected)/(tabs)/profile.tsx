@@ -3,6 +3,7 @@ import { useRouter } from 'expo-router';
 import React, { useRef, useState } from 'react';
 import {
     Alert,
+    Image,
     Animated,
     Modal,
     ScrollView,
@@ -13,6 +14,10 @@ import {
     TouchableOpacity,
     View
 } from 'react-native';
+import {useUser} from "@clerk/clerk-expo";
+import {useToast} from "react-native-toast-notifications";
+import {db} from "@/data/db";
+import VehicleCard from "@/components/vehicle-card";
 
 export default function ProfileScreen() {
     const router = useRouter();
@@ -21,21 +26,25 @@ export default function ProfileScreen() {
     const [emergencyModalVisible, setEmergencyModalVisible] = useState(false);
     const [notificationsEnabled, setNotificationsEnabled] = useState(true);
     const [locationEnabled, setLocationEnabled] = useState(true);
+    const [vehicles, setVehicles] = useState([]);
+    const [failed, setFailed] = React.useState(false);
+    const {user} = useUser()
+    const toast = useToast();
 
     const fadeAnim = useRef(new Animated.Value(0)).current;
     const slideAnim = useRef(new Animated.Value(30)).current;
 
     const [userData, setUserData] = useState({
-        name: 'John Doe',
-        email: 'john.doe@example.com',
-        phone: '+1 (555) 123-4567',
+        name: "",
+        email: "",
+        phone: "",
         memberSince: '2024',
         rating: 4.9,
         trips: 24,
         emergencyContact: {
-            name: 'Sarah Wilson',
-            phone: '+1 (555) 987-6543',
-            relationship: 'Spouse'
+            name: "",
+            phone: "",
+            relationship: 'Friend'
         }
     });
 
@@ -54,7 +63,32 @@ export default function ProfileScreen() {
                 useNativeDriver: true,
             }),
         ]).start();
-    }, []);
+
+        setUserData({
+            name: user?.fullName as string,
+            email: user?.primaryEmailAddress?.emailAddress,
+            phone: user?.primaryPhoneNumber?.phoneNumber as string ?? user?.unsafeMetadata?.phone,
+            memberSince: '2024',
+            rating: 4.9,
+            trips: 24,
+            emergencyContact: {
+                name: user?.unsafeMetadata?.emergencyContactName as string,
+                phone: user?.unsafeMetadata?.emergencyContactPhone as string,
+                relationship: 'Friend'
+            }
+        })
+
+        loadVehicles()
+    }, [user]);
+
+    const loadVehicles = async () => {
+        try {
+            const cars = await db.getCars();
+            setVehicles(cars);
+        } catch (error) {
+            console.error('Error loading vehicles:', error);
+        }
+    };
 
     const serviceHistory = [
         {
@@ -99,40 +133,47 @@ export default function ProfileScreen() {
         }
     ];
 
-    const vehicles = [
-        {
-            id: '1',
-            make: 'Toyota',
-            model: 'Camry',
-            year: '2020',
-            license: 'ABC-1234',
-            color: 'Silver',
-            default: true
-        },
-        {
-            id: '2',
-            make: 'Honda',
-            model: 'CR-V',
-            year: '2018',
-            license: 'XYZ-5678',
-            color: 'Black',
-            default: false
+    const handleSaveProfile = async () => {
+        try {
+            await user?.update({
+                firstName: editData.name.split(' ')[0] ?? userData.name.split(' ')[0],
+                lastName: editData.name.split(' ')[1] ?? userData.name.split(' ')[1],
+                unsafeMetadata: {
+                    phone: editData.phone ?? userData.phone,
+                    emergencyContactName: userData?.emergencyContact.name,
+                    emergencyContactPhone: userData?.emergencyContact.phone,
+                    relationship: 'Friend'
+                },
+            });
+            setUserData(editData);
+            toast.show('Success Profile updated successfully!', { type: 'success' });
+        } catch (error) {
+            console.error(error);
+            toast.show('Failed to update profile!', { type: 'success' });
         }
-    ];
-
-    const handleSaveProfile = () => {
-        setUserData(editData);
         setEditModalVisible(false);
-        Alert.alert('Success', 'Profile updated successfully!');
     };
 
-    const handleSaveEmergencyContact = () => {
-        setUserData(prev => ({
-            ...prev,
-            emergencyContact: editData.emergencyContact
-        }));
+    const handleSaveEmergencyContact = async () => {
+        try {
+            await user?.update({
+                unsafeMetadata: {
+                    phone: userData.phone,
+                    emergencyContactName: editData.emergencyContact.name,
+                    emergencyContactPhone: editData.emergencyContact.phone,
+                    relationship: editData.emergencyContact.relationship
+                },
+            });
+            setUserData(prev => ({
+                ...prev,
+                emergencyContact: editData.emergencyContact
+            }));
+            toast.show('Success contact updated successfully!', {type: 'success'});
+        } catch (error) {
+            console.error(error);
+            toast.show('Failed to update contact!', {type: 'danger'});
+        }
         setEmergencyModalVisible(false);
-        Alert.alert('Success', 'Emergency contact updated successfully!');
     };
 
     const handleLogout = () => {
@@ -150,13 +191,50 @@ export default function ProfileScreen() {
         );
     };
 
-    const StatCard = ({ value, label, icon }: { value: string; label: string; icon: string }) => (
-        <View style={styles.statCard}>
-            <Ionicons name={icon as any} size={24} color="#075538" />
-            <Text style={styles.statValue}>{value}</Text>
-            <Text style={styles.statLabel}>{label}</Text>
-        </View>
-    );
+    const handleUpdateVehicle = async (id: number, updates: any) => {
+        try {
+            await db.updateCar(id, updates);
+            await loadVehicles(); // Refresh the list
+        } catch (error) {
+            throw error;
+        }
+    };
+
+    const handleDeleteVehicle = async (id: number) => {
+        try {
+            await db.deleteCar(id);
+            await loadVehicles(); // Refresh the list
+        } catch (error) {
+            throw error;
+        }
+    };
+
+    const handleAddVehicle = async () => {
+        // Show add vehicle modal
+        Alert.prompt(
+            'Add New Vehicle',
+            'Enter vehicle details:',
+            async (text) => {
+                if (text) {
+                    try {
+                        await db.addCar({
+                            make: 'Toyota',
+                            model: 'Camry',
+                            plate: 'ABC-123',
+                            year: 2020,
+                            color: 'Silver',
+                            isDefault: vehicles.length === 0 // Set as default if first vehicle
+                        });
+                        await loadVehicles();
+                        Alert.alert('Success', 'Vehicle added successfully!');
+                    } catch (error) {
+                        Alert.alert('Error', 'Failed to add vehicle');
+                    }
+                }
+            },
+            'plain-text'
+        );
+    };
 
     const ServiceHistoryCard = ({ service }: { service: any }) => (
         <View style={styles.historyCard}>
@@ -191,26 +269,6 @@ export default function ProfileScreen() {
         </View>
     );
 
-    const VehicleCard = ({ vehicle }: { vehicle: any }) => (
-        <View style={styles.vehicleCard}>
-            <View style={styles.vehicleHeader}>
-                <Ionicons name="car" size={24} color="#075538" />
-                <View style={styles.vehicleInfo}>
-                    <Text style={styles.vehicleName}>{vehicle.year} {vehicle.make} {vehicle.model}</Text>
-                    <Text style={styles.vehicleDetails}>{vehicle.color} • {vehicle.license}</Text>
-                </View>
-                {vehicle.default && (
-                    <View style={styles.defaultBadge}>
-                        <Text style={styles.defaultText}>Default</Text>
-                    </View>
-                )}
-            </View>
-            <TouchableOpacity style={styles.editVehicleButton}>
-                <Ionicons name="pencil" size={16} color="#64748b" />
-            </TouchableOpacity>
-        </View>
-    );
-
     const renderProfileTab = () => (
         <Animated.View
             style={[
@@ -237,19 +295,19 @@ export default function ProfileScreen() {
                     <View style={styles.infoRow}>
                         <Ionicons name="person" size={20} color="#64748b" />
                         <Text style={styles.infoLabel}>Full Name</Text>
-                        <Text style={styles.infoValue}>{userData.name}</Text>
+                        <Text style={styles.infoValue}>{userData?.name}</Text>
                     </View>
 
                     <View style={styles.infoRow}>
                         <Ionicons name="mail" size={20} color="#64748b" />
                         <Text style={styles.infoLabel}>Email</Text>
-                        <Text style={styles.infoValue}>{userData.email}</Text>
+                        <Text style={styles.infoValue}>{userData?.email}</Text>
                     </View>
 
                     <View style={styles.infoRow}>
                         <Ionicons name="call" size={20} color="#64748b" />
                         <Text style={styles.infoLabel}>Phone</Text>
-                        <Text style={styles.infoValue}>{userData.phone}</Text>
+                        <Text style={styles.infoValue}>{userData?.phone}</Text>
                     </View>
                 </View>
             </View>
@@ -281,19 +339,37 @@ export default function ProfileScreen() {
                 </View>
             </View>
 
-            {/* My Vehicles */}
+            {/* My Vehicles Section */}
             <View style={styles.section}>
                 <View style={styles.sectionHeader}>
                     <Text style={styles.sectionTitle}>My Vehicles</Text>
-                    <TouchableOpacity style={styles.addButton}>
+                    <TouchableOpacity
+                        style={styles.addButton}
+                        onPress={handleAddVehicle}
+                    >
                         <Ionicons name="add" size={20} color="#075538" />
                     </TouchableOpacity>
                 </View>
 
                 <View style={styles.vehiclesContainer}>
                     {vehicles.map(vehicle => (
-                        <VehicleCard key={vehicle.id} vehicle={vehicle} />
+                        <VehicleCard
+                            key={vehicle.id}
+                            vehicle={vehicle}
+                            onUpdate={handleUpdateVehicle}
+                            onDelete={handleDeleteVehicle}
+                        />
                     ))}
+
+                    {vehicles.length === 0 && (
+                        <View style={styles.emptyState}>
+                            <Ionicons name="car" size={48} color="#cbd5e1" />
+                            <Text style={styles.emptyText}>No vehicles added yet</Text>
+                            <Text style={styles.emptySubtext}>
+                                Add your first vehicle to get started
+                            </Text>
+                        </View>
+                    )}
                 </View>
             </View>
         </Animated.View>
@@ -401,9 +477,19 @@ export default function ProfileScreen() {
             <View style={styles.header}>
                 <View style={styles.profileHeader}>
                     <View style={styles.avatarContainer}>
-                        <Text style={styles.avatarText}>
-                            {userData.name.split(' ').map(n => n[0]).join('')}
-                        </Text>
+                        <View style={styles.avatarContainer}>
+                            {!failed && user?.imageUrl ? (
+                                <Image
+                                    source={{ uri: user.imageUrl }}
+                                    style={styles.avatarImage}
+                                    onError={() => setFailed(true)}
+                                />
+                            ) : (
+                                <Text style={styles.avatarText}>
+                                    {userData?.name?.split(" ")?.map(n => n[0]).join("")}
+                                </Text>
+                            )}
+                        </View>
                     </View>
                     <View style={styles.profileInfo}>
                         <Text style={styles.userName}>{userData.name}</Text>
@@ -482,6 +568,7 @@ export default function ProfileScreen() {
                         <View style={styles.inputGroup}>
                             <Text style={styles.inputLabel}>Full Name</Text>
                             <TextInput
+                                autoComplete={'name'}
                                 style={styles.textInput}
                                 value={editData.name}
                                 onChangeText={(text) => setEditData({...editData, name: text})}
@@ -491,6 +578,8 @@ export default function ProfileScreen() {
                         <View style={styles.inputGroup}>
                             <Text style={styles.inputLabel}>Email</Text>
                             <TextInput
+                                readOnly={true}
+                                autoComplete={'email'}
                                 style={styles.textInput}
                                 value={editData.email}
                                 onChangeText={(text) => setEditData({...editData, email: text})}
@@ -502,6 +591,7 @@ export default function ProfileScreen() {
                         <View style={styles.inputGroup}>
                             <Text style={styles.inputLabel}>Phone</Text>
                             <TextInput
+                                autoComplete={'tel-device'}
                                 style={styles.textInput}
                                 value={editData.phone}
                                 onChangeText={(text) => setEditData({...editData, phone: text})}
@@ -814,10 +904,6 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         flex: 1,
     },
-    vehicleInfo: {
-        marginLeft: 12,
-        flex: 1,
-    },
     vehicleName: {
         fontSize: 16,
         fontWeight: 'bold',
@@ -885,6 +971,8 @@ const styles = StyleSheet.create({
         fontSize: 12,
         color: '#94a3b8',
         marginBottom: 12,
+        marginLeft: 12,
+        flex: 1,
     },
     historyFooter: {
         flexDirection: 'row',
@@ -1039,5 +1127,33 @@ const styles = StyleSheet.create({
         color: '#fff',
         fontSize: 16,
         fontWeight: 'bold',
+    },
+    avatarImage: {
+        width: 50,
+        height: 50,
+        borderRadius: 25,
+    },
+    emptyState: {
+        alignItems: 'center',
+        padding: 40,
+        backgroundColor: '#fff',
+        borderRadius: 16,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+        elevation: 4,
+    },
+    emptyText: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: '#475569',
+        marginTop: 16,
+    },
+    emptySubtext: {
+        fontSize: 14,
+        color: '#64748b',
+        marginTop: 4,
+        textAlign: 'center',
     },
 });

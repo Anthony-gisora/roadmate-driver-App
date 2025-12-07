@@ -1,6 +1,6 @@
-import { useSignIn, useClerk } from "@clerk/clerk-expo";
+import {useSignIn, useClerk, useUser} from "@clerk/clerk-expo";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import {router, useRouter} from "expo-router";
 import React, {useEffect, useState} from "react";
 import {
     Alert,
@@ -33,16 +33,15 @@ export default function Login() {
     const { signIn, setActive, isLoaded } = useSignIn();
     const { signOut, openSignIn } = useClerk();
     const toast = useToast();
+    const {isSignedIn} = useUser()
 
-    // Clear any existing session when the screen mounts
     useEffect(() => {
-        (async () => {
-            try {
-                await signOut();
-            } catch (err) {
-                console.warn('Clerk signOut on mount failed:', err);
+        signOut();
+        if (isLoaded){
+            if(isSignedIn){
+                router.push('/(tabs)/(protected)/(tabs)/emergency');
             }
-        })();
+        }
     }, [signOut]);
 
     // Animation values

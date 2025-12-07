@@ -3,10 +3,12 @@ import Dexie from 'dexie';
 // Define your database schema types
 interface Car {
     id?: number;
+    make: string,
     model: string;
     isDefault: boolean;
     plate: string;
     year: number;
+    color: string
 }
 
 interface EmergencyContact {
@@ -24,7 +26,7 @@ export class OfflineDB extends Dexie {
 
         // Define database schema
         this.version(1).stores({
-            cars: '++id, model, isDefault, plate, year',
+            cars: '++id, make, model, isDefault, plate, year, color',
             emergencyContacts: '++id, name, phone'
         });
 
