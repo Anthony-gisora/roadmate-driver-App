@@ -1,7 +1,7 @@
 import Dexie from 'dexie';
 
 // Define your database schema types
-interface Car {
+export interface Car {
     id?: number;
     make: string,
     model: string;

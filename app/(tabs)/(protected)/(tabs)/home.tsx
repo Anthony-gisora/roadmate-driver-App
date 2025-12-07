@@ -80,27 +80,22 @@ export default function HomeScreen() {
 
   const handlePress = () => {
     router.push({
-      pathname: '/messaging/[id]',
+      pathname: `/messaging/${activeService.mechanicId as string}`,
       params: {
-        id: 1,
-        mechanicName: "john",
+        mechanicName: activeService.mechanic,
         mechanicImage: ""
       }
     });
   };
 
   useEffect(() => {
-    try{
-      db.getContacts().then((contactsFromDb) => {
-        setEmergencyContacts((prev) => {
-          const existingIds = new Set(prev.map(c => c.id));
-          const newContacts = contactsFromDb.filter(c => !existingIds.has(c.id));
-          return [...prev, ...newContacts];
-        });
-      }).catch((error)=>console.error(error));
-    }catch (e) {
-      console.error(e);
-    }
+    const emergencyC = [{
+      id: 10,
+      name: user?.user?.unsafeMetadata?.emergencyContactName,
+      phone: user?.user?.unsafeMetadata?.emergencyContactPhone,
+      relationship: user?.user?.unsafeMetadata?.emergencyContactRelationship
+    }];
+
     apiClient.get(`/req/requests/${user?.user?.id}`)
         .then((res)=>{
           console.log(res);
@@ -112,14 +107,33 @@ export default function HomeScreen() {
             type: request?.requestType,
             mechanic: mechanic?.name,
             status: request?.status,
-            eta: '5 min',
-            price: 'KES 2500',
+            eta: request?.eta,
+            price: request?.price,
             progress: 75,
-            mechanicImage: '👨‍🔧'
+            mechanicImage: '👨‍🔧',
+            mechanicId: mechanic?.clerkUid,
+            distance: mechanic?.distance
           })
+
+          setEmergencyContacts((prev) => {
+            const existingIds = new Set(prev.map(c => c.id));
+            const newContacts = emergencyC.filter(c => !existingIds.has(c.id));
+            return [...prev, ...newContacts];
+          });
         })
         .catch((res)=>{
           console.log(res);
+          const emergencyC = [{
+            id: 10,
+            name: user?.user?.unsafeMetadata?.emergencyContactName,
+            phone: user?.user?.unsafeMetadata?.emergencyContactPhone,
+            relationship: user?.user?.unsafeMetadata?.emergencyContactRelationship
+          }];
+          setEmergencyContacts((prev) => {
+            const existingIds = new Set(prev.map(c => c.id));
+            const newContacts = emergencyC.filter(c => !existingIds.has(c.id));
+            return [...prev, ...newContacts];
+          });
         })
   }, [user?.user?.id]);
 

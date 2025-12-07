@@ -18,6 +18,7 @@ import {useUser} from "@clerk/clerk-expo";
 import {useToast} from "react-native-toast-notifications";
 import {db} from "@/data/db";
 import VehicleCard from "@/components/vehicle-card";
+import {apiClient} from "@/hooks/api-client";
 
 export default function ProfileScreen() {
     const router = useRouter();
@@ -27,6 +28,7 @@ export default function ProfileScreen() {
     const [notificationsEnabled, setNotificationsEnabled] = useState(true);
     const [locationEnabled, setLocationEnabled] = useState(true);
     const [vehicles, setVehicles] = useState([]);
+    const [serviceHistory, setServiceHistory] = useState([]);
     const [failed, setFailed] = React.useState(false);
     const {user} = useUser()
     const toast = useToast();
@@ -78,7 +80,8 @@ export default function ProfileScreen() {
             }
         })
 
-        loadVehicles()
+        loadVehicles();
+        loadServiceHistory();
     }, [user]);
 
     const loadVehicles = async () => {
@@ -86,52 +89,20 @@ export default function ProfileScreen() {
             const cars = await db.getCars();
             setVehicles(cars);
         } catch (error) {
-            console.error('Error loading vehicles:', error);
+            console.error('Error loading vehicles -:', error);
         }
     };
 
-    const serviceHistory = [
-        {
-            id: '1',
-            type: 'Flat Tire Repair',
-            mechanic: 'Mike Johnson',
-            date: '2024-01-15',
-            price: '$25',
-            status: 'Completed',
-            rating: 5,
-            vehicle: 'Toyota Camry 2020'
-        },
-        {
-            id: '2',
-            type: 'Fuel Delivery',
-            mechanic: 'Quick Fuel Service',
-            date: '2024-01-10',
-            price: '$15',
-            status: 'Completed',
-            rating: 4,
-            vehicle: 'Toyota Camry 2020'
-        },
-        {
-            id: '3',
-            type: 'Jump Start',
-            mechanic: 'Carlos Rodriguez',
-            date: '2024-01-05',
-            price: '$40',
-            status: 'Completed',
-            rating: 5,
-            vehicle: 'Toyota Camry 2020'
-        },
-        {
-            id: '4',
-            type: 'Engine Diagnostics',
-            mechanic: 'Sarah Chen',
-            date: '2023-12-20',
-            price: '$60',
-            status: 'Completed',
-            rating: 5,
-            vehicle: 'Toyota Camry 2020'
-        }
-    ];
+    const loadServiceHistory = () => {
+        apiClient.get(`/req/driver/${user?.id}`)
+            .then((response) => {
+                console.log(response);
+                setServiceHistory(response.data?.data);
+            })
+            .catch((error) => {
+                console.log(error);
+            })
+    }
 
     const handleSaveProfile = async () => {
         try {
@@ -185,7 +156,7 @@ export default function ProfileScreen() {
                 {
                     text: 'Logout',
                     style: 'destructive',
-                    onPress: () => router.replace('/login')
+                    onPress: () => router.replace('/(auth)')
                 }
             ]
         );
@@ -223,7 +194,7 @@ export default function ProfileScreen() {
                             plate: 'ABC-123',
                             year: 2020,
                             color: 'Silver',
-                            isDefault: vehicles.length === 0 // Set as default if first vehicle
+                            isDefault: vehicles.length === 0
                         });
                         await loadVehicles();
                         Alert.alert('Success', 'Vehicle added successfully!');
@@ -241,30 +212,30 @@ export default function ProfileScreen() {
             <View style={styles.historyHeader}>
                 <View style={styles.serviceType}>
                     <Ionicons name="car-sport" size={16} color="#075538" />
-                    <Text style={styles.serviceTypeText}>{service.type}</Text>
+                    <Text style={styles.serviceTypeText}>{service?.type}</Text>
                 </View>
-                <Text style={styles.servicePrice}>{service.price}</Text>
+                <Text style={styles.servicePrice}>{service?.price}</Text>
             </View>
 
-            <Text style={styles.mechanicName}>{service.mechanic}</Text>
-            <Text style={styles.vehicleInfo}>{service.vehicle}</Text>
+            <Text style={styles.mechanicName}>{service?.mechanic}</Text>
+            <Text style={styles.vehicleInfo}>{service?.vehicle}</Text>
 
             <View style={styles.historyFooter}>
-                <Text style={styles.serviceDate}>{new Date(service.date).toLocaleDateString()}</Text>
+                <Text style={styles.serviceDate}>{new Date(service?.createdAt).toLocaleDateString()}</Text>
                 <View style={styles.ratingContainer}>
                     {[...Array(5)].map((_, i) => (
                         <Ionicons
                             key={i}
                             name="star"
                             size={14}
-                            color={i < service.rating ? "#f59e0b" : "#cbd5e1"}
+                            color={i < service?.rating ? "#f59e0b" : "#cbd5e1"}
                         />
                     ))}
                 </View>
             </View>
 
             <View style={[styles.statusBadge, { backgroundColor: '#10b981' }]}>
-                <Text style={styles.statusText}>{service.status}</Text>
+                <Text style={styles.statusText}>{service?.status}</Text>
             </View>
         </View>
     );
@@ -387,8 +358,8 @@ export default function ProfileScreen() {
                 <Text style={styles.sectionDescription}>Your recent roadside assistance requests</Text>
 
                 <View style={styles.historyContainer}>
-                    {serviceHistory.map(service => (
-                        <ServiceHistoryCard key={service.id} service={service} />
+                    {serviceHistory?.map(service => (
+                        <ServiceHistoryCard key={service?.id} service={service} />
                     ))}
                 </View>
             </View>

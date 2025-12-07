@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { useUser } from "@clerk/clerk-expo";
 import {ChatManager} from "@/hooks/chat-manager";
+import {apiClient} from "@/hooks/api-client";
 
 export default function NotificationsScreen() {
     const router = useRouter();
@@ -88,33 +89,8 @@ export default function NotificationsScreen() {
     };
 
     const getMechanicDetails = async (mechanicId: string) => {
-        // Mock mechanic data - in real app, you'd fetch from your backend
-        const mechanics = {
-            'mike_johnson': {
-                name: 'Mike Johnson',
-                specialization: 'Tire Specialist',
-                rating: 4.8,
-                image: '👨‍🔧'
-            },
-            'sarah_chen': {
-                name: 'Sarah Chen',
-                specialization: 'Engine Expert',
-                rating: 4.9,
-                image: '👩‍🔧'
-            },
-            'carlos_rodriguez': {
-                name: 'Carlos Rodriguez',
-                specialization: 'Towing & Recovery',
-                rating: 4.7,
-                image: '🚛'
-            },
-            'express_auto': {
-                name: 'Express Auto Care',
-                specialization: 'Full Service Garage',
-                rating: 4.6,
-                image: '🏢'
-            }
-        };
+        const response = await apiClient.get('/mechanics')
+        const mechanics = response?.data?.mechanics
 
         return mechanics[mechanicId as keyof typeof mechanics] || {
             name: 'Unknown Mechanic',
@@ -146,11 +122,11 @@ export default function NotificationsScreen() {
 
     const handleChatPress = (chat: any) => {
         router.push({
-            pathname: '/messaging/[id]',
+            pathname: `/messaging/${chat.mechanic.id}`,
             params: {
-                id: chat.mechanic.id,
                 mechanicName: chat.mechanic.name,
-                mechanicImage: chat.mechanic.image
+                mechanicImage: chat.mechanic.image,
+                chatId: chat.id
             }
         });
     };

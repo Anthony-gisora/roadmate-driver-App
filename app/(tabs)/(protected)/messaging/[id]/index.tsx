@@ -47,7 +47,7 @@ export default function ChatScreen() {
                 const chatManager = ChatManager.getInstance();
                 const conversationMessages = await chatManager.getMessages(id as string);
                 setMessages(conversationMessages);
-                if (conversationMessages.length > 0){
+                if (conversationMessages.length < 1){
                     // chat exists but not locally, so fetch from backend
                     apiClient.get(`/message/${chatId2}`)
                         .then(res => {
@@ -88,6 +88,7 @@ export default function ChatScreen() {
             try{
                 const res = await apiClient.post("/conversation", {
                     receiverId: id, currentUserId: user?.id as string,
+                    mechanicName: mechanicName, driverName: user?.firstName as string,
                 })
                 //update chatId2
                 chatId2 = res?.data?.chatId as string;
@@ -113,7 +114,7 @@ export default function ChatScreen() {
         });
 
         const newMessage = {
-            id: Date.now().toString(),
+            id: Date?.now()?.toString(),
             messageText: messageText.trim(),
             senderId: user!.id,
             timestamp: Date.now(),
@@ -210,7 +211,7 @@ export default function ChatScreen() {
                 <FlatList
                     ref={flatListRef}
                     data={messages}
-                    keyExtractor={(item) => item.id.toString()}
+                    keyExtractor={(item) => item?.id?.toString()}
                     renderItem={({ item }) => <MessageBubble message={item} />}
                     showsVerticalScrollIndicator={false}
                     contentContainerStyle={styles.messagesContent}

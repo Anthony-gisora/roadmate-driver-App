@@ -6,7 +6,7 @@ import {apiClient} from "@/hooks/api-client";
 import {useUser} from "@clerk/clerk-expo";
 import {getLocation} from "@/hooks/location";
 import {useToast} from "react-native-toast-notifications";
-import LiveMechanicMap from "@/components/live-mech-map";
+import {Car, db} from "@/data/db";
 
 const { width } = Dimensions.get('window');
 
@@ -15,14 +15,18 @@ export default function RequestScreen() {
     const params = useLocalSearchParams();
     const [progress, setProgress] = useState(0);
     const [mechanic, setMechanic] = useState<any>(null);
+    const [car, setCar] = useState<Car|undefined>();
     const [eta, setEta] = useState<string>('5-10 min');
+    const [sending, setSending] = useState(false);
+    const [sent, setSent] = useState(false);
+    const [price, setPrice] = useState<number>(0);
     const { user } = useUser();
     const toast = useToast();
 
     const progressAnim = new Animated.Value(0);
     const slideAnim = new Animated.Value(50);
 
-    const { priority, problem, useAutoLocation,timestamp, loc } = params;
+    const { priority, problem, useAutoLocation,timestamp, location } = params;
 
     const problemIcons: { [key: string]: string } = {
         'flat-tire': 'car-outline',
@@ -41,6 +45,17 @@ export default function RequestScreen() {
         'other': '#10b981',
     };
 
+    const handlePress = () => {
+        console.log(mechanic);
+        router.push({
+            pathname: `/(tabs)/(protected)/messaging/${mechanic.id}`,
+            params: {
+                mechanicName: mechanic?.name,
+                mechanicImage: ""
+            }
+        });
+    };
+
     function getETA(distanceKm: number): string {
         const averageSpeed = 40; // km/h
         const totalMinutes = (distanceKm / averageSpeed) * 60;
@@ -55,79 +70,91 @@ export default function RequestScreen() {
     }
 
     useEffect(() => {
-        // Only run when all dependencies are ready
-        if (!user?.id || !problem) return;
+        db.getDefaultCar()
+            .then((res)=>{
+                setCar(res);
+            })
+    }, []);
 
-        const sendRequest = async () => {
-            setProgress(0);
-            const driverId = user.id;
-            const requestType = problem;
-            const details = {
-                priority: priority.toString(),
-                timestamp: timestamp.toString(),
-            };
-            let location: string | string[] = loc ?? "";
+    const sendRequest = async () => {
+        if(sent){
+            return null;
+        }
+        setSending(true);
+        setProgress(0);
+        const driverId = user?.id;
+        const requestType = problem;
+        const details = {
+            priority: priority.toString(),
+            timestamp: timestamp.toString(),
+        };
+        let loc: string | string[] = location ?? "";
 
-            if (useAutoLocation === "true") {
-                location = (await getLocation()) ?? "";
-            }
+        if (useAutoLocation === "true") {
+            loc = (await getLocation()) ?? "";
+        }
 
-            try {
-                setProgress(15);
-                //connect to socket get nearest mech
-                const lat = location.toString().split(',')[0];
-                const lng = location.toString().split(',')[1];
+        try {
+            setProgress(15);
+            //connect to socket get nearest mechanic
+            const lat = loc.toString().split(',')[0];
+            const lng = loc.toString().split(',')[1];
 
-                await apiClient.get(`/online-mechanics?lat=${lat}&lng=${lng}`)
-                    .then((res)=>{
-                        console.log(res.data.nearest);
-                        setProgress(50);
-                        const mechanic = res.data.nearest;
-                        const distance = Number(mechanic.distance);
+            await apiClient.get(`/online-mechanics?lat=${lat}&lng=${lng}`)
+                .then((res)=>{
+                    console.log(res.data.nearest);
+                    setProgress(50);
+                    const mechanic = res.data.nearest;
+                    const distance = Number(mechanic.distance);
 
-                        //estimate ETA
-                        setEta(getETA(distance));
+                    //estimate ETA
+                    setEta(getETA(distance));
 
-                        setMechanic({
-                            id: mechanic.clerkUid,
-                            name: mechanic.name,
-                            rating: 4.8,
-                            reviews: 60,
-                            distance: `${distance.toFixed(2) }KM`,
-                            specialization: problem === "flat-tire" ? "Tire Specialist" : "General Mechanic",
-                            image: "👨‍🔧",
-                        });
+                    setMechanic({
+                        id: mechanic.clerkUid,
+                        name: mechanic.name,
+                        rating: 4.8,
+                        reviews: 60,
+                        distance: `${distance.toFixed(2) }KM`,
+                        specialization: problem === "flat-tire" ? "Tire Specialist" : "General Mechanic",
+                        image: "👨‍🔧",
+                    });
 
-                        apiClient.post("/req/requests", {
-                            driverId,
-                            requestType,
-                            details: JSON.stringify(details),
-                            location,
-                            mechanicId: mechanic.clerkUid
-                        })
+                    apiClient.post("/req/requests", {
+                        driverId,
+                        requestType,
+                        details: JSON.stringify(details),
+                        location,
+                        mechanicId: mechanic.clerkUid,
+                        price: price,
+                        vehicleMake: car?.make,
+                        vehicleModel: car?.model,
+                        vehiclePlate: car?.plate,
+                        vehicleYear: car?.year,
+                        eta: eta
+                    })
                         .then((res) => {
                             console.log(res);
                             setProgress(100);
+                            setSent(true);
                         })
                         .catch((err)=>{
                             toast.show(err.response.data?.message ?? 'An error occurred', { type: "danger" });
                             console.log(err);
                         })
-                    })
-                    .catch((err)=>{
-                        setProgress(0);
-                        toast.show(err.message ?? "No mechanic is available at the moment", { type: "danger" });
-                    })
-            } catch (err: any) {
-                console.log(err);
-                const error = err.response?.data?.message ?? err.message;
-                toast.show(`Error occurred: ${error}`, { type: "danger" });
-                setProgress(0);
-            }
-        };
-
-        sendRequest();
-    }, [useAutoLocation, user?.id, problem]);
+                })
+                .catch((err)=>{
+                    setProgress(0);
+                    toast.show(err.message ?? "No mechanic is available at the moment", { type: "danger" });
+                })
+        } catch (err: any) {
+            console.log(err);
+            const error = err.response?.data?.message ?? err.message;
+            toast.show(`Error occurred: ${error}`, { type: "danger" });
+            setProgress(0);
+        }
+        setSending(false);
+    };
 
 
     //update price estimates
@@ -145,8 +172,10 @@ export default function RequestScreen() {
 
         const basePrice = basePrices[params.problem as string] || 50;
         const priorityMultiplier = params.priority === 'emergency' ? 1.5 : 1;
+        const price = (basePrice * priorityMultiplier).toFixed(2);
+        setPrice(Number(price));
 
-        return `KES${(basePrice * priorityMultiplier).toFixed(2)}`;
+        return `KES${price}`;
     };
 
     return (
@@ -228,9 +257,30 @@ export default function RequestScreen() {
                         </View>
                         <View style={styles.detailContent}>
                             <Text style={styles.detailLabel}>Estimated Cost</Text>
-                            <Text style={styles.detailValue}>{estimatedPrice()}</Text>
+                            <Text style={styles.detailValue}>{price}</Text>
                         </View>
                     </View>
+
+                    {car == null ? (
+                        <View style={styles.detailRow}>
+                            <View style={styles.detailIcon}>
+                                <Ionicons name="car" size={20} color="#2563eb" />
+                            </View>
+                            <View style={styles.detailContent}>
+                                <Text style={styles.detailLabel}>To attach car data go to profile>then update vehicle details</Text>
+                            </View>
+                        </View>
+                    ):(
+                        <View style={styles.detailRow}>
+                        <View style={styles.detailIcon}>
+                            <Ionicons name="car" size={20} color="#2563eb" />
+                        </View>
+                        <View style={styles.detailContent}>
+                            <Text style={styles.detailLabel}>{car.year} {car.make} {car.model}</Text>
+                            <Text style={styles.detailValue}>{car.color} {car.plate}</Text>
+                        </View>
+                    </View>
+                    )}
                 </View>
 
                 {/* Mechanic Match */}
@@ -261,7 +311,7 @@ export default function RequestScreen() {
                             </View>
                         </View>
 
-                        <TouchableOpacity style={styles.contactButton}>
+                        <TouchableOpacity onPress={handlePress} style={styles.contactButton}>
                             <Ionicons name="chatbubble" size={20} color="#2563eb" />
                             <Text style={styles.contactButtonText}>Message Mechanic</Text>
                         </TouchableOpacity>
@@ -275,7 +325,9 @@ export default function RequestScreen() {
                         View Live location updates on the homepage by clicking the active request
                     </Text>
 
-                    <TouchableOpacity style={styles.emergencyButton}>
+                    <TouchableOpacity onPress={()=>{
+                        router.push('/(tabs)/(protected)/(tabs)/home');
+                    }} style={styles.emergencyButton}>
                         <Ionicons name="call" size={20} color="#00ff9d" />
                         <Text style={styles.emergencyButtonText}>Track location</Text>
                     </TouchableOpacity>
@@ -298,9 +350,9 @@ export default function RequestScreen() {
                     <Text style={styles.cancelButtonText}>Cancel Request</Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity style={styles.updateButton}>
-                    <Ionicons name="refresh" size={20} color="#2563eb" />
-                    <Text style={styles.updateButtonText}>Update Location</Text>
+                <TouchableOpacity disabled={sending} onPress={sendRequest} style={styles.updateButton}>
+                    <Ionicons name="send" size={20} color="#2563eb" />
+                    <Text style={styles.updateButtonText}>Submit Request</Text>
                 </TouchableOpacity>
             </View>
         </View>

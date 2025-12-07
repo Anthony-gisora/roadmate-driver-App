@@ -24,8 +24,12 @@ export default function EmergencyScreen() {
     const [selectedProblem, setSelectedProblem] = useState<string | null>(null);
     const [otherDescription, setOtherDescription] = useState('');
     const [useAutoLocation, setUseAutoLocation] = useState(true);
+    const [location, setLocation] = useState<{latitude:number,longitude:number}>();
+
+
     const handleSelect = (coords: { latitude: number; longitude: number }) => {
         console.log(coords);
+        setLocation(coords)
         Alert.alert("Selected", `${coords.latitude}, ${coords.longitude}`);
     };
 
@@ -89,6 +93,7 @@ export default function EmergencyScreen() {
             problem: selectedProblem,
             otherDescription: selectedProblem === 'other' ? otherDescription : '',
             useAutoLocation,
+            location: `${location?.latitude}, ${location?.longitude}`,
             timestamp: new Date().toISOString(),
         };
 
