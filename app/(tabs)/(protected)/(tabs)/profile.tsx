@@ -55,6 +55,18 @@ export default function ProfileScreen() {
 
     const [editData, setEditData] = useState(userData);
 
+    const handleTerms = () => {
+        router.push('/(tabs)/(protected)/webview?path=terms');
+    };
+
+    const handlePrivacy = () => {
+        router.push('/(tabs)/(protected)/webview?path=privacy');
+    };
+
+    const handleHelp = () => {
+        router.push('/(tabs)/(protected)/webview?path=help');
+    };
+
     React.useEffect(() => {
         Animated.parallel([
             Animated.timing(fadeAnim, {
@@ -422,19 +434,19 @@ export default function ProfileScreen() {
                 <Text style={styles.sectionTitle}>Support</Text>
 
                 <View style={styles.settingsCard}>
-                    <TouchableOpacity style={styles.menuItem}>
+                    <TouchableOpacity onPress={handleHelp} style={styles.menuItem}>
                         <Ionicons name="help-circle" size={24} color="#075538" />
                         <Text style={styles.menuText}>Help & Support</Text>
                         <Ionicons name="chevron-forward" size={20} color="#64748b" />
                     </TouchableOpacity>
 
-                    <TouchableOpacity style={styles.menuItem}>
+                    <TouchableOpacity onPress={handleTerms} style={styles.menuItem}>
                         <Ionicons name="document-text" size={24} color="#075538" />
                         <Text style={styles.menuText}>Terms of Service</Text>
                         <Ionicons name="chevron-forward" size={20} color="#64748b" />
                     </TouchableOpacity>
 
-                    <TouchableOpacity style={styles.menuItem}>
+                    <TouchableOpacity onPress={handlePrivacy} style={styles.menuItem}>
                         <Ionicons name="lock-closed" size={24} color="#075538" />
                         <Text style={styles.menuText}>Privacy Policy</Text>
                         <Ionicons name="chevron-forward" size={20} color="#64748b" />
