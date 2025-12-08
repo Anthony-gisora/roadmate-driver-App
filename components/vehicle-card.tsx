@@ -1,17 +1,17 @@
-import React, { useState, useRef } from 'react';
+import { Ionicons } from '@expo/vector-icons';
+import React, { useRef, useState } from 'react';
 import {
-    View,
-    Text,
-    StyleSheet,
-    TouchableOpacity,
-    Modal,
-    TextInput,
     Alert,
     Animated,
+    Modal,
     Platform,
-    ScrollView
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 
 const VehicleCard = ({ vehicle, onUpdate, onDelete }: {
     vehicle: any;
@@ -176,7 +176,6 @@ const VehicleCard = ({ vehicle, onUpdate, onDelete }: {
                 <TouchableOpacity
                     style={styles.modalOverlay}
                     activeOpacity={1}
-                    onPress={closeModal}
                 >
                     <Animated.View
                         style={[
