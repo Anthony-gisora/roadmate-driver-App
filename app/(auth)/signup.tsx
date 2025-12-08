@@ -624,7 +624,6 @@ export default function Signup() {
                         </View>
                     )}
 
-                    <div id="clerk-captcha"/>
                     {/* Signup Button */}
                     <TouchableOpacity
                         style={[styles.signupButton, isLoading && styles.buttonDisabled]}

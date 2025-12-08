@@ -16,81 +16,6 @@ import {
 
 const { width } = Dimensions.get('window');
 
-// Mock data for mechanics and services
-const MECHANICS_DATA = [
-    {
-        id: '1',
-        name: 'Mike Johnson',
-        specialization: 'Tire Specialist',
-        rating: 4.8,
-        reviews: 127,
-        distance: '1.2 km',
-        price: '$25',
-        availability: 'Available Now',
-        image: '👨‍🔧',
-        skills: ['Flat Tire Repair', 'Tire Replacement', 'Wheel Alignment'],
-        certifications: ['ASE Certified', '5 Years Experience'],
-        responseTime: '5-10 min',
-        featured: true
-    },
-    {
-        id: '2',
-        name: 'Sarah Chen',
-        specialization: 'Engine Expert',
-        rating: 4.9,
-        reviews: 89,
-        distance: '2.1 km',
-        price: '$60',
-        availability: 'Available Now',
-        image: '👩‍🔧',
-        skills: ['Engine Diagnostics', 'Oil Change', 'Brake Repair'],
-        certifications: ['Master Technician', '8 Years Experience'],
-        responseTime: '15-20 min',
-        featured: true
-    },
-    {
-        id: '3',
-        name: 'Carlos Rodriguez',
-        specialization: 'Towing & Recovery',
-        rating: 4.7,
-        reviews: 203,
-        distance: '0.8 km',
-        price: '$80',
-        availability: 'Available Now',
-        image: '🚛',
-        skills: ['Vehicle Towing', 'Jump Start', 'Lockout Service'],
-        certifications: ['CDL Licensed', '10 Years Experience'],
-        responseTime: '8-12 min'
-    },
-    {
-        id: '4',
-        name: 'Express Auto Care',
-        specialization: 'Full Service Garage',
-        rating: 4.6,
-        reviews: 456,
-        distance: '3.5 km',
-        price: '$45',
-        availability: 'Available Now',
-        image: '🏢',
-        skills: ['Full Diagnostics', 'AC Repair', 'Electrical Systems'],
-        certifications: ['AAA Certified', '24/7 Service'],
-        responseTime: '20-25 min'
-    },
-    {
-        id: '5',
-        name: 'Quick Fuel Delivery',
-        specialization: 'Fuel & Fluid Services',
-        rating: 4.5,
-        reviews: 78,
-        distance: '1.8 km',
-        price: '$15',
-        availability: 'Available Now',
-        image: '⛽',
-        skills: ['Fuel Delivery', 'Fluid Top-up', 'Battery Service'],
-        certifications: ['Mobile Service', '24/7 Available'],
-        responseTime: '10-15 min'
-    }
-];
 
 const SERVICE_TYPES = [
     { id: 'all', name: 'All Services', icon: 'build' },
@@ -118,10 +43,11 @@ export default function ServicesScreen() {
     const [selectedMechanic, setSelectedMechanic] = useState<any>(null);
     const [showFilters, setShowFilters] = useState(false);
     const [showMechanicModal, setShowMechanicModal] = useState(false);
+    const [mechanics, setMechanics] = useState([]);
 
     const scrollY = useRef(new Animated.Value(0)).current;
 
-    const filteredMechanics = MECHANICS_DATA.filter(mechanic => {
+    const filteredMechanics = mechanic?.filter(mechanic => {
         const matchesService = selectedService === 'all' ||
             mechanic.specialization.toLowerCase().includes(selectedService);
         const matchesSearch = mechanic.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -177,6 +103,7 @@ export default function ServicesScreen() {
         </TouchableOpacity>
     );
 
+
     const FilterButton = ({ item }: { item: any }) => (
         <TouchableOpacity
             style={[
@@ -198,6 +125,12 @@ export default function ServicesScreen() {
             </Text>
         </TouchableOpacity>
     );
+
+    // const fetch = () => async {
+    //     const response = await apiClient.get('/mechanics')
+    //     const mechanics = response?.data?.mechanics
+    //     setMechanics(mechanics);
+    // }
 
     const MechanicCard = ({ mechanic, index }: { mechanic: any; index: number }) => {
         const translateY = scrollY.interpolate({
@@ -341,7 +274,7 @@ export default function ServicesScreen() {
             {/* Content */}
             {activeView === 'list' ? (
                 <FlatList
-                    data={filteredMechanics}
+                    data={!filteredMechanics}
                     keyExtractor={(item) => item.id}
                     renderItem={({ item, index }) => <MechanicCard mechanic={item} index={index} />}
                     showsVerticalScrollIndicator={false}
@@ -366,7 +299,7 @@ export default function ServicesScreen() {
                         <Ionicons name="map" size={64} color="#cbd5e1" />
                         <Text style={styles.mapTitle}>Map View</Text>
                         <Text style={styles.mapDescription}>
-                            {filteredMechanics.length} mechanics near you
+                            {filteredMechanics?.length} mechanics near you
                         </Text>
                         <TouchableOpacity style={styles.showListButton} onPress={() => setActiveView('list')}>
                             <Text style={styles.showListText}>Show List View</Text>
