@@ -20,7 +20,6 @@
     "@react-navigation/elements": "^2.6.3",
     "@react-navigation/native": "^7.1.8",
     "axios": "^1.12.2",
-    "dexie": "^4.2.1",
     "expo": "~54.0.10",
     "expo-auth-session": "^7.0.10",
     "expo-av": "~16.0.7",

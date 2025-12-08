@@ -1,10 +1,15 @@
+import VehicleDialog from "@/components/add-vehicle";
+import VehicleCard from "@/components/vehicle-card";
+import { offlineDB } from "@/data/db";
+import { apiClient } from "@/hooks/api-client";
+import { useUser } from "@clerk/clerk-expo";
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useRef, useState } from 'react';
 import {
     Alert,
-    Image,
     Animated,
+    Image,
     Modal,
     ScrollView,
     StyleSheet,
@@ -14,11 +19,7 @@ import {
     TouchableOpacity,
     View
 } from 'react-native';
-import {useUser} from "@clerk/clerk-expo";
-import {useToast} from "react-native-toast-notifications";
-import {db} from "@/data/db";
-import VehicleCard from "@/components/vehicle-card";
-import {apiClient} from "@/hooks/api-client";
+import { useToast } from "react-native-toast-notifications";
 
 export default function ProfileScreen() {
     const router = useRouter();
@@ -29,9 +30,11 @@ export default function ProfileScreen() {
     const [locationEnabled, setLocationEnabled] = useState(true);
     const [vehicles, setVehicles] = useState([]);
     const [serviceHistory, setServiceHistory] = useState([]);
+    const [dialogOpen, setDialogOpen] = useState(false);
     const [failed, setFailed] = React.useState(false);
     const {user} = useUser()
     const toast = useToast();
+    const db = offlineDB;
 
     const fadeAnim = useRef(new Animated.Value(0)).current;
     const slideAnim = useRef(new Animated.Value(30)).current;
@@ -180,7 +183,7 @@ export default function ProfileScreen() {
         }
     };
 
-    const handleAddVehicle = async () => {
+    const andleAddVehicle = async () => {
         // Show add vehicle modal
         Alert.prompt(
             'Add New Vehicle',
@@ -205,6 +208,10 @@ export default function ProfileScreen() {
             },
             'plain-text'
         );
+    };
+
+    const handleAddVehicle = () => {
+        setDialogOpen(true);
     };
 
     const ServiceHistoryCard = ({ service }: { service: any }) => (
@@ -520,6 +527,15 @@ export default function ProfileScreen() {
                 {activeTab === 'history' && renderHistoryTab()}
                 {activeTab === 'settings' && renderSettingsTab()}
             </ScrollView>
+
+            <VehicleDialog
+                open={dialogOpen}
+                setOpen={setDialogOpen}
+                onSubmit={async (vehicle) => {
+                    await db.addCar(vehicle);
+                    await loadVehicles();
+                }}
+            />;
 
             {/* Edit Profile Modal */}
             <Modal

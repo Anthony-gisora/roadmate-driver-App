@@ -16,237 +16,176 @@ export interface EmergencyContact {
   phone: string;
 }
 
-const db = SQLite.openDatabase('OfflineDB.db');
+let dbPromise: Promise<SQLite.SQLiteDatabase> | null = null;
+
+async function getDB() {
+  if (!dbPromise) {
+    dbPromise = SQLite.openDatabaseAsync('OfflineDB.db');
+    const db = await dbPromise;
+    await db.execAsync(`
+      CREATE TABLE IF NOT EXISTS cars (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        make TEXT NOT NULL,
+        model TEXT NOT NULL,
+        isDefault INTEGER DEFAULT 0,
+        plate TEXT NOT NULL,
+        year INTEGER NOT NULL,
+        color TEXT
+      );
+      CREATE TABLE IF NOT EXISTS emergencyContacts (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        phone TEXT NOT NULL
+      );
+    `);
+  }
+  return dbPromise;
+}
 
 export class OfflineDB {
-  constructor() {
-    this.init();
-  }
-
-  private init() {
-    // Create tables if they don't exist
-    db.transaction(tx => {
-      tx.executeSql(
-        `CREATE TABLE IF NOT EXISTS cars (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          make TEXT NOT NULL,
-          model TEXT NOT NULL,
-          isDefault INTEGER DEFAULT 0,
-          plate TEXT NOT NULL,
-          year INTEGER NOT NULL,
-          color TEXT
-        );`
-      );
-
-      tx.executeSql(
-        `CREATE TABLE IF NOT EXISTS emergencyContacts (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          name TEXT NOT NULL,
-          phone TEXT NOT NULL
-        );`
-      );
-    });
-  }
-
   // ----- Car Methods -----
-  addCar(car: Car): Promise<number> {
-    return new Promise((resolve, reject) => {
-      db.transaction(tx => {
-        const setDefault = car.isDefault ? 1 : 0;
-
-        // If new car is default, unset previous default
-        if (setDefault) {
-          tx.executeSql(
-            `UPDATE cars SET isDefault = 0 WHERE isDefault = 1;`
-          );
-        }
-
-        tx.executeSql(
-          `INSERT INTO cars (make, model, isDefault, plate, year, color) VALUES (?, ?, ?, ?, ?, ?)`,
-          [car.make, car.model, setDefault, car.plate, car.year, car.color],
-          (_, result) => resolve(result.insertId),
-          (_, error) => {
-            console.error('Error adding car:', error);
-            reject(error);
-            return false;
-          }
-        );
-      });
-    });
+  async addCar(car: Car): Promise<number> {
+    const db = await getDB();
+    if (car.isDefault) {
+      await db.runAsync(`UPDATE cars SET isDefault = 0 WHERE isDefault = 1`);
+    }
+    const result = await db.runAsync(
+      `INSERT INTO cars (make, model, isDefault, plate, year, color) VALUES (?, ?, ?, ?, ?, ?)`,
+      car.make,
+      car.model,
+      car.isDefault ? 1 : 0,
+      car.plate,
+      car.year,
+      car.color
+    );
+    return result.lastInsertRowId;
   }
 
-  getCars(): Promise<Car[]> {
-    return new Promise((resolve, reject) => {
-      db.transaction(tx => {
-        tx.executeSql(
-          `SELECT * FROM cars`,
-          [],
-          (_, { rows }) => {
-            // Convert isDefault from 0/1 to boolean
-            const cars: Car[] = rows._array.map(row => ({
-              ...row,
-              isDefault: !!row.isDefault,
-            }));
-            resolve(cars);
-          },
-          (_, error) => {
-            console.error('Error fetching cars:', error);
-            reject(error);
-            return false;
-          }
-        );
-      });
-    });
+  async getCars(): Promise<Car[]> {
+    const db = await getDB();
+    const rows = await db.getAllAsync('SELECT * FROM cars');
+    return rows.map((row: any) => ({
+      ...row,
+      isDefault: !!row.isDefault,
+    }));
   }
 
-  updateCar(id: number, updates: Partial<Car>): Promise<number> {
-    return new Promise((resolve, reject) => {
-      db.transaction(tx => {
-        // If setting new default, unset previous default
-        if (updates.isDefault) {
-          tx.executeSql(
-            `UPDATE cars SET isDefault = 0 WHERE isDefault = 1;`
-          );
-        }
+  async updateCar(id: number, updates: Partial<Car>): Promise<number> {
+    const db = await getDB();
 
-        const fields: string[] = [];
-        const values: any[] = [];
-        if (updates.make !== undefined) { fields.push('make = ?'); values.push(updates.make); }
-        if (updates.model !== undefined) { fields.push('model = ?'); values.push(updates.model); }
-        if (updates.isDefault !== undefined) { fields.push('isDefault = ?'); values.push(updates.isDefault ? 1 : 0); }
-        if (updates.plate !== undefined) { fields.push('plate = ?'); values.push(updates.plate); }
-        if (updates.year !== undefined) { fields.push('year = ?'); values.push(updates.year); }
-        if (updates.color !== undefined) { fields.push('color = ?'); values.push(updates.color); }
+    if (updates.isDefault) {
+      await db.runAsync(`UPDATE cars SET isDefault = 0 WHERE isDefault = 1`);
+    }
 
-        const sql = `UPDATE cars SET ${fields.join(', ')} WHERE id = ?`;
-        values.push(id);
+    const setClauses: string[] = [];
+    const values: any[] = [];
 
-        tx.executeSql(
-          sql,
-          values,
-          (_, result) => resolve(result.rowsAffected),
-          (_, error) => {
-            console.error('Error updating car:', error);
-            reject(error);
-            return false;
-          }
-        );
-      });
-    });
+    if (updates.make !== undefined) {
+      setClauses.push('make = ?');
+      values.push(updates.make);
+    }
+    if (updates.model !== undefined) {
+      setClauses.push('model = ?');
+      values.push(updates.model);
+    }
+    if (updates.isDefault !== undefined) {
+      setClauses.push('isDefault = ?');
+      values.push(updates.isDefault ? 1 : 0);
+    }
+    if (updates.plate !== undefined) {
+      setClauses.push('plate = ?');
+      values.push(updates.plate);
+    }
+    if (updates.year !== undefined) {
+      setClauses.push('year = ?');
+      values.push(updates.year);
+    }
+    if (updates.color !== undefined) {
+      setClauses.push('color = ?');
+      values.push(updates.color);
+    }
+
+    if (setClauses.length === 0) return 0;
+
+    values.push(id);
+    const sql = `UPDATE cars SET ${setClauses.join(', ')} WHERE id = ?`;
+    const result = await db.runAsync(sql, ...values);
+    return result.changes;
   }
 
-  deleteCar(id: number): Promise<number> {
-    return new Promise((resolve, reject) => {
-      db.transaction(tx => {
-        tx.executeSql(
-          `DELETE FROM cars WHERE id = ?`,
-          [id],
-          (_, result) => resolve(result.rowsAffected),
-          (_, error) => {
-            console.error('Error deleting car:', error);
-            reject(error);
-            return false;
-          }
-        );
-      });
-    });
+  async deleteCar(id: number): Promise<number> {
+    const db = await getDB();
+    const result = await db.runAsync(
+      `DELETE FROM cars WHERE id = ?`,
+      id
+    );
+    return result.changes;
   }
 
-  getDefaultCar(): Promise<Car | undefined> {
-    return new Promise((resolve, reject) => {
-      db.transaction(tx => {
-        tx.executeSql(
-          `SELECT * FROM cars WHERE isDefault = 1 LIMIT 1`,
-          [],
-          (_, { rows }) => {
-            const car = rows._array[0];
-            if (car) car.isDefault = !!car.isDefault;
-            resolve(car);
-          },
-          (_, error) => {
-            console.error('Error fetching default car:', error);
-            reject(error);
-            return false;
-          }
-        );
-      });
-    });
+  async getDefaultCar(): Promise<Car | undefined> {
+    const db = await getDB();
+    const row = await db.getFirstAsync(
+      'SELECT * FROM cars WHERE isDefault = 1 LIMIT 1'
+    );
+    if (row) {
+      (row as any).isDefault = !!(row as any).isDefault;
+      return row as Car;
+    }
+    return undefined;
   }
 
   // ----- Emergency Contact Methods -----
-  addContact(contact: EmergencyContact): Promise<number> {
-    return new Promise((resolve, reject) => {
-      db.transaction(tx => {
-        tx.executeSql(
-          `INSERT INTO emergencyContacts (name, phone) VALUES (?, ?)`,
-          [contact.name, contact.phone],
-          (_, result) => resolve(result.insertId),
-          (_, error) => {
-            console.error('Error adding contact:', error);
-            reject(error);
-            return false;
-          }
-        );
-      });
-    });
+  async addContact(contact: EmergencyContact): Promise<number> {
+    const db = await getDB();
+    const result = await db.runAsync(
+      `INSERT INTO emergencyContacts (name, phone) VALUES (?, ?)`,
+      contact.name,
+      contact.phone
+    );
+    return result.lastInsertRowId;
   }
 
-  getContacts(): Promise<EmergencyContact[]> {
-    return new Promise((resolve, reject) => {
-      db.transaction(tx => {
-        tx.executeSql(
-          `SELECT * FROM emergencyContacts`,
-          [],
-          (_, { rows }) => resolve(rows._array),
-          (_, error) => {
-            console.error('Error fetching contacts:', error);
-            reject(error);
-            return false;
-          }
-        );
-      });
-    });
+  async getContacts(): Promise<EmergencyContact[]> {
+    const db = await getDB();
+    const rows = await db.getAllAsync(
+      'SELECT * FROM emergencyContacts'
+    );
+    return rows;
   }
 
-  updateContact(id: number, updates: Partial<EmergencyContact>): Promise<number> {
-    return new Promise((resolve, reject) => {
-      db.transaction(tx => {
-        const fields: string[] = [];
-        const values: any[] = [];
-        if (updates.name !== undefined) { fields.push('name = ?'); values.push(updates.name); }
-        if (updates.phone !== undefined) { fields.push('phone = ?'); values.push(updates.phone); }
-        values.push(id);
+  async updateContact(
+    id: number,
+    updates: Partial<EmergencyContact>
+  ): Promise<number> {
+    const db = await getDB();
+    const setClauses: string[] = [];
+    const values: any[] = [];
 
-        const sql = `UPDATE emergencyContacts SET ${fields.join(', ')} WHERE id = ?`;
-        tx.executeSql(
-          sql,
-          values,
-          (_, result) => resolve(result.rowsAffected),
-          (_, error) => {
-            console.error('Error updating contact:', error);
-            reject(error);
-            return false;
-          }
-        );
-      });
-    });
+    if (updates.name !== undefined) {
+      setClauses.push('name = ?');
+      values.push(updates.name);
+    }
+    if (updates.phone !== undefined) {
+      setClauses.push('phone = ?');
+      values.push(updates.phone);
+    }
+    if (setClauses.length === 0) return 0;
+
+    values.push(id);
+    const sql = `UPDATE emergencyContacts SET ${setClauses.join(
+      ', '
+    )} WHERE id = ?`;
+    const result = await db.runAsync(sql, ...values);
+    return result.changes;
   }
 
-  deleteContact(id: number): Promise<number> {
-    return new Promise((resolve, reject) => {
-      db.transaction(tx => {
-        tx.executeSql(
-          `DELETE FROM emergencyContacts WHERE id = ?`,
-          [id],
-          (_, result) => resolve(result.rowsAffected),
-          (_, error) => {
-            console.error('Error deleting contact:', error);
-            reject(error);
-            return false;
-          }
-        );
-      });
-    });
+  async deleteContact(id: number): Promise<number> {
+    const db = await getDB();
+    const result = await db.runAsync(
+      `DELETE FROM emergencyContacts WHERE id = ?`,
+      id
+    );
+    return result.changes;
   }
 }
 

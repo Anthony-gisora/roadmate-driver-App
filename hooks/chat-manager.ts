@@ -3,31 +3,33 @@ import * as Notifications from 'expo-notifications';
 import * as SQLite from 'expo-sqlite';
 
 // --- SQLite DB setup ---
-const db = SQLite.openDatabase('conversationsDB.db');
+let dbPromise: Promise<SQLite.SQLiteDatabase> | null = null;
 
-db.transaction(tx => {
-  // Conversations table
-  tx.executeSql(
-    `CREATE TABLE IF NOT EXISTS conversations (
-      conversationId TEXT PRIMARY KEY NOT NULL,
-      memberA TEXT,
-      memberB TEXT,
-      lastMessage TEXT,
-      lastTimestamp INTEGER
-    );`
-  );
+async function getDB() {
+  if (!dbPromise) {
+    dbPromise = SQLite.openDatabaseAsync('conversationsDB.db');
+    const db = await dbPromise;
 
-  // Messages table
-  tx.executeSql(
-    `CREATE TABLE IF NOT EXISTS messages (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      conversationId TEXT,
-      messageText TEXT,
-      senderId TEXT,
-      timestamp INTEGER
-    );`
-  );
-});
+    // Create tables if they don't exist
+    await db.execAsync(`
+      CREATE TABLE IF NOT EXISTS conversations (
+        conversationId TEXT PRIMARY KEY NOT NULL,
+        memberA TEXT,
+        memberB TEXT,
+        lastMessage TEXT,
+        lastTimestamp INTEGER
+      );
+      CREATE TABLE IF NOT EXISTS messages (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        conversationId TEXT,
+        messageText TEXT,
+        senderId TEXT,
+        timestamp INTEGER
+      );
+    `);
+  }
+  return dbPromise;
+}
 
 // --- Offline Chat Manager ---
 export class ChatManager {
@@ -43,39 +45,22 @@ export class ChatManager {
   }
 
   // Get all chats with last message
-  getChats(): Promise<any[]> {
-    return new Promise((resolve, reject) => {
-      db.transaction(tx => {
-        tx.executeSql(
-          `SELECT * FROM conversations ORDER BY lastTimestamp DESC`,
-          [],
-          (_, { rows }) => resolve(rows._array),
-          (_, error) => {
-            console.error('Failed to fetch chats:', error);
-            reject(error);
-            return false;
-          }
-        );
-      });
-    });
+  async getChats(): Promise<any[]> {
+    const db = await getDB();
+    const rows = await db.getAllAsync(
+      'SELECT * FROM conversations ORDER BY lastTimestamp DESC'
+    );
+    return rows;
   }
 
   // Get all messages for a conversation
-  getMessages(conversationId: string): Promise<any[]> {
-    return new Promise((resolve, reject) => {
-      db.transaction(tx => {
-        tx.executeSql(
-          `SELECT * FROM messages WHERE conversationId = ? ORDER BY timestamp ASC`,
-          [conversationId],
-          (_, { rows }) => resolve(rows._array),
-          (_, error) => {
-            console.error('Failed to fetch messages:', error);
-            reject(error);
-            return false;
-          }
-        );
-      });
-    });
+  async getMessages(conversationId: string): Promise<any[]> {
+    const db = await getDB();
+    const rows = await db.getAllAsync(
+      'SELECT * FROM messages WHERE conversationId = ? ORDER BY timestamp ASC',
+      conversationId
+    );
+    return rows;
   }
 
   // Add a new message to a conversation
@@ -90,71 +75,41 @@ export class ChatManager {
     senderId: string;
     isViewing?: boolean;
   }) {
+    const db = await getDB();
     const timestamp = Date.now();
 
     // Store the message
-    await new Promise<void>((resolve, reject) => {
-      db.transaction(tx => {
-        tx.executeSql(
-          `INSERT INTO messages (conversationId, messageText, senderId, timestamp) VALUES (?, ?, ?, ?)`,
-          [conversationId, messageText, senderId, timestamp],
-          () => resolve(),
-          (_, error) => {
-            console.error('Failed to add message:', error);
-            reject(error);
-            return false;
-          }
-        );
-      });
-    });
+    await db.runAsync(
+      'INSERT INTO messages (conversationId, messageText, senderId, timestamp) VALUES (?, ?, ?, ?)',
+      conversationId,
+      messageText,
+      senderId,
+      timestamp
+    );
 
     // Update conversation
-    const conv = await new Promise<any | undefined>((resolve, reject) => {
-      db.transaction(tx => {
-        tx.executeSql(
-          `SELECT * FROM conversations WHERE conversationId = ?`,
-          [conversationId],
-          (_, { rows }) => resolve(rows._array[0]),
-          (_, error) => {
-            console.error('Failed to get conversation:', error);
-            reject(error);
-            return false;
-          }
-        );
-      });
-    });
+    const conv = await db.getFirstAsync(
+      'SELECT * FROM conversations WHERE conversationId = ?',
+      conversationId
+    );
 
     if (conv) {
-      await new Promise<void>((resolve, reject) => {
-        db.transaction(tx => {
-          tx.executeSql(
-            `UPDATE conversations SET lastMessage = ?, lastTimestamp = ? WHERE conversationId = ?`,
-            [messageText, timestamp, conversationId],
-            () => resolve(),
-            (_, error) => {
-              console.error('Failed to update conversation:', error);
-              reject(error);
-              return false;
-            }
-          );
-        });
-      });
+      await db.runAsync(
+        'UPDATE conversations SET lastMessage = ?, lastTimestamp = ? WHERE conversationId = ?',
+        messageText,
+        timestamp,
+        conversationId
+      );
     } else {
       // create conversation if doesn't exist
-      await new Promise<void>((resolve, reject) => {
-        db.transaction(tx => {
-          tx.executeSql(
-            `INSERT INTO conversations (conversationId, memberA, memberB, lastMessage, lastTimestamp) VALUES (?, ?, ?, ?, ?)`,
-            [conversationId, senderId, '', messageText, timestamp],
-            () => resolve(),
-            (_, error) => {
-              console.error('Failed to create conversation:', error);
-              reject(error);
-              return false;
-            }
-          );
-        });
-      });
+      await db.runAsync(
+        'INSERT INTO conversations (conversationId, memberA, memberB, lastMessage, lastTimestamp) VALUES (?, ?, ?, ?, ?)',
+        conversationId,
+        senderId,
+        '',
+        messageText,
+        timestamp
+      );
     }
 
     // Handle notification or sound
@@ -175,20 +130,11 @@ export class ChatManager {
     memberA: string;
     memberB: string;
   }) {
-    const existing = await new Promise<any | undefined>((resolve, reject) => {
-      db.transaction(tx => {
-        tx.executeSql(
-          `SELECT * FROM conversations WHERE conversationId = ?`,
-          [conversationId],
-          (_, { rows }) => resolve(rows._array[0]),
-          (_, error) => {
-            console.error('Failed to fetch conversation:', error);
-            reject(error);
-            return false;
-          }
-        );
-      });
-    });
+    const db = await getDB();
+    const existing = await db.getFirstAsync(
+      'SELECT * FROM conversations WHERE conversationId = ?',
+      conversationId
+    );
 
     if (existing) return existing;
 
@@ -200,20 +146,14 @@ export class ChatManager {
       lastTimestamp: Date.now(),
     };
 
-    await new Promise<void>((resolve, reject) => {
-      db.transaction(tx => {
-        tx.executeSql(
-          `INSERT INTO conversations (conversationId, memberA, memberB, lastMessage, lastTimestamp) VALUES (?, ?, ?, ?, ?)`,
-          [newChat.conversationId, newChat.memberA, newChat.memberB, '', newChat.lastTimestamp],
-          () => resolve(),
-          (_, error) => {
-            console.error('Failed to create conversation:', error);
-            reject(error);
-            return false;
-          }
-        );
-      });
-    });
+    await db.runAsync(
+      'INSERT INTO conversations (conversationId, memberA, memberB, lastMessage, lastTimestamp) VALUES (?, ?, ?, ?, ?)',
+      newChat.conversationId,
+      newChat.memberA,
+      newChat.memberB,
+      '',
+      newChat.lastTimestamp
+    );
 
     return newChat;
   }

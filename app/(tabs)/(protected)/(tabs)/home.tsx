@@ -1,21 +1,20 @@
+import { apiClient } from "@/hooks/api-client";
+import { useUser } from '@clerk/clerk-expo';
 import { Ionicons } from '@expo/vector-icons';
-import {useUser} from '@clerk/clerk-expo';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import {
-    Alert,
-    Animated,
-    Dimensions,
-    RefreshControl,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
+  Alert,
+  Animated,
+  Dimensions,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from 'react-native';
-import {apiClient} from "@/hooks/api-client";
-import {useToast} from "react-native-toast-notifications";
-import {db} from "@/data/db";
+import { useToast } from "react-native-toast-notifications";
 
 const { width } = Dimensions.get('window');
 
