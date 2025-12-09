@@ -46,8 +46,7 @@
         }
       ],
       "expo-secure-store",
-      "expo-sqlite",
-      "sentry-expo"
+      "expo-sqlite"
     ],
     "experiments": {
       "typedRoutes": true,

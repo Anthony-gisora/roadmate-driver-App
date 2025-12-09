@@ -32,7 +32,7 @@ export default function WebViewScreen() {
         <TouchableOpacity onPress={() => router.back()}>
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </TouchableOpacity>
-
+        
         <Text
           style={{
             color: '#fff',
