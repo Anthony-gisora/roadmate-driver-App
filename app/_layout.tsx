@@ -1,18 +1,25 @@
+import { socketEvents } from "@/hooks/events-emitter";
+import { getSocket } from "@/hooks/socket";
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { ClerkProvider, useUser } from "@clerk/clerk-expo";
-import { tokenCache } from '@clerk/clerk-expo/token-cache'
+import { ClerkProvider } from "@clerk/clerk-expo";
+import { tokenCache } from '@clerk/clerk-expo/token-cache';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import {Stack} from 'expo-router';
+import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { useEffect } from "react";
 import 'react-native-reanimated';
 import { ToastProvider } from 'react-native-toast-notifications';
-import {useEffect} from "react";
-import {getSocket} from "@/hooks/socket";
-import {socketEvents} from "@/hooks/events-emitter";
+import * as Sentry from 'sentry-expo';
 
 export const unstable_settings = {
     initialRouteName: '/',
 };
+
+Sentry.init({
+  dsn: 'YOUR_SENTRY_DSN_HERE',
+  enableInExpoDevelopment: true,
+  debug: true,
+});
 
 export default function RootLayout() {
     const colorScheme = useColorScheme();
