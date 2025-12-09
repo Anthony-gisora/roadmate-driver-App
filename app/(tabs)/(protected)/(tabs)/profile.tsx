@@ -547,7 +547,7 @@ export default function ProfileScreen() {
                     await db.addCar(vehicle);
                     await loadVehicles();
                 }}
-            />;
+            />
 
             {/* Edit Profile Modal */}
             <Modal
