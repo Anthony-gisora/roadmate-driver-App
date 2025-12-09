@@ -1,6 +1,8 @@
+import TechnicianMap from '@/components/discover-mapview';
+import { apiClient } from '@/hooks/api-client';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
     Animated,
     Dimensions,
@@ -44,29 +46,64 @@ export default function ServicesScreen() {
     const [showFilters, setShowFilters] = useState(false);
     const [showMechanicModal, setShowMechanicModal] = useState(false);
     const [mechanics, setMechanics] = useState([]);
+    const [filteredMechanics, setFilteredMechanics] = useState([]);
 
-    const scrollY = useRef(new Animated.Value(0)).current;
+    const handleTechnicianSelect = (technician) => {
+        console.log('Selected technician:', technician);
+        setSelectedMechanic(technician);
+        setShowMechanicModal(true);
+    };
 
-    const filteredMechanics = mechanic?.filter(mechanic => {
-        const matchesService = selectedService === 'all' ||
-            mechanic.specialization.toLowerCase().includes(selectedService);
-        const matchesSearch = mechanic.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            mechanic.specialization.toLowerCase().includes(searchQuery.toLowerCase());
-        return matchesService && matchesSearch;
-    }).sort((a, b) => {
-        switch (selectedFilter) {
-            case 'distance':
+    useEffect(() => {
+    apiClient.get('/mechanics')
+        .then((res) => {
+        const mechanics = res?.data?.mechanics || [];
+        const normalized = mechanics.map(m => ({
+            ...m,
+            specialization: m.data?.join(", ") || "",
+            rating: m.rating || 4.5,    // fallback
+            reviews: m.reviews || 12,   // fallback
+            price: m.price || "KSh 1000",
+            image: "🔧",
+            availability: m.isOnline === "online" ? "Available Now" : "Offline",
+        }));
+        setMechanics(normalized);
+
+        const filtered = normalized
+        .filter((mechanic) => {
+            const name = mechanic.name.toLowerCase();
+            const services = mechanic.data.map(s => s.toLowerCase());
+
+            const matchesService =
+            selectedService === "all" ||
+            services.some(s => s.includes(selectedService.toLowerCase()));
+
+            const search = searchQuery.toLowerCase();
+            const matchesSearch =
+            name.includes(search) ||
+            services.some(s => s.includes(search));
+
+            return matchesService && matchesSearch;
+        })
+        .sort((a, b) => {
+            switch (selectedFilter) {
+            case "distance":
                 return parseFloat(a.distance) - parseFloat(b.distance);
-            case 'rating':
-                return b.rating - a.rating;
-            case 'price':
-                return parseFloat(a.price.slice(1)) - parseFloat(b.price.slice(1));
-            case 'availability':
-                return a.availability === 'Available Now' ? -1 : 1;
+
+            case "availability":
+                return a.isOnline === "online" ? -1 : 1;
+
             default:
                 return 0;
-        }
-    });
+            }
+        });
+
+        setFilteredMechanics(filtered);
+        });
+    }, [selectedService, selectedFilter, searchQuery]);
+
+
+    const scrollY = useRef(new Animated.Value(0)).current;
 
     const handleBookService = (mechanic: any) => {
         setShowMechanicModal(false);
@@ -125,12 +162,6 @@ export default function ServicesScreen() {
             </Text>
         </TouchableOpacity>
     );
-
-    // const fetch = () => async {
-    //     const response = await apiClient.get('/mechanics')
-    //     const mechanics = response?.data?.mechanics
-    //     setMechanics(mechanics);
-    // }
 
     const MechanicCard = ({ mechanic, index }: { mechanic: any; index: number }) => {
         const translateY = scrollY.interpolate({
@@ -274,8 +305,8 @@ export default function ServicesScreen() {
             {/* Content */}
             {activeView === 'list' ? (
                 <FlatList
-                    data={!filteredMechanics}
-                    keyExtractor={(item) => item.id}
+                    data={filteredMechanics}
+                    keyExtractor={(item) => item?.id}
                     renderItem={({ item, index }) => <MechanicCard mechanic={item} index={index} />}
                     showsVerticalScrollIndicator={false}
                     contentContainerStyle={styles.listContent}
@@ -295,16 +326,11 @@ export default function ServicesScreen() {
                 />
             ) : (
                 <View style={styles.mapContainer}>
-                    <View style={styles.mapPlaceholder}>
-                        <Ionicons name="map" size={64} color="#cbd5e1" />
-                        <Text style={styles.mapTitle}>Map View</Text>
-                        <Text style={styles.mapDescription}>
-                            {filteredMechanics?.length} mechanics near you
-                        </Text>
-                        <TouchableOpacity style={styles.showListButton} onPress={() => setActiveView('list')}>
-                            <Text style={styles.showListText}>Show List View</Text>
-                        </TouchableOpacity>
-                    </View>
+                    <TechnicianMap 
+                            technicians={filteredMechanics}
+                            onTechnicianSelect={handleTechnicianSelect}
+                            userLocation={{ lat: -1.2921, lng: 36.8219 }}
+                        />
                 </View>
             )}
 
@@ -330,14 +356,14 @@ export default function ServicesScreen() {
 
                         <ScrollView style={styles.modalContent}>
                             <View style={styles.profileHeader}>
-                                <Text style={styles.profileEmoji}>{selectedMechanic.image}</Text>
+                                <Text style={styles.profileEmoji}>{selectedMechanic?.image}</Text>
                                 <View style={styles.profileInfo}>
-                                    <Text style={styles.profileName}>{selectedMechanic.name}</Text>
-                                    <Text style={styles.profileSpecialization}>{selectedMechanic.specialization}</Text>
+                                    <Text style={styles.profileName}>{selectedMechanic?.name}</Text>
+                                    <Text style={styles.profileSpecialization}>{selectedMechanic?.specialization}</Text>
                                     <View style={styles.profileRating}>
                                         <Ionicons name="star" size={20} color="#f59e0b" />
-                                        <Text style={styles.profileRatingText}>{selectedMechanic.rating}</Text>
-                                        <Text style={styles.profileReviews}>({selectedMechanic.reviews} reviews)</Text>
+                                        <Text style={styles.profileRatingText}>{selectedMechanic?.rating}</Text>
+                                        <Text style={styles.profileReviews}>({selectedMechanic?.reviews} reviews)</Text>
                                     </View>
                                 </View>
                             </View>
@@ -345,7 +371,7 @@ export default function ServicesScreen() {
                             <View style={styles.detailSection}>
                                 <Text style={styles.sectionTitle}>Skills & Services</Text>
                                 <View style={styles.skillsContainer}>
-                                    {selectedMechanic.skills.map((skill: string, index: number) => (
+                                    {selectedMechanic?.data?.map((skill: string, index: number) => (
                                         <View key={index} style={styles.skillTag}>
                                             <Text style={styles.skillText}>{skill}</Text>
                                         </View>
@@ -355,7 +381,7 @@ export default function ServicesScreen() {
 
                             <View style={styles.detailSection}>
                                 <Text style={styles.sectionTitle}>Certifications</Text>
-                                {selectedMechanic.certifications.map((cert: string, index: number) => (
+                                {selectedMechanic?.certifications?.map((cert: string, index: number) => (
                                     <View key={index} style={styles.certificationItem}>
                                         <Ionicons name="checkmark-circle" size={20} color="#10b981" />
                                         <Text style={styles.certificationText}>{cert}</Text>
@@ -409,7 +435,7 @@ export default function ServicesScreen() {
 
 const styles = StyleSheet.create({
     container: {
-        flex: 1,
+        //flex: 1
         backgroundColor: '#f8fafc',
     },
     header: {
@@ -483,13 +509,17 @@ const styles = StyleSheet.create({
         backgroundColor: '#fff',
         borderBottomWidth: 1,
         borderBottomColor: '#e2e8f0',
+        paddingVertical: 0, marginVertical: 0
     },
     serviceTypesContent: {
         paddingHorizontal: 20,
         paddingVertical: 16,
         gap: 12,
+        marginVertical: 0
     },
     serviceTypeButton: {
+        maxHeight: 50,
+        minHeight: 50,
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: '#f8fafc',
@@ -670,6 +700,7 @@ const styles = StyleSheet.create({
     },
     mapContainer: {
         flex: 1,
+        minHeight: "60%",
         backgroundColor: '#f8fafc',
     },
     mapPlaceholder: {
