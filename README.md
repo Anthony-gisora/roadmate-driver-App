@@ -19,16 +19,16 @@ Accent colour: #ced46a
 - [x] Emergency contact details
 
 ### 2. Service Requests
-- [ ] Request priority (emergency, normal, other)
-- [ ] Problem description (flat tire, fuel delivery, etc.)
-- [ ] Price estimation
-- [ ] Real-time GPS location tracking (auto/manual)
-- [ ] Matching and dispatching (nearest mechanic)
+- [x] Request priority (emergency, normal, other)
+- [x] Problem description (flat tire, fuel delivery, etc.)
+- [x] Price estimation
+- [x] Real-time GPS location tracking (auto/manual)
+- [x] Matching and dispatching (nearest mechanic)
 - [ ] Upload photo/video of issue
-- [ ] Scheduled service booking (maintenance, inspection)
+- [x] Scheduled service booking (maintenance, inspection)
 
 ### 3. Discovery
-- [ ] Find nearby mechanics, garages, shops, towing, gas stations
+- [x] Find nearby mechanics, garages, shops, towing, gas stations
 - [ ] Filter by distance, ratings, specialization, availability
 - [ ] Mechanic profile (skills, certifications, reviews)
 - [ ] Map + List view
@@ -55,7 +55,7 @@ Accent colour: #ced46a
 - [ ] Receipt/invoice after completion
 
 ### 9. Service History
-- [ ] Log of all past repairs/maintenance
+- [x] Log of all past repairs/maintenance
 
 ---
 
