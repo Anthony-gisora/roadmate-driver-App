@@ -15,7 +15,9 @@
       "assets/*"
     ],
     "android": {
-      "permissions": ["INTERNET"],
+      "permissions": [
+        "INTERNET"
+      ],
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -44,7 +46,8 @@
         }
       ],
       "expo-secure-store",
-      "expo-sqlite"
+      "expo-sqlite",
+      "sentry-expo"
     ],
     "experiments": {
       "typedRoutes": true,

@@ -171,6 +171,12 @@ export default function HomeScreen() {
     });
   };
 
+  const handleNotification = () => {
+    router.push({
+      pathname: '/notifications',
+    });
+  }
+
   const handleEmergency = () => {
     router.push('/emergency');
   };
@@ -269,7 +275,7 @@ export default function HomeScreen() {
               <Text style={styles.title}>Welcome {user?.user?.firstName}</Text>
               <Text style={styles.subtitle}>Ready to hit the road?</Text>
             </View>
-            <TouchableOpacity style={styles.notificationButton}>
+            <TouchableOpacity onPress={handleNotification} style={styles.notificationButton}>
               <Ionicons name="notifications" size={24} color="#1e293b" />
               <View style={styles.notificationBadge} />
             </TouchableOpacity>
