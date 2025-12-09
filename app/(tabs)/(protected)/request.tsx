@@ -1,12 +1,13 @@
-import {Ionicons} from '@expo/vector-icons';
-import {useLocalSearchParams, useRouter} from 'expo-router';
-import React, {useEffect, useState} from 'react';
-import {Alert, Animated, Dimensions, ScrollView, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
-import {apiClient} from "@/hooks/api-client";
-import {useUser} from "@clerk/clerk-expo";
-import {getLocation} from "@/hooks/location";
-import {useToast} from "react-native-toast-notifications";
-import {Car, db} from "@/data/db";
+import CarSelector from '@/components/car-selector';
+import { Car, offlineDB } from "@/data/db";
+import { apiClient } from "@/hooks/api-client";
+import { getLocation } from "@/hooks/location";
+import { useUser } from "@clerk/clerk-expo";
+import { Ionicons } from '@expo/vector-icons';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import { Alert, Animated, Dimensions, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useToast } from "react-native-toast-notifications";
 
 const { width } = Dimensions.get('window');
 
@@ -22,6 +23,7 @@ export default function RequestScreen() {
     const [price, setPrice] = useState<number>(0);
     const { user } = useUser();
     const toast = useToast();
+    const db = offlineDB;
 
     const progressAnim = new Animated.Value(0);
     const slideAnim = new Animated.Value(50);
@@ -55,6 +57,10 @@ export default function RequestScreen() {
             }
         });
     };
+
+    const handleSelectCar = (car) => {
+        setCar(car);
+    }
 
     function getETA(distanceKm: number): string {
         const averageSpeed = 40; // km/h
@@ -261,26 +267,11 @@ export default function RequestScreen() {
                         </View>
                     </View>
 
-                    {car == null ? (
-                        <View style={styles.detailRow}>
-                            <View style={styles.detailIcon}>
-                                <Ionicons name="car" size={20} color="#2563eb" />
-                            </View>
-                            <View style={styles.detailContent}>
-                                <Text style={styles.detailLabel}>To attach car data go to profile>then update vehicle details</Text>
-                            </View>
-                        </View>
-                    ):(
-                        <View style={styles.detailRow}>
-                        <View style={styles.detailIcon}>
-                            <Ionicons name="car" size={20} color="#2563eb" />
-                        </View>
-                        <View style={styles.detailContent}>
-                            <Text style={styles.detailLabel}>{car.year} {car.make} {car.model}</Text>
-                            <Text style={styles.detailValue}>{car.color} {car.plate}</Text>
-                        </View>
-                    </View>
-                    )}
+                    <CarSelector
+                        onSelectCar={(car) => {
+                            handleSelectCar(car);
+                        }}
+                    />
                 </View>
 
                 {/* Mechanic Match */}

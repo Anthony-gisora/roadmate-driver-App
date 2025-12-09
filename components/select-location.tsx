@@ -1,5 +1,5 @@
-import React, { useEffect, useRef } from 'react';
-import { View, Platform } from 'react-native';
+import React, { useRef } from 'react';
+import { Platform, View } from 'react-native';
 import { WebView } from 'react-native-webview';
 
 interface Props {
@@ -12,6 +12,7 @@ const SelectLocationMap: React.FC<Props> = ({ onSelect }) => {
   const handleMessage = (event: any) => {
     try {
       const data = JSON.parse(event.nativeEvent.data);
+      console.log('Received data from WebView:', data);
       if (data.lat && data.lng) {
         onSelect({ latitude: data.lat, longitude: data.lng });
       }
@@ -20,15 +21,31 @@ const SelectLocationMap: React.FC<Props> = ({ onSelect }) => {
     }
   };
 
+  // Inject JavaScript to setup the ReactNativeWebView object properly
+  const injectedJavaScript = `
+    window.ReactNativeWebView = window.ReactNativeWebView || {
+      postMessage: function(data) {
+        window.postMessage(data);
+      }
+    };
+    true; // Important: return true to avoid warning
+  `;
+
   const html = `
     <!DOCTYPE html>
     <html>
     <head>
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-      <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+      <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+        crossorigin=""/>
       <style>
-        html, body, #map { height: 100%; margin: 0; padding: 0; }
+        html, body, #map { 
+          height: 100%; 
+          margin: 0; 
+          padding: 0; 
+          overflow: hidden;
+        }
         .pin {
           position: absolute;
           top: 50%;
@@ -51,38 +68,65 @@ const SelectLocationMap: React.FC<Props> = ({ onSelect }) => {
           border-radius: 8px;
           z-index: 1001;
           cursor: pointer;
+          border: none;
+          font-size: 16px;
         }
       </style>
     </head>
     <body>
       <div id="map"></div>
       <div class="pin">📍</div>
-      <div id="selectBtn">Select Location</div>
+      <button id="selectBtn">Select Location</button>
+      <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+        crossorigin=""></script>
       <script>
-        const map = L.map('map').setView([-1.2921, 36.8219], 14);
-
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          attribution: '© OpenStreetMap contributors'
-        }).addTo(map);
-
-        document.getElementById('selectBtn').addEventListener('click', () => {
-          const center = map.getCenter();
-        
+        // Wait for the page to fully load
+        document.addEventListener('DOMContentLoaded', function() {
+          console.log('DOM loaded, initializing map...');
+          
           try {
-            if (window.ReactNativeWebView && window.ReactNativeWebView.postMessage) {
-              window.ReactNativeWebView.postMessage(JSON.stringify({
+            // Initialize map with a default location
+            const map = L.map('map').setView([-1.2921, 36.8219], 14);
+            
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+              attribution: '© OpenStreetMap contributors',
+              maxZoom: 19
+            }).addTo(map);
+            
+            // Setup the ReactNativeWebView object
+            window.ReactNativeWebView = window.ReactNativeWebView || {
+              postMessage: function(data) {
+                window.postMessage(data);
+              }
+            };
+            
+            document.getElementById('selectBtn').addEventListener('click', function() {
+              const center = map.getCenter();
+              console.log('Map center:', center);
+              
+              const message = JSON.stringify({
                 lat: center.lat,
                 lng: center.lng
-              }));
-              console.log('Message sent to React Native');
-            } else {
-              console.warn('ReactNativeWebView not ready');
-            }
-          } catch (err) {
-            console.error('Failed to post message:', err);
+              });
+              
+              console.log('Sending message:', message);
+              
+              // Try multiple ways to send the message
+              if (window.ReactNativeWebView && window.ReactNativeWebView.postMessage) {
+                window.ReactNativeWebView.postMessage(message);
+              } else if (window.postMessage) {
+                window.postMessage(message);
+              } else {
+                console.error('No postMessage method available');
+              }
+            });
+            
+            console.log('Map initialized successfully');
+          } catch (error) {
+            console.error('Error initializing map:', error);
           }
         });
-
       </script>
     </body>
     </html>
@@ -93,14 +137,32 @@ const SelectLocationMap: React.FC<Props> = ({ onSelect }) => {
   }
 
   return (
-      <View style={{ flex: 1 }}>
-        <WebView
-            ref={webviewRef}
-            originWhitelist={['*']}
-            source={{ html }}
-            onMessage={handleMessage}
-        />
-      </View>
+    <View style={{ flex: 1, height: 400 }}>
+      <WebView
+        ref={webviewRef}
+        originWhitelist={['*']}
+        source={{
+          html,
+          baseUrl: 'https://unpkg.com/'
+        }}
+        javaScriptEnabled={true}
+        domStorageEnabled={true}
+        mixedContentMode="always"
+        allowUniversalAccessFromFileURLs={true}
+        allowFileAccess={true}
+        allowFileAccessFromFileURLs={true}
+        onMessage={handleMessage}
+        injectedJavaScript={injectedJavaScript}
+        onLoadEnd={() => {
+          console.log('WebView loaded');
+        }}
+        onError={(syntheticEvent) => {
+          const { nativeEvent } = syntheticEvent;
+          console.warn('WebView error: ', nativeEvent);
+        }}
+        style={{ flex: 1 }}
+      />
+    </View>
   );
 };
 

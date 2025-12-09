@@ -3,10 +3,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useRef, useState } from 'react';
 import {
-    Image,
     Alert,
     Animated,
     Dimensions,
+    Image,
     ScrollView,
     StyleSheet,
     Text,
@@ -250,7 +250,9 @@ export default function EmergencyScreen() {
 
                         {!useAutoLocation && (
                             <View style={styles.manualLocationContainer}>
+                                <Text>Drag to choose location</Text>
                                 <SelectLocationMap onSelect={handleSelect}/>
+                                <Text>Selected Location: {location?.latitude}, {location?.longitude}</Text>
                             </View>
                         )}
                     </View>
