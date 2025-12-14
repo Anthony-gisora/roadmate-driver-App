@@ -21,6 +21,7 @@ export default function NotificationsScreen() {
     const [chats, setChats] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
+    const chatManager = ChatManager.getInstance();
 
     // Animation values
     const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -45,7 +46,6 @@ export default function NotificationsScreen() {
     const loadChats = async () => {
         try {
             setIsLoading(true);
-            const chatManager = ChatManager.getInstance();
             const conversations = await chatManager.getChats();
 
             // Transform conversations to chat format with mechanic data
@@ -131,6 +131,11 @@ export default function NotificationsScreen() {
         });
     };
 
+    const handleAction = async (chat: any) => {
+        await chatManager.deleteChat(chat.id);
+        setChats(prevChats => prevChats.filter(c => c.id !== chat.id));
+    }
+
     const ChatCard = ({ chat, index }: { chat: any; index: number }) => {
         const translateY = fadeAnim.interpolate({
             inputRange: [0, 1],
@@ -155,6 +160,7 @@ export default function NotificationsScreen() {
                 <TouchableOpacity
                     style={styles.chatCardInner}
                     onPress={() => handleChatPress(chat)}
+                    onLongPress={()=>handleAction(chat)}
                 >
                     {/* Avatar with Online Status */}
                     <View style={styles.avatarContainer}>
@@ -196,12 +202,6 @@ export default function NotificationsScreen() {
                                 </View>
                             )}
                         </View>
-                    </View>
-
-                    {/* Rating */}
-                    <View style={styles.ratingContainer}>
-                        <Ionicons name="star" size={16} color="#f59e0b" />
-                        <Text style={styles.ratingText}>{chat.mechanic.rating}</Text>
                     </View>
                 </TouchableOpacity>
             </Animated.View>

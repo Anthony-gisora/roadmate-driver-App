@@ -17,6 +17,7 @@ import { useUser } from '@clerk/clerk-expo';
 import {ChatManager} from "@/hooks/chat-manager";
 import {apiClient} from "@/hooks/api-client";
 import {sendMessage} from "@/hooks/socket";
+import {socketEvents} from "@/hooks/events-emitter";
 
 export default function ChatScreen() {
     const { id, mechanicName, mechanicImage, chatId } = useLocalSearchParams();
@@ -37,6 +38,19 @@ export default function ChatScreen() {
             duration: 400,
             useNativeDriver: true,
         }).start();
+    }, []);
+
+    useEffect(() => {
+        const onNewMessage = (msg: any) => {
+            console.log("Incoming message:", msg);
+            setMessages(prev => [...prev, msg]);
+        };
+
+        socketEvents.on("newMessage", onNewMessage);
+
+        return () => {
+            socketEvents.off("newMessage", onNewMessage);
+        };
     }, []);
 
     const loadMessages = async () => {

@@ -53,6 +53,12 @@ export class ChatManager {
     return rows;
   }
 
+  async deleteChat(id: string): Promise<any> {
+    const db = await getDB();
+    const del = await db.execAsync(`DELETE FROM conversations WHERE conversationId=${id}`);
+    return del;
+  }
+
   // Get all messages for a conversation
   async getMessages(conversationId: string): Promise<any[]> {
     const db = await getDB();
@@ -115,8 +121,6 @@ export class ChatManager {
     // Handle notification or sound
     if (isViewing) {
       this.playSound();
-    } else {
-      this.showNotification(messageText);
     }
   }
 
@@ -166,20 +170,6 @@ export class ChatManager {
       await sound.playAsync();
     } catch (err) {
       console.error('Failed to play sound', err);
-    }
-  }
-
-  private async showNotification(messageText: string) {
-    try {
-      await Notifications.scheduleNotificationAsync({
-        content: {
-          title: 'New Message',
-          body: messageText,
-        },
-        trigger: null,
-      });
-    } catch (err) {
-      console.error('Failed to show notification', err);
     }
   }
 }

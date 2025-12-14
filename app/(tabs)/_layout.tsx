@@ -1,27 +1,27 @@
-import { useAuth } from '@clerk/clerk-expo'
-import {Redirect, Stack} from 'expo-router'
+import { useAuth } from "@clerk/clerk-expo";
+import { Stack, Redirect } from "expo-router";
+import { useEffect, useState } from "react";
 
 export default function AppLayout() {
-    const { isSignedIn } = useAuth()
+    const { isSignedIn, isLoaded } = useAuth();
+    const [ready, setReady] = useState(false);
 
+    // Wait until Clerk is loaded
+    useEffect(() => {
+        if (isLoaded) setReady(true);
+    }, [isLoaded]);
+
+    if (!ready) return null; // or splash/loading
+
+    // Redirect if not signed in
     if (!isSignedIn) {
         return <Redirect href="/(auth)" />;
     }
 
     return (
         <Stack screenOptions={{ headerShown: false }}>
-            {/* Public routes */}
-            <Stack.Protected guard={!isSignedIn}>
-                <Stack.Screen name="index" />
-                <Stack.Screen name="signup" />
-                <Stack.Screen name="forgot-password" />
-                <Stack.Screen name="verify-email" />
-            </Stack.Protected>
-
-            {/* Protected routes */}
-            <Stack.Protected guard={isSignedIn!}>
-                <Stack.Screen name="(protected)" />
-            </Stack.Protected>
+            {/* Only render protected screens if signed in */}
+            <Stack.Screen name="(protected)" />
         </Stack>
-    )
+    );
 }

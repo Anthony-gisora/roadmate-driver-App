@@ -31,18 +31,7 @@ export default function Login() {
     const [isLoading, setIsLoading] = useState(false);
     const [secureTextEntry, setSecureTextEntry] = useState(true);
     const { signIn, setActive, isLoaded } = useSignIn();
-    const { signOut, openSignIn } = useClerk();
     const toast = useToast();
-    const {isSignedIn} = useUser()
-
-    useEffect(() => {
-        signOut();
-        if (isLoaded){
-            if(isSignedIn){
-                router.push('/(tabs)/(protected)/(tabs)/emergency');
-            }
-        }
-    }, [signOut]);
 
     // Animation values
     const fadeAnim = React.useRef(new Animated.Value(0)).current;
