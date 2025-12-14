@@ -18,15 +18,17 @@ import {ChatManager} from "@/hooks/chat-manager";
 import {apiClient} from "@/hooks/api-client";
 import {sendMessage} from "@/hooks/socket";
 import {socketEvents} from "@/hooks/events-emitter";
+import string from "zod/src/v3/benchmarks/string";
 
 export default function ChatScreen() {
     const { id, mechanicName, mechanicImage, chatId } = useLocalSearchParams();
     const router = useRouter();
     const { user } = useUser();
     const [messages, setMessages] = useState<any[]>([]);
+    const [chat_id, setChatId] = useState<string|null>(chatId?.toString());
     const [messageText, setMessageText] = useState('');
     const [isLoading, setIsLoading] = useState(true);
-    let chatId2 = chatId;
+    const chatManager = ChatManager.getInstance();
 
     const flatListRef = useRef<FlatList>(null);
     const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -55,29 +57,30 @@ export default function ChatScreen() {
 
     const loadMessages = async () => {
         // get all messages from backend and store locally if the chatId is not null
-        if(chatId2){
+        if(chat_id){
             // chatId exists so maybe locally too
             try {
-                const chatManager = ChatManager.getInstance();
                 const conversationMessages = await chatManager.getMessages(id as string);
                 setMessages(conversationMessages);
                 if (conversationMessages.length < 1){
                     // chat exists but not locally, so fetch from backend
-                    apiClient.get(`/message/${chatId2}`)
+                    apiClient.get(`/message/${chat_id}`)
                         .then(res => {
                             console.log(res);
                             setMessages([...res.data]);
-                            chatManager.createChat({conversationId: chatId2 as string,
+                            chatManager.createChat({
+                                driver: user?.firstName as string, mechanic: mechanicName as string, conversationId: chat_id as string,
                             memberA: user?.id as string,
                             memberB: id as string})
 
                             //save messages
                             messages.forEach((message) => {
                                 chatManager.addMessage({
-                                    conversationId:chatId2 as string,
+                                    driver: user?.firstName as string, mechanic: undefined, memberB: undefined,
+                                    conversationId:chat_id as string,
                                     messageText: message?.messageText as string,
                                     senderId: message?.senderId as string,
-                                    isViewing: true,
+                                    isViewing: true
                                 })
                             })
                         })
@@ -94,24 +97,27 @@ export default function ChatScreen() {
     };
 
     const handleSendMessage = async () => {
+        let currentChatId = chat_id;
         if (!messageText.trim()) return;
-        const chatManager = ChatManager.getInstance();
         //check if chat exists
-        if(chatId2 == null){
+        if(currentChatId == null){
             //create the chat in the backend then save the chatId and save it locally
             try{
                 const res = await apiClient.post("/conversation", {
                     receiverId: id, currentUserId: user?.id as string,
                     mechanicName: mechanicName, driverName: user?.firstName as string,
                 })
-                //update chatId2
-                chatId2 = res?.data?.chatId as string;
-                console.log("chatId2", chatId2);
+                //update chatId
+                const newChatId = res?.data?.chatId;
+                setChatId(newChatId);
+                currentChatId = newChatId;
 
                 await chatManager.createChat({
-                    conversationId: res?.data?.chatId,
+                    conversationId: newChatId,
                     memberA: user?.id as string,
                     memberB: id as string,
+                    driver: user?.firstName as string,
+                    mechanic: mechanicName as string
                 });
             }catch (e) {
                 console.error(e);
@@ -122,7 +128,7 @@ export default function ChatScreen() {
         // send the message using sockets
         sendMessage({
             senderId: user?.id as string,
-            conversationId: chatId2 as string,
+            conversationId: currentChatId as string,
             messageText: messageText,
             otherUserId: id as string
         });
@@ -132,7 +138,7 @@ export default function ChatScreen() {
             messageText: messageText.trim(),
             senderId: user!.id,
             timestamp: Date.now(),
-            conversationId: id as string
+            conversationId: currentChatId as string
         };
 
         // Optimistically update UI
@@ -141,15 +147,17 @@ export default function ChatScreen() {
 
         // Save to database
         try {
-            const chatManager = ChatManager.getInstance();
             await chatManager.addMessage({
-                conversationId: chatId2 as string,
+                driver: user?.firstName as string,
+                mechanic: mechanicName as string,
+                memberB: id as string,
+                conversationId: currentChatId as string,
                 messageText: messageText.trim(),
                 senderId: user!.id,
                 isViewing: true
             });
         } catch (error) {
-            console.error('Error sending message:', error);
+            console.error(`Error sending message to ChatId ${currentChatId}:`, error);
             // Optionally show error and revert optimistic update
         }
 
@@ -175,7 +183,7 @@ export default function ChatScreen() {
                         styles.messageText,
                         isUser ? styles.userMessageText : styles.mechanicMessageText
                     ]}>
-                        {message.messageText}
+                        {message.messageText ?? message.text}
                     </Text>
                     <Text style={styles.messageTime}>
                         {new Date(message.timestamp).toLocaleTimeString([], {

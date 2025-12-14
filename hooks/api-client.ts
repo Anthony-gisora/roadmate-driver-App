@@ -19,6 +19,7 @@ async function getAuthToken(): Promise<string | null> {
 
 // Base URLs
 const DEFAULT_DEV_BASE_URL = 'http://192.168.100.45:5000/api';
+const DEFAULT_SOCKET_URL = 'http://192.168.100.45:5000';
 const DEFAULT_PROD_BASE_URL = 'https://roadmateassist.onrender.com/api';
 const DEFAULT_IMAGE_URL = 'https://roadmateassist.onrender.com/api/images'
 
@@ -52,5 +53,5 @@ apiClient.interceptors.response.use(
   (error) => Promise.reject(error)
 );
 
-export { apiClient, DEFAULT_IMAGE_URL, DEFAULT_PROD_BASE_URL };
+export { apiClient, DEFAULT_IMAGE_URL, DEFAULT_PROD_BASE_URL, DEFAULT_SOCKET_URL };
 

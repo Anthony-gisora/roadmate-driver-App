@@ -1,6 +1,8 @@
 import { useAuth } from "@clerk/clerk-expo";
 import { Stack, Redirect } from "expo-router";
 import { useEffect, useState } from "react";
+import {getSocket} from "@/hooks/socket";
+import {socketEvents} from "@/hooks/events-emitter";
 
 export default function AppLayout() {
     const { isSignedIn, isLoaded } = useAuth();

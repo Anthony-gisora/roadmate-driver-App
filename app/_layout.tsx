@@ -5,13 +5,14 @@ import {ClerkProvider, useUser} from "@clerk/clerk-expo";
 import { tokenCache } from '@clerk/clerk-expo/token-cache';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import * as Sentry from '@sentry/react-native';
-import {router, Stack} from 'expo-router';
+import {router, Stack, usePathname} from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from "react";
 import 'react-native-reanimated';
 import { ToastProvider } from 'react-native-toast-notifications';
 import * as Notifications from "expo-notifications";
 import {Platform} from "react-native";
+import {ChatManager} from "@/hooks/chat-manager";
 
 Sentry.init({
   dsn: 'https://a127ee337dafa3f316ddd8ad74d0bf2e@o4508255508561920.ingest.de.sentry.io/4510504659255376',
@@ -47,27 +48,39 @@ Notifications.setNotificationHandler({
     }),
 });
 
-const listener = async (msg: any) => {
-    console.log("New message from anywhere:", msg);
-
-    await Notifications.scheduleNotificationAsync({
-        content: {
-            title: msg.senderName ?? "New Message",
-            body: msg.messageText ?? "You have a new message",
-            sound: "default",
-            //channelId: "messages",
-            data: {
-                conversationId: msg.conversationId,
-                senderId: msg.senderId,
-            },
-        },
-        trigger: null,
-    });
-};
-
-
 function RootLayout() {
     const colorScheme = useColorScheme();
+    const pathname = usePathname();
+    const isMessagingPage = pathname?.startsWith("/messaging");
+
+    const listener = async (msg: any) => {
+        console.log("New message from anywhere:", msg);
+
+        await Notifications.scheduleNotificationAsync({
+            content: {
+                title: msg.mechanic ?? "New Message",
+                body: msg.text ?? "You have a new message",
+                sound: isMessagingPage ? false : "default",
+                channelId: isMessagingPage ? 'silent-messages' : 'default',
+                data: {
+                    conversationId: msg.conversationId,
+                    senderId: msg.senderId,
+                },
+            },
+            trigger: null,
+        });
+
+        const chatManager = ChatManager.getInstance();
+        await chatManager.addMessage({
+            driver: msg?.driver, mechanic: msg?.mechanic, memberB: msg?.senderId,
+            conversationId: msg.conversationId as string,
+            messageText: msg.text.trim(),
+            senderId: msg.senderId,
+            isViewing: isMessagingPage,
+            isSending: false,
+            time: msg.timestamp
+        });
+    };
 
     useEffect(() => {
         getSocket();
@@ -85,6 +98,13 @@ function RootLayout() {
                 name: "Messages",
                 importance: Notifications.AndroidImportance.HIGH,
                 sound: "default",
+            });
+
+            Notifications.setNotificationChannelAsync('silent-messages', {
+                name: 'Silent Messages',
+                importance: Notifications.AndroidImportance.MIN,
+                sound: null,
+                bypassDnd: false,
             });
         }
     }, []);

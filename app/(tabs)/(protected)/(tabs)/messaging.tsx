@@ -20,6 +20,7 @@ export default function NotificationsScreen() {
     const { user } = useUser();
     const [chats, setChats] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [mechanics,setMechanics] = useState<any[]>([]);
     const [refreshing, setRefreshing] = useState(false);
     const chatManager = ChatManager.getInstance();
 
@@ -28,7 +29,7 @@ export default function NotificationsScreen() {
     const slideAnim = useRef(new Animated.Value(30)).current;
 
     useEffect(() => {
-        loadChats();
+        loadMechs();
         Animated.parallel([
             Animated.timing(fadeAnim, {
                 toValue: 1,
@@ -41,12 +42,35 @@ export default function NotificationsScreen() {
                 useNativeDriver: true,
             }),
         ]).start();
+        loadChats();
     }, []);
+
+    const loadMechs = async () => {
+        try {
+            const response = await apiClient.get('/mechanics');
+            const mechanics = response?.data?.mechanics ?? [];
+
+            const mechs = mechanics.map((m: any) => ({
+                ...m, // keep all API fields
+                rating: m.rating ?? 4.5, // default rating if missing
+                specialization: m.specialization ?? 'General Repair',
+                image: m.image ?? '🧑‍🔧', // placeholder emoji
+                distance: m.distance ?? 0, // you can compute later if needed
+                isOnline: m.isOnline === 'online', // convert string to boolean if you want
+            }));
+
+            setMechanics(mechs);
+        } catch (error) {
+            console.error('Error loading mechanics:', error);
+            setMechanics([]); // fallback empty array
+        }
+    };
 
     const loadChats = async () => {
         try {
             setIsLoading(true);
             const conversations = await chatManager.getChats();
+            console.log('Conversations:', conversations);
 
             // Transform conversations to chat format with mechanic data
             const formattedChats = await Promise.all(
@@ -63,7 +87,7 @@ export default function NotificationsScreen() {
                         id: conv.conversationId,
                         mechanic: {
                             id: mechanicId,
-                            name: mechanic.name,
+                            name: conv?.mechanic ?? mechanic.name,
                             specialization: mechanic.specialization,
                             rating: mechanic.rating,
                             image: mechanic.image,
@@ -89,14 +113,11 @@ export default function NotificationsScreen() {
     };
 
     const getMechanicDetails = async (mechanicId: string) => {
-        const response = await apiClient.get('/mechanics')
-        const mechanics = response?.data?.mechanics
-
-        return mechanics[mechanicId as keyof typeof mechanics] || {
+        return mechanics.find((m: any) => m.clerkUid === mechanicId) || {
             name: 'Unknown Mechanic',
             specialization: 'General Repair',
             rating: 4.5,
-            image: '🔧'
+            image: '🧑‍🔧'
         };
     };
 

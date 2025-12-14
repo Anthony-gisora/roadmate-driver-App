@@ -16,17 +16,22 @@ async function getDB() {
         conversationId TEXT PRIMARY KEY NOT NULL,
         memberA TEXT,
         memberB TEXT,
+        driver TEXT,
+        mechanic TEXT,
         lastMessage TEXT,
         lastTimestamp INTEGER
-      );
-      CREATE TABLE IF NOT EXISTS messages (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        conversationId TEXT,
-        messageText TEXT,
-        senderId TEXT,
-        timestamp INTEGER
-      );
+      )
     `);
+
+    await db.execAsync(`
+      CREATE TABLE IF NOT EXISTS messages (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          conversationId TEXT,
+          messageText TEXT,
+          senderId TEXT,
+          timestamp INTEGER
+        )
+    `)
   }
   return dbPromise;
 }
@@ -53,10 +58,10 @@ export class ChatManager {
     return rows;
   }
 
-  async deleteChat(id: string): Promise<any> {
+  async deleteChat(id: string): Promise<void> {
     const db = await getDB();
-    const del = await db.execAsync(`DELETE FROM conversations WHERE conversationId=${id}`);
-    return del;
+    await db.runAsync('DELETE FROM conversations WHERE conversationId = ?', id);
+    await db.runAsync('DELETE FROM messages WHERE conversationId = ?', id);
   }
 
   // Get all messages for a conversation
@@ -74,15 +79,21 @@ export class ChatManager {
     conversationId,
     messageText,
     senderId,
+      driver,mechanic,memberB,
     isViewing = false,
+    isSending = true,
+      time
   }: {
     conversationId: string;
     messageText: string;
     senderId: string;
+    driver: string | undefined;mechanic: string | undefined;memberB: string | undefined;
     isViewing?: boolean;
+    isSending?: boolean;
+    time?: number| null;
   }) {
     const db = await getDB();
-    const timestamp = Date.now();
+    const timestamp = time ?? Date.now();
 
     // Store the message
     await db.runAsync(
@@ -109,18 +120,25 @@ export class ChatManager {
     } else {
       // create conversation if doesn't exist
       await db.runAsync(
-        'INSERT INTO conversations (conversationId, memberA, memberB, lastMessage, lastTimestamp) VALUES (?, ?, ?, ?, ?)',
+        'INSERT INTO conversations (conversationId, memberA, memberB,driver,mechanic, lastMessage, lastTimestamp) VALUES (?, ?, ?, ?, ?,?,?)',
         conversationId,
         senderId,
-        '',
+        memberB ?? '',
+        driver ?? '',
+        mechanic ?? '',
         messageText,
         timestamp
       );
     }
 
     // Handle notification or sound
-    if (isViewing) {
-      this.playSound();
+    if(isViewing){
+      if (isSending) {
+        this.playSendingSound();
+      }else{
+        //play incoming message sound
+        this.playIncomingSound();
+      }
     }
   }
 
@@ -129,10 +147,14 @@ export class ChatManager {
     conversationId,
     memberA,
     memberB,
+    driver,
+    mechanic
   }: {
     conversationId: string;
     memberA: string;
     memberB: string;
+    driver: string;
+    mechanic: string;
   }) {
     const db = await getDB();
     const existing = await db.getFirstAsync(
@@ -146,15 +168,19 @@ export class ChatManager {
       conversationId,
       memberA,
       memberB,
+      driver,
+      mechanic,
       lastMessage: '',
       lastTimestamp: Date.now(),
     };
 
     await db.runAsync(
-      'INSERT INTO conversations (conversationId, memberA, memberB, lastMessage, lastTimestamp) VALUES (?, ?, ?, ?, ?)',
+      'INSERT INTO conversations (conversationId, memberA, memberB, driver, mechanic, lastMessage, lastTimestamp) VALUES (?, ?, ?, ?, ?)',
       newChat.conversationId,
       newChat.memberA,
       newChat.memberB,
+      newChat.driver,
+      newChat.mechanic,
       '',
       newChat.lastTimestamp
     );
@@ -162,10 +188,21 @@ export class ChatManager {
     return newChat;
   }
 
-  private async playSound() {
+  private async playSendingSound() {
     try {
       const { sound } = await Audio.Sound.createAsync(
-        require('../assets/audio/inchat.mp3')
+          require('../assets/audio/inchat.mp3')
+      );
+      await sound.playAsync();
+    } catch (err) {
+      console.error('Failed to play sound', err);
+    }
+  }
+
+  private async playIncomingSound() {
+    try {
+      const { sound } = await Audio.Sound.createAsync(
+          require('../assets/audio/outchat.mp3')
       );
       await sound.playAsync();
     } catch (err) {
