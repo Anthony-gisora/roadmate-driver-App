@@ -280,7 +280,7 @@ const FeedbackScreen = ({ navigation }) => {
                     </TouchableOpacity>
 
                     <Text style={styles.note}>
-                        Your feedback will be reviewed by our team. We'll notify you once it's processed.
+                        Your feedback will be reviewed by our team. We appreciate you taking your time to give us valuable insight.
                     </Text>
                 </View>
             </ScrollView>
