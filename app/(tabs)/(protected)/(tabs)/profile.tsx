@@ -68,7 +68,7 @@ export default function ProfileScreen() {
     };
 
     const handleFeedback = () => {
-        router.push('//feedback');
+        router.push('/feedback');
     };
 
     React.useEffect(() => {
@@ -454,19 +454,17 @@ export default function ProfileScreen() {
             <View style={styles.header}>
                 <View style={styles.profileHeader}>
                     <View style={styles.avatarContainer}>
-                        <View style={styles.avatarContainer}>
-                            {!failed && user?.imageUrl ? (
-                                <Image
-                                    source={{ uri: user.imageUrl }}
-                                    style={styles.avatarImage}
-                                    onError={() => setFailed(true)}
-                                />
-                            ) : (
-                                <Text style={styles.avatarText}>
-                                    {userData?.name?.split(" ")?.map(n => n[0]).join("")}
-                                </Text>
-                            )}
-                        </View>
+                        {!failed && user?.imageUrl ? (
+                            <Image
+                                source={{ uri: user.imageUrl }}
+                                style={styles.avatarImage}
+                                onError={() => setFailed(true)}
+                            />
+                        ) : (
+                            <Text style={styles.avatarText}>
+                                {userData?.name?.split(" ")?.map(n => n[0]).join("")}
+                            </Text>
+                        )}
                     </View>
                     <View style={styles.profileInfo}>
                         <Text style={styles.userName}>{userData.name}</Text>
