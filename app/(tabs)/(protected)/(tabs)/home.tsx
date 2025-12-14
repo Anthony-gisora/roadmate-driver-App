@@ -15,6 +15,7 @@ import {
   View
 } from 'react-native';
 import { useToast } from "react-native-toast-notifications";
+import LiveMechanicMap from "@/components/locationtile";
 
 const { width } = Dimensions.get('window');
 
@@ -358,15 +359,10 @@ export default function HomeScreen() {
               </View>
 
               <View style={styles.progressContainer}>
-                <View style={styles.progressBackground}>
-                  <View 
-                    style={[
-                      styles.progressFill,
-                      { width: `${activeService.progress}%` }
-                    ]} 
-                  />
-                </View>
-                <Text style={styles.progressText}>{activeService.progress}% Complete</Text>
+                <LiveMechanicMap
+                    mechanicId={activeService?.mechanicId}
+                    lat={activeService?.location?.split(',')[0] ?? '1.2921'}
+                    lng={activeService?.location?.split(',')[1]?? '36.8219'} />
               </View>
 
               <View style={styles.serviceActions}>
