@@ -56,11 +56,11 @@ export default function ProfileScreen() {
     const [editData, setEditData] = useState(userData);
 
     const handleTerms = () => {
-        router.push('/(tabs)/(protected)/webview?path=terms');
+        router.push('/(tabs)/(protected)/webview?path=terms-of-service');
     };
 
     const handlePrivacy = () => {
-        router.push('/(tabs)/(protected)/webview?path=privacy');
+        router.push('/(tabs)/(protected)/webview?path=privacy-policy');
     };
 
     const handleHelp = () => {
@@ -193,33 +193,6 @@ export default function ProfileScreen() {
         } catch (error) {
             throw error;
         }
-    };
-
-    const andleAddVehicle = async () => {
-        // Show add vehicle modal
-        Alert.prompt(
-            'Add New Vehicle',
-            'Enter vehicle details:',
-            async (text) => {
-                if (text) {
-                    try {
-                        await db.addCar({
-                            make: 'Toyota',
-                            model: 'Camry',
-                            plate: 'ABC-123',
-                            year: 2020,
-                            color: 'Silver',
-                            isDefault: vehicles.length === 0
-                        });
-                        await loadVehicles();
-                        Alert.alert('Success', 'Vehicle added successfully!');
-                    } catch (error) {
-                        Alert.alert('Error', 'Failed to add vehicle');
-                    }
-                }
-            },
-            'plain-text'
-        );
     };
 
     const handleAddVehicle = () => {

@@ -244,6 +244,7 @@ export default function ForgotPassword() {
                 <TextInput
                     style={[styles.input, errors.email && styles.errorInput]}
                     placeholder="Enter your email"
+                    autoComplete={'email'}
                     placeholderTextColor="#9ca3af"
                     value={email}
                     onChangeText={(text) => {
@@ -299,6 +300,7 @@ export default function ForgotPassword() {
                 <TextInput
                     style={[styles.input, errors.otp && styles.errorInput]}
                     placeholder="Enter 6-digit code"
+                    autoComplete={'one-time-code'}
                     placeholderTextColor="#9ca3af"
                     value={otp}
                     onChangeText={(text) => {
@@ -362,6 +364,7 @@ export default function ForgotPassword() {
                 <TextInput
                     style={[styles.input, errors.password && styles.errorInput]}
                     placeholder="New Password"
+                    autoComplete={'new-password'}
                     placeholderTextColor="#9ca3af"
                     value={password}
                     onChangeText={(text) => {
@@ -393,6 +396,7 @@ export default function ForgotPassword() {
                 <TextInput
                     style={[styles.input, errors.confirmPassword && styles.errorInput]}
                     placeholder="Confirm New Password"
+                    autoComplete={'new-password'}
                     placeholderTextColor="#9ca3af"
                     value={confirmPassword}
                     onChangeText={(text) => {

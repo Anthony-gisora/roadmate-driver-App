@@ -155,6 +155,7 @@ export default function Login() {
                         <TextInput
                             style={[styles.input, errors.email && styles.errorInput]}
                             placeholder="Enter your email"
+                            autoComplete={'email'}
                             placeholderTextColor="#9ca3af"
                             value={email}
                             onChangeText={(text) => {
@@ -178,6 +179,7 @@ export default function Login() {
                         <TextInput
                             style={[styles.input, errors.password && styles.errorInput]}
                             placeholder="Enter your password"
+                            autoComplete={'current-password'}
                             placeholderTextColor="#9ca3af"
                             value={password}
                             onChangeText={(text) => {

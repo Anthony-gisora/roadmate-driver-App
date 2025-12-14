@@ -467,6 +467,7 @@ export default function Signup() {
                         <TextInput
                             style={[styles.input, errors.fullName && styles.errorInput]}
                             placeholder="Full Name"
+                            autoComplete={'name'}
                             placeholderTextColor="#94a3b8"
                             value={formData.fullName}
                             onChangeText={(text) => handleInputChange("fullName", text)}
@@ -486,6 +487,7 @@ export default function Signup() {
                         <TextInput
                             style={[styles.input, errors.email && styles.errorInput]}
                             placeholder="Email Address"
+                            autoComplete={'email'}
                             placeholderTextColor="#94a3b8"
                             value={formData.email}
                             onChangeText={(text) => handleInputChange("email", text)}
@@ -506,6 +508,7 @@ export default function Signup() {
                         <TextInput
                             style={[styles.input, errors.phone && styles.errorInput]}
                             placeholder="Phone Number"
+                            autoComplete={'tel'}
                             placeholderTextColor="#94a3b8"
                             value={formData.phone}
                             onChangeText={(text) => handleInputChange("phone", text)}
@@ -528,6 +531,7 @@ export default function Signup() {
                         <TextInput
                             style={[styles.input, errors.password && styles.errorInput]}
                             placeholder="Password (min. 6 characters)"
+                            autoComplete={'new-password'}
                             placeholderTextColor="#94a3b8"
                             value={formData.password}
                             onChangeText={(text) => handleInputChange("password", text)}
@@ -557,6 +561,7 @@ export default function Signup() {
                         <TextInput
                             style={[styles.input, errors.confirmPassword && styles.errorInput]}
                             placeholder="Confirm Password"
+                            autoComplete={'new-password'}
                             placeholderTextColor="#94a3b8"
                             value={formData.confirmPassword}
                             onChangeText={(text) => handleInputChange("confirmPassword", text)}
@@ -592,6 +597,7 @@ export default function Signup() {
                         <TextInput
                             style={[styles.input, errors.emergencyContactName && styles.errorInput]}
                             placeholder="Emergency Contact Name"
+                            autoComplete={'name'}
                             placeholderTextColor="#94a3b8"
                             value={formData.emergencyContactName}
                             onChangeText={(text) => handleInputChange("emergencyContactName", text)}
@@ -611,6 +617,7 @@ export default function Signup() {
                         <TextInput
                             style={[styles.input, errors.emergencyContactPhone && styles.errorInput]}
                             placeholder="Emergency Contact Phone"
+                            autoComplete={'tel'}
                             placeholderTextColor="#94a3b8"
                             value={formData.emergencyContactPhone}
                             onChangeText={(text) => handleInputChange("emergencyContactPhone", text)}
@@ -657,8 +664,8 @@ export default function Signup() {
                     {/* Terms and Conditions */}
                     <Text style={styles.termsText}>
                         By creating an account, you agree to our{" "}
-                        <Text style={styles.link}>Terms of Service</Text> and{" "}
-                        <Text style={styles.link}>Privacy Policy</Text>
+                        <Text onPress={() => router.push('https://roadmateassist.co.ke/terms-of-service')} style={styles.link}>Terms of Service</Text> and{" "}
+                        <Text onPress={() => router.push('https://roadmateassist.co.ke/privacy-policy')} style={styles.link}>Privacy Policy</Text>
                     </Text>
                 </Animated.View>
 
