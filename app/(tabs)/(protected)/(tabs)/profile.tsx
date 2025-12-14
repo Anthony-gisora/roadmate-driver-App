@@ -67,6 +67,10 @@ export default function ProfileScreen() {
         router.push('/(tabs)/(protected)/webview?path=help');
     };
 
+    const handleFeedback = () => {
+        router.push('//feedback');
+    };
+
     React.useEffect(() => {
         Animated.parallel([
             Animated.timing(fadeAnim, {
@@ -200,36 +204,40 @@ export default function ProfileScreen() {
     };
 
     const ServiceHistoryCard = ({ service }: { service: any }) => (
-        <View style={styles.historyCard}>
-            <View style={styles.historyHeader}>
-                <View style={styles.serviceType}>
-                    <Ionicons name="car-sport" size={16} color="#075538" />
-                    <Text style={styles.serviceTypeText}>{service?.type}</Text>
+        <TouchableOpacity onPress={()=>{
+            router.push(`/review?id=${service?._id}`)
+        }}>
+            <View style={styles.historyCard}>
+                <View style={styles.historyHeader}>
+                    <View style={styles.serviceType}>
+                        <Ionicons name="car-sport" size={16} color="#075538" />
+                        <Text style={styles.serviceTypeText}>{service?.type}</Text>
+                    </View>
+                    <Text style={styles.servicePrice}>{service?.price}</Text>
                 </View>
-                <Text style={styles.servicePrice}>{service?.price}</Text>
-            </View>
 
-            <Text style={styles.mechanicName}>{service?.mechanic}</Text>
-            <Text style={styles.vehicleInfo}>{service?.vehicle}</Text>
+                <Text style={styles.mechanicName}>{service?.mechanic?.name}</Text>
+                <Text style={styles.vehicleInfo}>{service?.vehicleYear} {service?.colour} {service?.vehicleMake} {service?.vehicleModel}</Text>
 
-            <View style={styles.historyFooter}>
-                <Text style={styles.serviceDate}>{new Date(service?.createdAt).toLocaleDateString()}</Text>
-                <View style={styles.ratingContainer}>
-                    {[...Array(5)].map((_, i) => (
-                        <Ionicons
-                            key={i}
-                            name="star"
-                            size={14}
-                            color={i < service?.rating ? "#f59e0b" : "#cbd5e1"}
-                        />
-                    ))}
+                <View style={styles.historyFooter}>
+                    <Text style={styles.serviceDate}>{new Date(service?.createdAt).toLocaleDateString()}</Text>
+                    <View style={styles.ratingContainer}>
+                        {[...Array(5)]?.map((_, i) => (
+                            <Ionicons
+                                key={i}
+                                name="star"
+                                size={14}
+                                color={i < service?.rating ? "#f59e0b" : "#cbd5e1"}
+                            />
+                        ))}
+                    </View>
+                </View>
+
+                <View style={[styles.statusBadge, { backgroundColor: '#10b981' }]}>
+                    <Text style={styles.statusText}>{service?.status}</Text>
                 </View>
             </View>
-
-            <View style={[styles.statusBadge, { backgroundColor: '#10b981' }]}>
-                <Text style={styles.statusText}>{service?.status}</Text>
-            </View>
-        </View>
+        </TouchableOpacity>
     );
 
     const renderProfileTab = () => (
@@ -422,6 +430,12 @@ export default function ProfileScreen() {
                     <TouchableOpacity onPress={handlePrivacy} style={styles.menuItem}>
                         <Ionicons name="lock-closed" size={24} color="#075538" />
                         <Text style={styles.menuText}>Privacy Policy</Text>
+                        <Ionicons name="chevron-forward" size={20} color="#64748b" />
+                    </TouchableOpacity>
+
+                    <TouchableOpacity onPress={handleFeedback} style={styles.menuItem}>
+                        <Ionicons name="bug" size={24} color="#075538" />
+                        <Text style={styles.menuText}>Feedback</Text>
                         <Ionicons name="chevron-forward" size={20} color="#64748b" />
                     </TouchableOpacity>
                 </View>

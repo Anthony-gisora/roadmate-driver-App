@@ -17,75 +17,12 @@ import { useToast } from 'react-native-toast-notifications';
 
 const { width } = Dimensions.get('window');
 
-// Mock notifications based on your schema
-const MOCK_NOTIFICATIONS = [
-    {
-        _id: '1',
-        title: 'Service Request Accepted',
-        message: 'Your roadside assistance request has been accepted by Mike Johnson. ETA: 10 minutes.',
-        actionTitle: 'View Details',
-        actionUrl: '/service/123',
-        read: false,
-        category: 'account',
-        createdAt: new Date(Date.now() - 1000 * 60 * 5).toISOString(), // 5 minutes ago
-    },
-    {
-        _id: '2',
-        message: 'Your payment of $45.00 has been processed successfully.',
-        title: 'Payment Processed',
-        actionTitle: 'View Receipt',
-        actionUrl: '/receipt/456',
-        read: true,
-        category: 'account',
-        createdAt: new Date(Date.now() - 1000 * 60 * 60).toISOString(), // 1 hour ago
-    },
-    {
-        _id: '3',
-        title: 'Privacy Policy Updated',
-        message: 'We have updated our privacy policy. Please review the changes.',
-        actionTitle: 'Review Changes',
-        actionUrl: '/privacy-policy',
-        read: false,
-        category: 'policy',
-        createdAt: new Date(Date.now() - 1000 * 60 * 60 * 3).toISOString(), // 3 hours ago
-    },
-    {
-        _id: '4',
-        title: 'Account Security Alert',
-        message: 'New device detected. Was this you?',
-        actionTitle: 'Review Activity',
-        actionUrl: '/security',
-        read: true,
-        category: 'security',
-        createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(), // 1 day ago
-    },
-    {
-        _id: '5',
-        title: 'Settings Updated',
-        message: 'Your notification preferences have been saved successfully.',
-        actionTitle: null,
-        actionUrl: null,
-        read: true,
-        category: 'settings',
-        createdAt: new Date(Date.now() - 1000 * 60 * 60 * 48).toISOString(), // 2 days ago
-    },
-    {
-        _id: '6',
-        title: 'Welcome to Driver Assist!',
-        message: 'Thank you for joining Driver Assist. We are here to help you on the road.',
-        actionTitle: 'Get Started',
-        actionUrl: '/onboarding',
-        read: true,
-        category: 'other',
-        createdAt: new Date(Date.now() - 1000 * 60 * 60 * 72).toISOString(), // 3 days ago
-    },
-];
 
 export default function NotificationsScreen() {
     const router = useRouter();
     const toast = useToast();
     
-    const [notifications, setNotifications] = useState(MOCK_NOTIFICATIONS);
+    const [notifications, setNotifications] = useState([]);
     const [selectedNotification, setSelectedNotification] = useState<any>(null);
     const [isDialogVisible, setIsDialogVisible] = useState(false);
     const [refreshing, setRefreshing] = useState(false);
@@ -114,7 +51,7 @@ export default function NotificationsScreen() {
 
     const filteredNotifications = notifications.filter(notification => {
         if (filter === 'all') return true;
-        return !notification.read;
+        return !notification?.read;
     });
 
     const unreadCount = notifications.filter(n => !n.read).length;
