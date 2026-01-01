@@ -111,17 +111,17 @@ export default function RequestScreen() {
                     console.log(res.data.nearest);
                     setProgress(50);
                     const mechanic = res.data.nearest;
-                    const distance = Number(mechanic.distance);
+                    const distance = Number(mechanic?.distance);
 
                     //estimate ETA
                     setEta(getETA(distance));
 
                     setMechanic({
-                        id: mechanic.clerkUid,
-                        name: mechanic.name,
+                        id: mechanic?.clerkUid,
+                        name: mechanic?.name,
                         rating: 4.8,
                         reviews: 60,
-                        distance: `${distance.toFixed(2) }KM`,
+                        distance: `${distance?.toFixed(2) }KM`,
                         specialization: problem === "flat-tire" ? "Tire Specialist" : "General Mechanic",
                         image: "👨‍🔧",
                     });
@@ -131,7 +131,7 @@ export default function RequestScreen() {
                         requestType,
                         details: JSON.stringify(details),
                         location,
-                        mechanicId: mechanic.clerkUid,
+                        mechanicId: mechanic?.clerkUid,
                         price: price,
                         vehicleMake: car?.make,
                         vehicleModel: car?.model,
@@ -294,7 +294,7 @@ export default function RequestScreen() {
                         <View style={styles.mechanicStats}>
                             <View style={styles.stat}>
                                 <Ionicons name="location" size={16} color="#64748b" />
-                                <Text style={styles.statText}>{mechanic.distance} away</Text>
+                                <Text style={styles.statText}>{mechanic?.distance} away</Text>
                             </View>
                             <View style={styles.stat}>
                                 <Ionicons name="time" size={16} color="#64748b" />
