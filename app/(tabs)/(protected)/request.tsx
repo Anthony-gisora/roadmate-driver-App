@@ -151,11 +151,13 @@ export default function RequestScreen() {
                 })
                 .catch((err)=>{
                     setProgress(0);
+                    console.log("error",err.response);
                     toast.show(err.message ?? "No mechanic is available at the moment", { type: "danger" });
                 })
         } catch (err: any) {
-            console.log(err);
+            console.log("An error occurred", err);
             const error = err.response?.data?.message ?? err.message;
+            setMechanic(null);
             toast.show(`Error occurred: ${error}`, { type: "danger" });
             setProgress(0);
         }
