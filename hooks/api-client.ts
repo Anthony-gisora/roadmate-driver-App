@@ -1,37 +1,35 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios, {
   AxiosInstance,
   AxiosResponse,
   InternalAxiosRequestConfig,
 } from 'axios';
+import * as SecureStore from "expo-secure-store";
 
 // Token storage keys
-const TOKEN_STORAGE_KEY = '@MyApp:auth_token';
+const TOKEN_STORAGE_KEY = 'auth_token';
 
 // Helper to get token
 async function getAuthToken(): Promise<string | null> {
   try {
-    return await AsyncStorage.getItem(TOKEN_STORAGE_KEY);
+    return await SecureStore.getItemAsync(TOKEN_STORAGE_KEY);
   } catch {
     return null;
   }
 }
 
 // Base URLs
-const DEFAULT_DEV_BASE_URL = 'http://192.168.100.45:5000/api';
-const DEFAULT_SOCKET_URL = 'http://192.168.100.45:5000';
+const DEFAULT_DEV_BASE_URL = 'http://192.168.100.200:5000/api';
+const DEFAULT_SOCKET_URL = 'http://192.168.100.200:5000';
 const DEFAULT_PROD_SOCKET_URL = 'https://roadmateassist.onrender.com:5000';
 const DEFAULT_PROD_BASE_URL = 'https://roadmateassist.onrender.com/api';
 const DEFAULT_IMAGE_URL = 'https://roadmateassist.onrender.com/api/images'
 
 function getBaseUrl(): string {
-  //return __DEV__ ? DEFAULT_DEV_BASE_URL : DEFAULT_PROD_BASE_URL;
-  return DEFAULT_PROD_BASE_URL;
+  return __DEV__ ? DEFAULT_DEV_BASE_URL : DEFAULT_PROD_BASE_URL;
 }
 
 export function getSocketUrl(): string {
-  //return __DEV__ ? DEFAULT_SOCKET_URL : DEFAULT_PROD_SOCKET_URL;
-  return DEFAULT_PROD_SOCKET_URL;
+  return __DEV__ ? DEFAULT_SOCKET_URL : DEFAULT_PROD_SOCKET_URL;
 }
 
 const apiClient: AxiosInstance = axios.create({

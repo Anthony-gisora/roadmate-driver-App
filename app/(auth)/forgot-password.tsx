@@ -16,6 +16,7 @@ import {
 } from "react-native";
 import { z } from "zod";
 import {useToast} from "react-native-toast-notifications";
+import {apiClient} from "@/hooks/api-client";
 
 const { width } = Dimensions.get("window");
 
@@ -42,6 +43,7 @@ export default function ForgotPassword() {
     const [currentStep, setCurrentStep] = useState<Step>("email");
     const [email, setEmail] = useState("");
     const [otp, setOtp] = useState("");
+    const [userId, setUserId] = useState();
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
     const [errors, setErrors] = useState<Record<string, string>>({});
@@ -99,17 +101,18 @@ export default function ForgotPassword() {
 
         try {
             // Request password reset from Clerk
-            await signIn?.create({
-                strategy: "reset_password_email_code",
-                identifier: email,
-            });
+            const res = await apiClient.post('/users/forgot-pwd',{
+                email: email,
+            })
+            console.log(res.data);
+            setUserId(res.data._id);
 
             setIsLoading(false);
             setCurrentStep("otp");
             Alert.alert("Code Sent!", `We've sent a verification code to ${email}`);
         } catch (err: any) {
             setIsLoading(false);
-            Alert.alert("Error", err.errors?.[0]?.message || "Failed to send reset code.");
+            Alert.alert(err.response?.data?.message || "Failed to send reset code.");
         }
     };
 
@@ -159,17 +162,18 @@ export default function ForgotPassword() {
 
         try {
             // Use Clerk’s reset password API
-            await signIn?.attemptFirstFactor({
-                strategy: "reset_password_email_code",
-                code: otp,
-                password: password,
+            const result = await apiClient.post('/users/verify-code',{
+                userId,
+                password,
+                code: otp
             });
+            console.log(result);
 
             toast.show("Success Your password has been reset successfully!", { type: 'success' });
 
             router.replace("/(auth)");
         } catch (err: any) {
-            toast.show(err.errors?.[0]?.message || "Unable to reset password.", { type: 'danger' });
+            toast.show(err.response?.data?.message ?? "Unable to reset password.", { type: 'danger' });
         } finally {
             setIsLoading(false);
         }

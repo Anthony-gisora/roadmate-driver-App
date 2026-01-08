@@ -1,8 +1,9 @@
 import * as SecureStore from "expo-secure-store";
 import { Ionicons } from "@expo/vector-icons";
 import {useRouter} from "expo-router";
-import React, {useState} from "react";
+import React, {useEffect, useState} from "react";
 import {
+    ActivityIndicator,
     Alert,
     Animated,
     KeyboardAvoidingView,
@@ -31,12 +32,26 @@ export default function Login() {
     const [password, setPassword] = useState("");
     const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
     const [isLoading, setIsLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
     const [secureTextEntry, setSecureTextEntry] = useState(true);
     const toast = useToast();
 
     // Animation values
     const fadeAnim = React.useRef(new Animated.Value(0)).current;
     const slideAnim = React.useRef(new Animated.Value(50)).current;
+
+    useEffect(() => {
+        const load = async () => {
+            const storedToken = await SecureStore.getItemAsync("auth_token");
+            if (storedToken) {
+                router.push('/(tabs)/(protected)/(tabs)/emergency');
+            }else{
+                setLoading(false);
+            }
+        }
+
+        load();
+    })
 
     React.useEffect(() => {
         Animated.parallel([
@@ -71,7 +86,7 @@ export default function Login() {
         setIsLoading(true);
 
         try {
-            const response = await apiClient.post('/login',
+            const response = await apiClient.post('/users/login',
                 {
                     email, password
                 });
@@ -79,23 +94,28 @@ export default function Login() {
 
             if (result.status === "success") {
                 await SecureStore.setItemAsync("auth_token", response.data.token);
-                //refreshAuth();
-                router.replace("/(tabs)/(protected)/(tabs)/emergency");
+                await SecureStore.setItemAsync("auth_user", JSON.stringify(response.data.user));
+                console.log(result);
+                router.push("/(tabs)/(protected)/(tabs)/emergency");
             } else {
-                toast.show('Failure signing in', { type: 'danger' });
+                toast.show(result?.data?.message, { type: 'danger' });
                 console.warn("Additional steps required.");
             }
         } catch (err: any) {
-            toast.show(err.errors?.[0]?.message || err.message, { type: 'danger' });
+            toast.show(err?.response?.data?.message, { type: 'danger' });
             console.error("Login error:", err.errors?.[0]?.message || err.message);
+        } finally {
+            setIsLoading(false);
         }
-
-        setIsLoading(false);
     };
 
     const handleForgotPassword = () => {
         router.push('/forgot-password');
     };
+
+    if(loading) {
+        return <ActivityIndicator />
+    }
 
     return (
         <KeyboardAvoidingView

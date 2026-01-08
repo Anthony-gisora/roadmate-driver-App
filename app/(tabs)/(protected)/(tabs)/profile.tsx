@@ -32,7 +32,7 @@ export default function ProfileScreen() {
     const [serviceHistory, setServiceHistory] = useState([]);
     const [dialogOpen, setDialogOpen] = useState(false);
     const [failed, setFailed] = React.useState(false);
-    const {user} = useAuth()
+    const {user,logout} = useAuth()
     const toast = useToast();
     const db = offlineDB;
 
@@ -175,7 +175,10 @@ export default function ProfileScreen() {
                 {
                     text: 'Logout',
                     style: 'destructive',
-                    onPress: () => router.replace('/(auth)')
+                    onPress: async () => {
+                        await logout();
+                        router.replace('/(auth)')
+                    }
                 }
             ]
         );

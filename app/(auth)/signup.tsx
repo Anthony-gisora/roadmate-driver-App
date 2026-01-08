@@ -17,8 +17,7 @@ import { useToast } from "react-native-toast-notifications";
 import { z } from "zod";
 import * as WebBrowser from 'expo-web-browser';
 import OAuthButton from "@/components/OauthButton";
-
-const { width } = Dimensions.get('window');
+import {apiClient} from "@/hooks/api-client";
 
 const signupSchema = z.object({
     fullName: z.string().min(2, "Full name must be at least 2 characters"),
@@ -33,7 +32,7 @@ const signupSchema = z.object({
     path: ["confirmPassword"],
 });
 
-// Configure WebBrowser for OAuth
+
 WebBrowser.maybeCompleteAuthSession();
 
 export default function Signup() {
@@ -51,9 +50,6 @@ export default function Signup() {
     const [isLoading, setIsLoading] = useState(false);
     const [secureTextEntry, setSecureTextEntry] = useState(true);
     const [secureConfirmTextEntry, setSecureConfirmTextEntry] = useState(true);
-    const [verificationStep, setVerificationStep] = useState(false);
-    const [verificationCode, setVerificationCode] = useState(["", "", "", "", "", ""]);
-    const [isVerifying, setIsVerifying] = useState(false);
 
     const toast = useToast();
 
@@ -86,33 +82,6 @@ export default function Signup() {
         }
     };
 
-    const handleCodeChange = (text: string, index: number) => {
-        if (text.length <= 1) {
-            const newCode = [...verificationCode];
-            newCode[index] = text;
-            setVerificationCode(newCode);
-
-            // Auto-focus next input
-            if (text && index < 5) {
-                inputRefs.current[index + 1]?.focus();
-            }
-
-            // Auto-submit when all digits are entered
-            if (text && index === 5) {
-                const fullCode = newCode.join('');
-                if (fullCode.length === 6) {
-                    handleVerification(fullCode);
-                }
-            }
-        }
-    };
-
-    const handleKeyPress = (e: any, index: number) => {
-        if (e.nativeEvent.key === 'Backspace' && !verificationCode[index] && index > 0) {
-            inputRefs.current[index - 1]?.focus();
-        }
-    };
-
     const handleSignup = async () => {
         const result = signupSchema.safeParse(formData);
         if (!result.success) {
@@ -130,129 +99,30 @@ export default function Signup() {
         setErrors({});
         setIsLoading(true);
 
-        if (!isLoaded) {
-            toast.show("System not ready. Please try again.", { type: "danger" });
-            setIsLoading(false);
-            return;
-        }
-
         try {
             // Create the sign-up attempt with metadata
-            await signUp.create({
-                emailAddress: formData.email,
+            const response = await apiClient.post('/users', {
+                email: formData.email,
                 password: formData.password,
-                firstName: formData.fullName.split(' ')[0],
-                lastName: formData.fullName.split(' ').slice(1).join(' '),
-                username: formData.email.split("@")[0],
-                unsafeMetadata: {
-                    phone: formData.phone,
-                    emergencyContactName: formData.emergencyContactName,
-                    emergencyContactPhone: formData.emergencyContactPhone,
-                    fullName: formData.fullName
-                }
+                name: formData.fullName,
+                phone: formData.phone,
+                emergencyContactName: formData.emergencyContactName,
+                emergencyContactPhone: formData.emergencyContactPhone,
             });
 
-            // Send verification email
-            await signUp.prepareEmailAddressVerification({ strategy: "email_code" });
-
-            // Move to verification step
-            setVerificationStep(true);
-            toast.show("Verification code sent to your email", { type: "success" });
+            toast.show("Account created successfully,", { type: "success" });
+            router.push("/(auth)");
 
         } catch (err: any) {
-            console.error("Sign-up error:", JSON.stringify(err, null, 2));
-
-            if (err.errors?.[0]?.code === 'form_identifier_exists') {
-                toast.show("Email already registered. Please sign in instead.", {
-                    type: 'warning'
-                });
-                setTimeout(() => router.replace('/(auth)'), 1500);
-            } else if (err.errors?.[0]?.message) {
-                toast.show(err.errors[0].message, { type: 'danger' });
-            } else {
-                toast.show("An error occurred during sign up. Please try again.", {
-                    type: 'danger'
-                });
-            }
+            console.error("Sign-up error:", err);
+            toast.show(err.response?.data?.message, {
+                type: 'warning'
+            });
+        } finally {
+            setIsLoading(false);
         }
 
         setIsLoading(false);
-    };
-
-    const handleVerification = async (code?: string) => {
-        if (!isLoaded || !signUp) {
-            toast.show("System not ready. Please try again.", { type: "danger" });
-            return;
-        }
-
-        const fullCode = code || verificationCode.join('');
-
-        if (fullCode.length !== 6) {
-            toast.show("Please enter the complete 6-digit code", { type: "danger" });
-            return;
-        }
-
-        setIsVerifying(true);
-
-        try {
-            // Attempt verification
-            const signUpAttempt = await signUp.attemptEmailAddressVerification({
-                code: fullCode,
-            });
-
-            if (signUpAttempt.status === "complete") {
-                // Set the user as active
-                await setActive({ session: signUpAttempt.createdSessionId });
-
-                // Start pulse animation for success
-                Animated.sequence([
-                    Animated.timing(pulseAnim, {
-                        toValue: 1.2,
-                        duration: 200,
-                        useNativeDriver: true,
-                    }),
-                    Animated.timing(pulseAnim, {
-                        toValue: 1,
-                        duration: 200,
-                        useNativeDriver: true,
-                    }),
-                ]).start();
-
-                toast.show("Account verified successfully!", { type: "success" });
-
-                // Navigate to the main app after a brief delay
-                setTimeout(() => {
-                    router.replace("/(tabs)/(protected)/(tabs)/emergency");
-                }, 800);
-            } else {
-                toast.show("Verification failed. Please try again.", { type: "danger" });
-            }
-        } catch (err: any) {
-            console.error("Verification error:", err);
-
-            if (err.errors?.[0]?.code === 'form_code_incorrect') {
-                toast.show("Invalid verification code. Please check and try again.", {
-                    type: 'danger'
-                });
-            } else {
-                toast.show("Verification failed. Please try again.", { type: "danger" });
-            }
-        }
-
-        setIsVerifying(false);
-    };
-
-    const handleResendCode = async () => {
-        if (!isLoaded || !signUp) return;
-
-        try {
-            await signUp.prepareEmailAddressVerification({ strategy: "email_code" });
-            toast.show("New verification code sent to your email", { type: "success" });
-            setVerificationCode(["", "", "", "", "", ""]);
-            inputRefs.current[0]?.focus();
-        } catch (err: any) {
-            toast.show("Failed to resend code. Please try again.", { type: "danger" });
-        }
     };
 
     const SectionHeader = ({ title, icon }: { title: string; icon: string }) => (
@@ -264,146 +134,6 @@ export default function Signup() {
         </View>
     );
 
-    const CodeInput = ({ index }: { index: number }) => (
-        <View style={styles.codeInputContainer}>
-            <Text style={styles.codeInput}>
-                {verificationCode[index]}
-            </Text>
-            <View style={[
-                styles.codeInputUnderline,
-                verificationCode[index] ? styles.codeInputUnderlineActive : {}
-            ]} />
-        </View>
-    );
-
-    // Render verification screen
-    if (verificationStep) {
-        return (
-            <KeyboardAvoidingView
-                style={styles.container}
-                behavior={Platform.OS === "ios" ? "padding" : "height"}
-            >
-                <ScrollView
-                    contentContainerStyle={styles.scrollContainer}
-                    showsVerticalScrollIndicator={false}
-                >
-                    <Animated.View
-                        style={[
-                            styles.verificationHeader,
-                            {
-                                opacity: fadeAnim,
-                                transform: [{translateY: slideAnim}]
-                            }
-                        ]}
-                    >
-                        <View style={styles.verificationLogoContainer}>
-                            <Animated.View style={{transform: [{scale: pulseAnim}]}}>
-                                <Ionicons name="shield-checkmark" size={60} color="#075538"/>
-                            </Animated.View>
-                        </View>
-                        <Text style={styles.verificationTitle}>Verify Your Email</Text>
-                        <Text style={styles.verificationSubtitle}>
-                            We sent a 6-digit code to
-                        </Text>
-                        <Text style={styles.verificationEmail}>{formData.email}</Text>
-                    </Animated.View>
-
-                    <Animated.View
-                        style={[
-                            styles.verificationFormContainer,
-                            {
-                                opacity: fadeAnim,
-                                transform: [{translateY: slideAnim}]
-                            }
-                        ]}
-                    >
-                        {/* Code Input */}
-                        <Text style={styles.codeLabel}>Enter verification code</Text>
-
-                        <View style={styles.codeInputsContainer}>
-                            {verificationCode.map((_, index) => (
-                                <TouchableOpacity
-                                    key={index}
-                                    style={styles.codeInputWrapper}
-                                    onPress={() => inputRefs.current[index]?.focus()}
-                                >
-                                    <CodeInput index={index}/>
-                                </TouchableOpacity>
-                            ))}
-                        </View>
-
-                        {/* Hidden TextInputs for keyboard */}
-                        <View style={styles.hiddenInputs}>
-                            {verificationCode.map((_, index) => (
-                                <TextInput
-                                    key={index}
-                                    ref={ref => inputRefs.current[index] = ref}
-                                    style={styles.hiddenInput}
-                                    value={verificationCode[index]}
-                                    onChangeText={(text) => handleCodeChange(text, index)}
-                                    onKeyPress={(e) => handleKeyPress(e, index)}
-                                    keyboardType="number-pad"
-                                    maxLength={1}
-                                    autoFocus={index === 0}
-                                    selectTextOnFocus
-                                />
-                            ))}
-                        </View>
-
-                        <Text style={styles.verificationHelp}>
-                            Check your email inbox for the 6-digit verification code
-                        </Text>
-
-                        {/* Verify Button */}
-                        <TouchableOpacity
-                            style={[styles.verifyButton, isVerifying && styles.buttonDisabled]}
-                            onPress={() => handleVerification()}
-                            disabled={isVerifying}
-                        >
-                            {isVerifying ? (
-                                <View style={styles.loadingContainer}>
-                                    <Ionicons name="refresh" size={20} color="#fff" style={styles.spinning}/>
-                                    <Text style={styles.buttonText}>Verifying...</Text>
-                                </View>
-                            ) : (
-                                <View style={styles.buttonContent}>
-                                    <Text style={styles.buttonText}>Verify Email</Text>
-                                    <Ionicons name="checkmark-circle-outline" size={20} color="#fff"/>
-                                </View>
-                            )}
-                        </TouchableOpacity>
-
-                        {/* Resend Code */}
-                        <TouchableOpacity
-                            style={styles.resendButton}
-                            onPress={handleResendCode}
-                            disabled={isVerifying}
-                        >
-                            <Text style={styles.resendText}>
-                                Didn&apos;t receive the code?{" "}
-                                <Text style={styles.resendLink}>Resend</Text>
-                            </Text>
-                        </TouchableOpacity>
-
-                        {/* Back to Signup */}
-                        <TouchableOpacity
-                            style={styles.backButton}
-                            onPress={() => {
-                                setVerificationStep(false);
-                                setVerificationCode(["", "", "", "", "", ""]);
-                            }}
-                        >
-                            <Ionicons name="arrow-back" size={16} color="#64748b"/>
-                            <Text style={styles.backText}>Back to sign up</Text>
-                        </TouchableOpacity>
-                    </Animated.View>
-                </ScrollView>
-                <div id="clerk-captcha"/>
-            </KeyboardAvoidingView>
-        );
-    }
-
-    // Original signup form
     return (
         <KeyboardAvoidingView
             style={styles.container}
@@ -463,7 +193,7 @@ export default function Signup() {
                         <TextInput
                             style={[styles.input, errors.fullName && styles.errorInput]}
                             placeholder="Full Name"
-                            autoComplete={'name'}
+                            autoComplete={"name"}
                             placeholderTextColor="#94a3b8"
                             value={formData.fullName}
                             onChangeText={(text) => handleInputChange("fullName", text)}
@@ -654,7 +384,7 @@ export default function Signup() {
 
                     {/* OAuthButton component to handle OAuth sign-in */}
                     <View style={{marginBottom: 24}}>
-                        <OAuthButton strategy="oauth_google">Sign in with Google</OAuthButton>
+                        <OAuthButton>Sign in with Google</OAuthButton>
                     </View>
 
                     {/* Terms and Conditions */}

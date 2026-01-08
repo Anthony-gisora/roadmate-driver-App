@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import * as SecureStore from "expo-secure-store";
 import { AxiosError } from "axios";
-import { useRouter, useSegments } from "expo-router";
 import {apiClient} from "@/hooks/api-client";
 
 type User = {
@@ -75,6 +74,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         } catch (err) {
             const error = err as AxiosError;
             if (!error.response) {
+                const userD = await SecureStore.getItemAsync(USER_KEY);
+                if (typeof userD === "string") {
+                    setUser(JSON.parse(userD));
+                }
                 console.warn("Network unavailable, staying authenticated");
                 return;
             }
