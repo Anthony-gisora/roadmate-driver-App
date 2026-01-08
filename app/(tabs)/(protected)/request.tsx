@@ -80,82 +80,109 @@ export default function RequestScreen() {
             .then((res)=>{
                 setCar(res);
             })
+        fetchMechanic();
     }, []);
+
+    const fetchMechanic = async () => {
+        setSending(true);
+        let loc: string | string[] = location ?? "";
+        if (useAutoLocation === "true") {
+            loc = (await getLocation()) ?? "";
+        }
+        setProgress(0);
+
+        setProgress(15);
+        const lat = loc.toString().split(',')[0];
+        const lng = loc.toString().split(',')[1];
+
+
+        await apiClient.get(`/online-mechanics?lat=${lat}&lng=${lng}`)
+            .then((res) => {
+                setProgress(30);
+                const mechanic = res.data.nearest;
+                const distance = Number(mechanic?.distance  ?? 0);
+
+                if(mechanic){
+                    //estimate ETA
+                    setEta(getETA(distance));
+
+                    setMechanic({
+                        id: mechanic.clerkUid,
+                        name: mechanic.name,
+                        rating: 4.8,
+                        reviews: 60,
+                        distance: `${distance?.toFixed(2) }KM`,
+                        specialization: problem === "flat-tire" ? "Tire Specialist" : "General Mechanic",
+                        image: "👨‍🔧",
+                        location: loc,
+                        price: estimatedPrice()
+                    });
+                    setProgress(50);
+                }else{
+                    setMechanic({
+                        id: 'user_30wtNSkJ1tqoMq0UawYeVAd1gOJ',
+                        name: "Anthony Gesora",
+                        rating: 4.8,
+                        reviews: 19,
+                        distance: `$2.45 KM`,
+                        specialization: "flat-tire",
+                        image: "🤖",
+                        location: location,
+                        price: estimatedPrice()
+                    });
+                    toast.show("No mechanic is available at the moment", { type: "danger" });
+                }
+            })
+            .catch((err) => {
+                console.log(err);
+                setProgress(0);
+                console.log("error",err.response);
+                toast.show(err.message ?? "Error fetching available mechanics", { type: "danger" });
+            }).finally(() => {
+                setSending(false);
+            })
+    }
 
     const sendRequest = async () => {
         if(sent){
             return null;
         }
         setSending(true);
-        setProgress(0);
         const driverId = user?.id;
         const requestType = problem;
         const details = {
             priority: priority.toString(),
             timestamp: timestamp.toString(),
         };
-        let loc: string | string[] = location ?? "";
 
-        if (useAutoLocation === "true") {
-            loc = (await getLocation()) ?? "";
-        }
 
         try {
-            setProgress(15);
-            //connect to socket get nearest mechanic
-            const lat = loc.toString().split(',')[0];
-            const lng = loc.toString().split(',')[1];
-
-            await apiClient.get(`/online-mechanics?lat=${lat}&lng=${lng}`)
-                .then((res)=>{
-                    console.log(res.data.nearest);
-                    setProgress(50);
-                    const mechanic = res.data.nearest;
-                    const distance = Number(mechanic?.distance);
-
-                    //estimate ETA
-                    setEta(getETA(distance));
-
-                    setMechanic({
-                        id: mechanic?.clerkUid,
-                        name: mechanic?.name,
-                        rating: 4.8,
-                        reviews: 60,
-                        distance: `${distance?.toFixed(2) }KM`,
-                        specialization: problem === "flat-tire" ? "Tire Specialist" : "General Mechanic",
-                        image: "👨‍🔧",
-                    });
-
-                    apiClient.post("/req/requests", {
-                        driverId,
-                        requestType,
-                        details: JSON.stringify(details),
-                        location,
-                        mechanicId: mechanic?.clerkUid,
-                        price: price,
-                        vehicleMake: car?.make,
-                        vehicleModel: car?.model,
-                        vehiclePlate: car?.plate,
-                        vehicleYear: car?.year,
-                        eta: eta
-                    })
-                        .then((res) => {
-                            console.log(res);
-                            setProgress(100);
-                            setSent(true);
-                        })
-                        .catch((err)=>{
-                            toast.show(err.response.data?.message ?? 'An error occurred', { type: "danger" });
-                            console.log(err);
-                        })
+            apiClient.post("/req/requests", {
+                driverId,
+                requestType,
+                details: JSON.stringify(details),
+                location: mechanic.loc,
+                mechanicId: mechanic.id,
+                price: mechanic.price,
+                vehicleMake: car?.make,
+                vehicleModel: car?.model,
+                vehiclePlate: car?.plate,
+                vehicleYear: car?.year,
+                eta: eta
+            })
+                .then((res) => {
+                    console.log(res);
+                    toast.show('Request submitted', { type: "success" });
+                    setProgress(100);
+                    setSent(true);
                 })
                 .catch((err)=>{
-                    setProgress(0);
-                    console.log("error",err.response);
-                    toast.show(err.message ?? "No mechanic is available at the moment", { type: "danger" });
+                    toast.show(err.response.data?.message ?? 'An error occurred', { type: "danger" });
+                    console.log(err);
                 })
         } catch (err: any) {
             console.log("An error occurred", err);
+            console.log("mechanic", mechanic);
             const error = err.response?.data?.message ?? err.message;
             setMechanic(null);
             toast.show(`Error occurred: ${error}`, { type: "danger" });
@@ -343,9 +370,18 @@ export default function RequestScreen() {
                     <Text style={styles.cancelButtonText}>Cancel Request</Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity disabled={sending} onPress={sendRequest} style={styles.updateButton}>
-                    <Ionicons name="send" size={20} color="#2563eb" />
-                    <Text style={styles.updateButtonText}>Submit Request</Text>
+                <TouchableOpacity disabled={sending || !mechanic} onPress={sendRequest} style={[
+                    styles.updateButton,
+                    mechanic === null && styles.disabledButton,
+                ]}>
+                    {sending ? (
+                        <>
+                            <Ionicons name="send" size={20} color="#2563eb" />
+                            <Text style={styles.updateButtonText}>Submit Request</Text>
+                        </>
+                        ):(
+                        <Text style={styles.updateButtonTextError}>No mechanic available</Text>
+                    )}
                 </TouchableOpacity>
             </View>
         </View>
@@ -667,5 +703,16 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: '600',
         color: '#2563eb',
+    },
+    updateButtonTextError: {
+        marginLeft: 8,
+        fontSize: 16,
+        fontWeight: '600',
+        color: '#fb0202',
+    },
+    disabledButton: {
+        backgroundColor: '#9ca3af',
+        opacity: 0.6,
+        borderColor: '#f10542',
     },
 });
