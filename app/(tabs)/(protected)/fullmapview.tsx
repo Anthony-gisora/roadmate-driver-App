@@ -1,8 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
-import {router, useLocalSearchParams, useRouter} from 'expo-router';
+import {router, useLocalSearchParams} from 'expo-router';
 import { Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { WebView } from 'react-native-webview';
 import LiveMechanicMap from "@/components/locationtile";
 import React from "react";
 

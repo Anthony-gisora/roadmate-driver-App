@@ -1,15 +1,15 @@
-import { useAuth } from "@clerk/clerk-expo";
 import { Stack } from "expo-router";
 import { useEffect } from "react";
 import {getSocket} from "@/hooks/socket";
+import {useAuth} from "@/providers/auth-provider";
 
 export default function AppLayout() {
-    const {userId} = useAuth();
+    const {user} = useAuth();
 
     useEffect(() => {
         const s = getSocket();
         s.on("connect", () => {
-            s.emit("addUser", userId);
+            s.emit("addUser", user?.id);
         });
     }, []);
 

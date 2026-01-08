@@ -1,5 +1,4 @@
 import { apiClient } from "@/hooks/api-client";
-import { useUser } from '@clerk/clerk-expo';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
@@ -16,6 +15,7 @@ import {
 } from 'react-native';
 import { useToast } from "react-native-toast-notifications";
 import LiveMechanicMap from "@/components/locationtile";
+import {useAuth} from "@/providers/auth-provider";
 
 const { width } = Dimensions.get('window');
 
@@ -28,13 +28,20 @@ const emergencyContact = [
   }
 ];
 
+interface emergencyContact {
+  id: number;
+  name: string;
+  phone: string;
+  relationship: string;
+}
+
 export default function HomeScreen() {
   const router = useRouter();
   const toast = useToast();
   const [refreshing, setRefreshing] = useState(false);
-  const [emergencyContacts, setEmergencyContacts] = useState(emergencyContact);
+  const [emergencyContacts, setEmergencyContacts] = useState<emergencyContact>(emergencyContact);
   const [activeService, setActiveService] = useState<any>(null);
-  const user = useUser();
+  const user = useAuth();
   
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(50)).current;
@@ -91,9 +98,9 @@ export default function HomeScreen() {
   useEffect(() => {
     const emergencyC = [{
       id: 10,
-      name: user?.user?.unsafeMetadata?.emergencyContactName,
-      phone: user?.user?.unsafeMetadata?.emergencyContactPhone,
-      relationship: user?.user?.unsafeMetadata?.emergencyContactRelationship
+      name: user.user?.emergencyContactName,
+      phone: user?.user?.emergencyContactPhone,
+      relationship: user?.user?.emergencyContactRelationship,
     }];
 
     apiClient.get(`/req/requests/${user?.user?.id}`)
@@ -125,9 +132,9 @@ export default function HomeScreen() {
           console.log(res);
           const emergencyC = [{
             id: 10,
-            name: user?.user?.unsafeMetadata?.emergencyContactName,
-            phone: user?.user?.unsafeMetadata?.emergencyContactPhone,
-            relationship: user?.user?.unsafeMetadata?.emergencyContactRelationship
+            name: user?.user?.emergencyContactName,
+            phone: user?.user?.emergencyContactPhone,
+            relationship: user?.user?.emergencyContactRelationship
           }];
           setEmergencyContacts((prev) => {
             const existingIds = new Set(prev.map(c => c.id));
@@ -273,7 +280,7 @@ export default function HomeScreen() {
         >
           <View style={styles.welcomeSection}>
             <View>
-              <Text style={styles.title}>Welcome {user?.user?.firstName}</Text>
+              <Text style={styles.title}>Welcome {user?.user?.name.split(' ')[0]}</Text>
               <Text style={styles.subtitle}>Ready to hit the road?</Text>
             </View>
             <TouchableOpacity onPress={handleNotification} style={styles.notificationButton}>
@@ -418,7 +425,7 @@ export default function HomeScreen() {
               {emergencyContact != null && (
 
               <View style={styles.contactsContainer}>
-                {emergencyContacts?.map(contact => (
+                {emergencyContacts?.map((contact: emergencyContact)  => (
                     <EmergencyContactCard key={contact.id} contact={contact} />
                 ))}
               </View>

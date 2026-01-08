@@ -14,7 +14,6 @@ import {
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useToast } from 'react-native-toast-notifications';
-import { useUser } from '@clerk/clerk-expo';
 import {apiClient} from "@/hooks/api-client";
 
 const { width } = Dimensions.get('window');

@@ -1,8 +1,6 @@
 import { socketEvents } from "@/hooks/events-emitter";
 import { getSocket } from "@/hooks/socket";
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import {ClerkProvider, useUser} from "@clerk/clerk-expo";
-import { tokenCache } from '@clerk/clerk-expo/token-cache';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import * as Sentry from '@sentry/react-native';
 import {router, Stack, usePathname} from 'expo-router';
@@ -13,6 +11,8 @@ import { ToastProvider } from 'react-native-toast-notifications';
 import * as Notifications from "expo-notifications";
 import {Platform} from "react-native";
 import {ChatManager} from "@/hooks/chat-manager";
+import {AuthProvider} from "@/providers/auth-provider";
+import {AuthGate} from "@/components/auth-guard";
 
 Sentry.init({
   dsn: 'https://a127ee337dafa3f316ddd8ad74d0bf2e@o4508255508561920.ingest.de.sentry.io/4510504659255376',
@@ -133,20 +133,21 @@ function RootLayout() {
     }, []);
 
     return (
-        <ClerkProvider
-            publishableKey="pk_test_c3RpcnJlZC1tdWRmaXNoLTM2LmNsZXJrLmFjY291bnRzLmRldiQ"
-            tokenCache={tokenCache}>
+        <AuthProvider
+        >
                 <ToastProvider>
                 <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
                     <Stack screenOptions={{ headerShown: false }}>
                         {/* Public routes */}
-                        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
                         <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+                        <AuthGate>
+                            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                        </AuthGate>
                     </Stack>
                     <StatusBar style="auto" />
                     </ThemeProvider>
                 </ToastProvider>
-        </ClerkProvider>
+        </AuthProvider>
     );
 }
 

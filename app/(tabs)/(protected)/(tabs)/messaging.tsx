@@ -1,4 +1,3 @@
-// app/(tabs)/notifications.tsx
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
@@ -11,13 +10,13 @@ import {
     View,
     RefreshControl
 } from 'react-native';
-import { useUser } from "@clerk/clerk-expo";
 import {ChatManager} from "@/hooks/chat-manager";
 import {apiClient} from "@/hooks/api-client";
+import {useAuth} from "@/providers/auth-provider";
 
 export default function NotificationsScreen() {
     const router = useRouter();
-    const { user } = useUser();
+    const { user } = useAuth();
     const [chats, setChats] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [mechanics,setMechanics] = useState<any[]>([]);

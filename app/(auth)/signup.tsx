@@ -1,5 +1,3 @@
-// app/signup.tsx
-import { useSignUp, useOAuth } from "@clerk/clerk-expo";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useState, useRef } from "react";
@@ -57,8 +55,6 @@ export default function Signup() {
     const [verificationCode, setVerificationCode] = useState(["", "", "", "", "", ""]);
     const [isVerifying, setIsVerifying] = useState(false);
 
-    const { signUp, setActive, isLoaded } = useSignUp();
-    const { startOAuthFlow } = useOAuth({ strategy: "oauth_google" });
     const toast = useToast();
 
     // Animation values

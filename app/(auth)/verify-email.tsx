@@ -1,4 +1,3 @@
-import { useSignIn, useSignUp } from '@clerk/clerk-expo';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
@@ -13,9 +12,6 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
-
-// We need to import TextInput from react-native
-import { TextInput } from 'react-native';
 import { useToast } from 'react-native-toast-notifications';
 
 const { width } = Dimensions.get('window');
@@ -24,8 +20,6 @@ export default function VerifyEmailScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const { id, username } = useLocalSearchParams();
-  const { isLoaded, signUp, setActive } = useSignUp();
-  const { signIn } = useSignIn();
   
   const [code, setCode] = useState(['', '', '', '', '', '']);
   const [isLoading, setIsLoading] = useState(false);

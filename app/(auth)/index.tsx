@@ -1,7 +1,7 @@
-import {useSignIn, useClerk, useUser} from "@clerk/clerk-expo";
+import * as SecureStore from "expo-secure-store";
 import { Ionicons } from "@expo/vector-icons";
-import {router, useRouter} from "expo-router";
-import React, {useEffect, useState} from "react";
+import {useRouter} from "expo-router";
+import React, {useState} from "react";
 import {
     Alert,
     Animated,
@@ -17,6 +17,8 @@ import {
 import { useToast } from "react-native-toast-notifications";
 import { z } from "zod";
 import OAuthButton from "@/components/OauthButton";
+import {apiClient} from "@/hooks/api-client";
+import {useAuth} from "@/providers/auth-provider";
 
 const loginSchema = z.object({
     email: z.string().email("Invalid email address"),
@@ -30,7 +32,6 @@ export default function Login() {
     const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
     const [isLoading, setIsLoading] = useState(false);
     const [secureTextEntry, setSecureTextEntry] = useState(true);
-    const { signIn, setActive, isLoaded } = useSignIn();
     const toast = useToast();
 
     // Animation values
@@ -69,19 +70,19 @@ export default function Login() {
         setErrors({});
         setIsLoading(true);
 
-        if (!isLoaded) return;
-
         try {
-            const result = await signIn.create({
-                identifier: email,
-                password,
-            });
+            const response = await apiClient.post('/login',
+                {
+                    email, password
+                });
+            const result = response.data;
 
-            if (result.status === "complete") {
-                await setActive({ session: result.createdSessionId });
+            if (result.status === "success") {
+                await SecureStore.setItemAsync("auth_token", response.data.token);
+                //refreshAuth();
                 router.replace("/(tabs)/(protected)/(tabs)/emergency");
             } else {
-                toast.show('Additional steps required.', { type: 'danger' });
+                toast.show('Failure signing in', { type: 'danger' });
                 console.warn("Additional steps required.");
             }
         } catch (err: any) {
@@ -94,10 +95,6 @@ export default function Login() {
 
     const handleForgotPassword = () => {
         router.push('/forgot-password');
-    };
-
-    const handleSocialLogin = (provider: string) => {
-        Alert.alert("Social Login", `${provider} login would be implemented here`);
     };
 
     return (
@@ -231,7 +228,7 @@ export default function Login() {
 
                     {/* Social Login Options */}
                     <View style={{marginBottom: 24}}>
-                        <OAuthButton strategy="oauth_google">Sign in with Google</OAuthButton>
+                        <OAuthButton>Sign in with Google</OAuthButton>
                     </View>
                 </Animated.View>
 

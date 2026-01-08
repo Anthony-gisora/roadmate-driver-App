@@ -15,6 +15,8 @@ const firebaseConfig = {
 const app = getApps().length === 0
   ? initializeApp(firebaseConfig)
   : getApp();
+
+export const EXPO_PUBLIC_FIREBASE_WEB_CLIENT_ID = '';
   
 export const auth = getAuth(app);
 

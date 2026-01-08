@@ -2,7 +2,6 @@ import VehicleDialog from "@/components/add-vehicle";
 import VehicleCard from "@/components/vehicle-card";
 import { offlineDB } from "@/data/db";
 import { apiClient } from "@/hooks/api-client";
-import { useUser } from "@clerk/clerk-expo";
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useRef, useState } from 'react';
@@ -20,6 +19,7 @@ import {
     View
 } from 'react-native';
 import { useToast } from "react-native-toast-notifications";
+import {useAuth} from "@/providers/auth-provider";
 
 export default function ProfileScreen() {
     const router = useRouter();
@@ -32,7 +32,7 @@ export default function ProfileScreen() {
     const [serviceHistory, setServiceHistory] = useState([]);
     const [dialogOpen, setDialogOpen] = useState(false);
     const [failed, setFailed] = React.useState(false);
-    const {user} = useUser()
+    const {user} = useAuth()
     const toast = useToast();
     const db = offlineDB;
 
@@ -86,16 +86,16 @@ export default function ProfileScreen() {
         ]).start();
 
         setUserData({
-            name: user?.fullName as string,
-            email: user?.primaryEmailAddress?.emailAddress,
-            phone: user?.primaryPhoneNumber?.phoneNumber as string ?? user?.unsafeMetadata?.phone,
+            name: user?.name as string,
+            email: user?.email as string,
+            phone: user?.phone as string,
             memberSince: '2024',
             rating: 4.9,
             trips: 24,
             emergencyContact: {
-                name: user?.unsafeMetadata?.emergencyContactName as string,
-                phone: user?.unsafeMetadata?.emergencyContactPhone as string,
-                relationship: 'Friend'
+                name: user?.emergencyContactName as string,
+                phone: user?.emergencyContactPhone as string,
+                relationship: user?.emergencyContactRelationship as string,
             }
         })
 

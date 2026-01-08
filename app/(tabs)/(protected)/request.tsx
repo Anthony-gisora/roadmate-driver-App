@@ -2,12 +2,12 @@ import CarSelector from '@/components/car-selector';
 import { Car, offlineDB } from "@/data/db";
 import { apiClient } from "@/hooks/api-client";
 import { getLocation } from "@/hooks/location";
-import { useUser } from "@clerk/clerk-expo";
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { Alert, Animated, Dimensions, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useToast } from "react-native-toast-notifications";
+import {useAuth} from "@/providers/auth-provider";
 
 const { width } = Dimensions.get('window');
 
@@ -21,7 +21,7 @@ export default function RequestScreen() {
     const [sending, setSending] = useState(false);
     const [sent, setSent] = useState(false);
     const [price, setPrice] = useState<number>(0);
-    const { user } = useUser();
+    const { user } = useAuth();
     const toast = useToast();
     const db = offlineDB;
 

@@ -1,4 +1,3 @@
-// app/chat/[id].tsx
 import React, { useState, useEffect, useRef } from 'react';
 import {
     View,
@@ -13,7 +12,6 @@ import {
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useUser } from '@clerk/clerk-expo';
 import {ChatManager} from "@/hooks/chat-manager";
 import {apiClient} from "@/hooks/api-client";
 import {sendMessage} from "@/hooks/socket";

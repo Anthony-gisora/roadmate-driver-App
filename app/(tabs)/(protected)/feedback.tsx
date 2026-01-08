@@ -1,4 +1,3 @@
-// FeedbackScreen.js
 import React, { useState } from 'react';
 import {
     View,
@@ -17,7 +16,6 @@ import * as ImagePicker from 'expo-image-picker';
 import {apiClient} from "@/hooks/api-client";
 import {Ionicons} from "@expo/vector-icons";
 import SuccessModal from "@/components/success-modal";
-import {useUser} from "@clerk/clerk-expo";
 import {router} from "expo-router";
 
 const FeedbackScreen = ({ navigation }) => {

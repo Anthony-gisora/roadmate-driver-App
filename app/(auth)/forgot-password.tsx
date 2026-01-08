@@ -15,8 +15,6 @@ import {
     View
 } from "react-native";
 import { z } from "zod";
-import {useSignIn, useSignUp} from "@clerk/clerk-expo"
-import { useClerk } from "@clerk/clerk-react";
 import {useToast} from "react-native-toast-notifications";
 
 const { width } = Dimensions.get("window");
@@ -50,9 +48,6 @@ export default function ForgotPassword() {
     const [isLoading, setIsLoading] = useState(false);
     const [secureTextEntry, setSecureTextEntry] = useState(true);
     const [secureConfirmTextEntry, setSecureConfirmTextEntry] = useState(true);
-    const {signUp} = useSignUp();
-    const {signIn} = useSignIn();
-    const { client } = useClerk();
     const toast = useToast();
 
     // Animation values

@@ -1,53 +1,60 @@
-import { styles } from '@/data/styles'
-import { useSSO } from '@clerk/clerk-expo'
-import { OAuthStrategy } from '@clerk/types'
-import * as AuthSession from 'expo-auth-session'
-import * as WebBrowser from 'expo-web-browser'
-import React, { useCallback, useEffect } from 'react'
-import { Platform, Text, TouchableOpacity } from 'react-native'
+import { styles } from "@/data/styles";
+import * as WebBrowser from "expo-web-browser";
+import * as Google from "expo-auth-session/providers/google";
+import * as SecureStore from "expo-secure-store";
+import { signInWithCredential, GoogleAuthProvider } from "firebase/auth";
+import {auth, EXPO_PUBLIC_FIREBASE_WEB_CLIENT_ID} from "@/hooks/firebase";
+import React, { useEffect } from "react";
+import { Platform, Text, TouchableOpacity } from "react-native";
+import { useRouter } from "expo-router";
+
+WebBrowser.maybeCompleteAuthSession();
 
 export const useWarmUpBrowser = () => {
     useEffect(() => {
-        if (Platform.OS === 'web') return
-        void WebBrowser.warmUpAsync()
+        if (Platform.OS === "web") return;
+        void WebBrowser.warmUpAsync();
         return () => {
-            void WebBrowser.coolDownAsync()
-        }
-    }, [])
-}
-WebBrowser.maybeCompleteAuthSession()
+            void WebBrowser.coolDownAsync();
+        };
+    }, []);
+};
 
-interface Props {
-    // The OAuthStrategy type from Clerk allows you to specify the provider you want to use in this specific instance of the OAuthButton component
-    strategy: OAuthStrategy
-    children: React.ReactNode
-}
+export default function GoogleAuthButton({ children }: { children: React.ReactNode }) {
+    useWarmUpBrowser();
+    const router = useRouter();
 
-export default function OAuthButton({ strategy, children }: Props) {
-    useWarmUpBrowser()
-    // useSSO hook from Clerk SDK to support various SSO providers
-    const { startSSOFlow } = useSSO()
+    const [request, response, promptAsync] = Google.useAuthRequest({
+        clientId: EXPO_PUBLIC_FIREBASE_WEB_CLIENT_ID,
+    });
 
-    const onPress = useCallback(async () => {
-        try {
-            const { createdSessionId, setActive } = await startSSOFlow({
-                strategy,
-                redirectUrl: AuthSession.makeRedirectUri(),
+    useEffect(() => {
+        if (response?.type !== "success") return;
+
+        const { id_token } = response.authentication ?? {};
+        if (!id_token) return;
+
+        const credential = GoogleAuthProvider.credential(id_token);
+
+        signInWithCredential(auth, credential)
+            .then(async (result) => {
+                const token = await result.user.getIdToken();
+
+                // store token for your AuthProvider
+                await SecureStore.setItemAsync("auth_token", token);
+
+                router.replace("/home");
             })
-
-            if (createdSessionId) {
-                setActive!({ session: createdSessionId })
-            } else {
-                throw new Error('Failed to create session')
-            }
-        } catch (err) {
-            console.error(JSON.stringify(err, null, 2))
-        }
-    }, [startSSOFlow, strategy])
+            .catch(console.error);
+    }, [response]);
 
     return (
-        <TouchableOpacity onPress={onPress} style={styles.button}>
+        <TouchableOpacity
+            disabled={!request}
+            onPress={() => promptAsync()}
+            style={styles.button}
+        >
             <Text style={styles.buttonText}>{children}</Text>
         </TouchableOpacity>
-    )
+    );
 }
