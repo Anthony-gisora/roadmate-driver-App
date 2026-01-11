@@ -13,6 +13,12 @@ type User = {
     emergencyContactName?: string;
     emergencyContactPhone?: string;
     emergencyContactRelationship?: string;
+    createdAt: Date;
+    updatedAt: Date;
+
+    // these extra data should also be appended here
+    trips?: number; //total completed requests
+    amountPaid?: number //total amount paid for all trips
 };
 
 type AuthContextType = {

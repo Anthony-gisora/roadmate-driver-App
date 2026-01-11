@@ -5,7 +5,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import {
   Alert,
   Animated,
-  Dimensions,
+  Dimensions, Linking, Platform,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -19,9 +19,9 @@ import {useAuth} from "@/providers/auth-provider";
 
 const { width } = Dimensions.get('window');
 
-const emergencyContact = [
+const emergencyContactRoadside = [
   {
-    id: '2',
+    id: 2,
     name: 'Roadmate Assist',
     phone: '+254753407670',
     relationship: 'Emergency'
@@ -39,19 +39,18 @@ export default function HomeScreen() {
   const router = useRouter();
   const toast = useToast();
   const [refreshing, setRefreshing] = useState(false);
-  const [emergencyContacts, setEmergencyContacts] = useState<emergencyContact>(emergencyContact);
+  const [emergencyContacts, setEmergencyContacts] = useState<emergencyContact[]>(emergencyContactRoadside);
   const [activeService, setActiveService] = useState<any>(null);
-  const user = useAuth();
+  const {user} = useAuth();
   
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(50)).current;
   const scaleAnim = useRef(new Animated.Value(0.9)).current;
 
   const userStats = {
-    rating: 4.9,
-    trips: 24,
-    memberSince: 2024,
-    savedAmount: 156
+    trips: user?.trips,
+    memberSince: user?.createdAt,
+    savedAmount: user?.amountPaid
   };
 
   const quickServices = [
@@ -98,12 +97,12 @@ export default function HomeScreen() {
   useEffect(() => {
     const emergencyC = [{
       id: 10,
-      name: user.user?.emergencyContactName,
-      phone: user?.user?.emergencyContactPhone,
-      relationship: user?.user?.emergencyContactRelationship,
+      name: user?.emergencyContactName,
+      phone: user?.emergencyContactPhone,
+      relationship: user?.emergencyContactRelationship,
     }];
 
-    apiClient.get(`/req/requests/${user?.user?._id}`)
+    apiClient.get(`/req/requests/${user?._id}`)
         .then((res)=>{
           console.log(res);
           const request = res.data?.data;
@@ -132,9 +131,9 @@ export default function HomeScreen() {
           console.log(res);
           const emergencyC = [{
             id: 10,
-            name: user?.user?.emergencyContactName,
-            phone: user?.user?.emergencyContactPhone,
-            relationship: user?.user?.emergencyContactRelationship
+            name: user?.emergencyContactName,
+            phone: user?.emergencyContactPhone,
+            relationship: user?.emergencyContactRelationship
           }];
           setEmergencyContacts((prev) => {
             const existingIds = new Set(prev.map(c => c.id));
@@ -142,7 +141,7 @@ export default function HomeScreen() {
             return [...prev, ...newContacts];
           });
         })
-  }, [user?.user?.id]);
+  }, [user]);
 
   useEffect(() => {
     Animated.parallel([
@@ -168,7 +167,6 @@ export default function HomeScreen() {
     setRefreshing(true);
     setTimeout(() => {
       setRefreshing(false);
-      Alert.alert('Updated', 'Your dashboard has been refreshed!');
     }, 2000);
   }, []);
 
@@ -189,18 +187,38 @@ export default function HomeScreen() {
     router.push('/emergency');
   };
 
-  const handleCallContact = (contact: any) => {
+  const handleCallContact = async (contact: any) => {
+    const url =
+        Platform.OS === 'android'
+            ? `tel:${contact.phone}`
+            : `telprompt:${contact.phone}`;
+
+    const supported = await Linking.canOpenURL(url);
     Alert.alert(
-      `Call ${contact.name}`,
-      `Would you like to call ${contact.phone}?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Call', onPress: () => {
-          Alert.alert('Calling...', `Connecting to ${contact.name}`);
-        }}
-      ]
+        `Call ${contact.name}`,
+        `Would you like to call ${contact.phone}?`,
+        [
+          {text: 'Cancel', style: 'cancel'},
+          {
+            text: 'Call', onPress: async () => {
+              if (supported) {
+                await Linking.openURL(url);
+              }
+            }
+          }
+        ]
     );
   };
+
+  const parseDate = (date: any) => {
+    const memberSinceDate = new Date(date);
+    const now = new Date();
+
+    const diffMs = now.getTime() - memberSinceDate.getTime();
+    const years = diffMs / (1000 * 60 * 60 * 24 * 365.25);
+
+    return years.toFixed(1);
+  }
 
   const StatCard = ({ value, label, icon, color }: { value: string; label: string; icon: string; color: string }) => (
     <Animated.View 
@@ -280,7 +298,7 @@ export default function HomeScreen() {
         >
           <View style={styles.welcomeSection}>
             <View>
-              <Text style={styles.title}>Welcome {user?.user?.name}</Text>
+              <Text style={styles.title}>Welcome {user?.name}</Text>
               <Text style={styles.subtitle}>Ready to hit the road?</Text>
             </View>
             <TouchableOpacity onPress={handleNotification} style={styles.notificationButton}>
@@ -291,9 +309,9 @@ export default function HomeScreen() {
 
           {/* Stats Overview */}
           <View style={styles.statsContainer}>
-            <StatCard value={`${userStats.rating.toString()} Yrs`} label="Member" icon="star" color="#f59e0b" />
-            <StatCard value={`${userStats.trips.toString()}`} label="Requests" icon="car" color="#2563eb" />
-            <StatCard value={`KES ${userStats.savedAmount}`} label="Saved" icon="wallet" color="#10b981" />
+            <StatCard value={`${parseDate(userStats.memberSince)} Yrs`} label="Member" icon="star" color="#f59e0b" />
+            <StatCard value={`${user?.trips ?? 0}`} label="Requests" icon="car" color="#2563eb" />
+            <StatCard value={`KES ${userStats.savedAmount ?? 0}`} label="Saved" icon="wallet" color="#10b981" />
           </View>
         </Animated.View>
 
@@ -394,7 +412,7 @@ export default function HomeScreen() {
         >
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Quick Services</Text>
-            <Text style={styles.sectionDescription}>Common roadside assistance</Text>
+            <Text style={styles.sectionDescription}>Common roadside assistance services</Text>
           </View>
           
           <ScrollView 
@@ -422,7 +440,7 @@ export default function HomeScreen() {
                 <Text style={styles.sectionTitle}>Emergency Contact</Text>
                 <Text style={styles.sectionDescription}>Quick access when needed</Text>
               </View>
-              {emergencyContact != null && (
+              {emergencyContacts != null && (
 
               <View style={styles.contactsContainer}>
                 {emergencyContacts?.map((contact: emergencyContact)  => (
@@ -709,7 +727,8 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   quickServicesContainer: {
-    gap: 12,
+    gap: 8,
+    paddingStart: 8,
   },
   quickServiceCard: {
     width: 140,
@@ -717,6 +736,8 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 16,
     marginRight: 12,
+    marginBottom: 12,
+    marginTop: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
