@@ -103,7 +103,7 @@ export default function HomeScreen() {
       relationship: user?.user?.emergencyContactRelationship,
     }];
 
-    apiClient.get(`/req/requests/${user?.user?.id}`)
+    apiClient.get(`/req/requests/${user?.user?._id}`)
         .then((res)=>{
           console.log(res);
           const request = res.data?.data;
@@ -280,7 +280,7 @@ export default function HomeScreen() {
         >
           <View style={styles.welcomeSection}>
             <View>
-              <Text style={styles.title}>Welcome {user?.user?.name.split(' ')[0]}</Text>
+              <Text style={styles.title}>Welcome {user?.user?.name}</Text>
               <Text style={styles.subtitle}>Ready to hit the road?</Text>
             </View>
             <TouchableOpacity onPress={handleNotification} style={styles.notificationButton}>

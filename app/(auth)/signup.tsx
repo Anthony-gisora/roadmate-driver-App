@@ -11,7 +11,7 @@ import {
     TextInput,
     TouchableOpacity,
     View,
-    Dimensions
+    Image
 } from "react-native";
 import { useToast } from "react-native-toast-notifications";
 import { z } from "zod";
@@ -154,9 +154,12 @@ export default function Signup() {
                     ]}
                 >
                     <View style={styles.logoContainer}>
-                        <Ionicons name="car-sport" size={50} color="#fff"/>
+                        <Image
+                            source={require('../../assets/images/icon.png')}
+                            style={{ width: 80, height: 80 }}
+                        />
                     </View>
-                    <Text style={styles.title}>Join Driver Assist</Text>
+                    <Text style={styles.title}>Join Roadmate Assist</Text>
                     <Text style={styles.subtitle}>
                         Create your account and drive with confidence
                     </Text>

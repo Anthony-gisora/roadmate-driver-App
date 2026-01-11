@@ -95,10 +95,11 @@ export default function RequestScreen() {
         const lat = loc.toString().split(',')[0];
         const lng = loc.toString().split(',')[1];
 
-
+        console.log("location", loc);
         await apiClient.get(`/online-mechanics?lat=${lat}&lng=${lng}`)
             .then((res) => {
                 setProgress(30);
+                console.log(res.data);
                 const mechanic = res.data.nearest;
                 const distance = Number(mechanic?.distance  ?? 0);
 
@@ -107,7 +108,7 @@ export default function RequestScreen() {
                     setEta(getETA(distance));
 
                     setMechanic({
-                        id: mechanic.clerkUid,
+                        id: mechanic.id,
                         name: mechanic.name,
                         rating: 4.8,
                         reviews: 60,
@@ -117,19 +118,10 @@ export default function RequestScreen() {
                         location: loc,
                         price: estimatedPrice()
                     });
+                    console.log("mechanic",mechanic);
                     setProgress(50);
                 }else{
-                    setMechanic({
-                        id: 'user_30wtNSkJ1tqoMq0UawYeVAd1gOJ',
-                        name: "Anthony Gesora",
-                        rating: 4.8,
-                        reviews: 19,
-                        distance: `$2.45 KM`,
-                        specialization: "flat-tire",
-                        image: "🤖",
-                        location: location,
-                        price: estimatedPrice()
-                    });
+                    setMechanic(null)
                     toast.show("No mechanic is available at the moment", { type: "danger" });
                 }
             })
@@ -148,15 +140,14 @@ export default function RequestScreen() {
             return null;
         }
         setSending(true);
-        const driverId = user?.id;
+        const driverId = user?._id;
         const requestType = problem;
         const details = {
             priority: priority.toString(),
             timestamp: timestamp.toString(),
         };
 
-
-        try {
+        try{
             apiClient.post("/req/requests", {
                 driverId,
                 requestType,
@@ -370,17 +361,23 @@ export default function RequestScreen() {
                     <Text style={styles.cancelButtonText}>Cancel Request</Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity disabled={sending || !mechanic} onPress={sendRequest} style={[
-                    styles.updateButton,
-                    mechanic === null && styles.disabledButton,
-                ]}>
-                    {sending ? (
+                <TouchableOpacity
+                    disabled={sending || !mechanic}
+                    onPress={sendRequest}
+                    style={[
+                        styles.updateButton,
+                        (!mechanic || sending) && styles.disabledButton,
+                    ]}
+                >
+                    {mechanic ? (
                         <>
                             <Ionicons name="send" size={20} color="#2563eb" />
                             <Text style={styles.updateButtonText}>Submit Request</Text>
                         </>
-                        ):(
-                        <Text style={styles.updateButtonTextError}>No mechanic available</Text>
+                    ) : (
+                        <Text style={styles.updateButtonTextError}>
+                            No mechanic available
+                        </Text>
                     )}
                 </TouchableOpacity>
             </View>

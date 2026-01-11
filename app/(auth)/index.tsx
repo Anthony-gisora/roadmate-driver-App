@@ -4,8 +4,7 @@ import {useRouter} from "expo-router";
 import React, {useEffect, useState} from "react";
 import {
     ActivityIndicator,
-    Alert,
-    Animated,
+    Animated, Image,
     KeyboardAvoidingView,
     Platform,
     ScrollView,
@@ -35,6 +34,7 @@ export default function Login() {
     const [loading, setLoading] = useState(true);
     const [secureTextEntry, setSecureTextEntry] = useState(true);
     const toast = useToast();
+    const {login,authenticated} = useAuth();
 
     // Animation values
     const fadeAnim = React.useRef(new Animated.Value(0)).current;
@@ -68,6 +68,12 @@ export default function Login() {
         ]).start();
     }, []);
 
+    useEffect(() => {
+        if (authenticated) {
+            router.replace("/(tabs)/(protected)/(tabs)/emergency");
+        }
+    }, [authenticated, router]);
+
     const handleLogin = async () => {
         const result = loginSchema.safeParse({ email, password });
         if (!result.success) {
@@ -93,10 +99,9 @@ export default function Login() {
             const result = response.data;
 
             if (result.status === "success") {
-                await SecureStore.setItemAsync("auth_token", response.data.token);
-                await SecureStore.setItemAsync("auth_user", JSON.stringify(response.data.user));
+                await login(response.data.token, response.data.user);
                 console.log(result);
-                router.push("/(tabs)/(protected)/(tabs)/emergency");
+                //router.push("/(tabs)/(protected)/(tabs)/emergency");
             } else {
                 toast.show(result?.data?.message, { type: 'danger' });
                 console.warn("Additional steps required.");
@@ -137,11 +142,14 @@ export default function Login() {
                     ]}
                 >
                     <View style={styles.logoContainer}>
-                        <Ionicons name="car-sport" size={60} color="#075538" />
+                        <Image
+                            source={require('../../assets/images/icon.png')}
+                            style={{ width: 100, height: 100 }}
+                        />
                     </View>
                     <Text style={styles.title}>Welcome Back!</Text>
                     <Text style={styles.subtitle}>
-                        Sign in to access your driver assistance services
+                        Sign in to access roadside assistance services
                     </Text>
                 </Animated.View>
 

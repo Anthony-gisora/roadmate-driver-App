@@ -17,6 +17,7 @@ import {apiClient} from "@/hooks/api-client";
 import {Ionicons} from "@expo/vector-icons";
 import SuccessModal from "@/components/success-modal";
 import {router} from "expo-router";
+import {useAuth} from "@/providers/auth-provider";
 
 const FeedbackScreen = ({ navigation }) => {
     const [formData, setFormData] = useState({
@@ -29,7 +30,7 @@ const FeedbackScreen = ({ navigation }) => {
     const [loading, setLoading] = useState(false);
     const [errors, setErrors] = useState({});
     const [succesModalOpen, setSuccesModalOpen] = useState(false);
-    const {user} = useUser();
+    const {user} = useAuth();
 
     const subjects = [
         'Bug Report',
@@ -68,7 +69,7 @@ const FeedbackScreen = ({ navigation }) => {
         setLoading(true);
 
         try {
-            const userId = user?.id;
+            const userId = user?._id;
 
             const feedbackData = {
                 userId,

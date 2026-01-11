@@ -32,7 +32,7 @@ export default function ProfileScreen() {
     const [serviceHistory, setServiceHistory] = useState([]);
     const [dialogOpen, setDialogOpen] = useState(false);
     const [failed, setFailed] = React.useState(false);
-    const {user,logout} = useAuth()
+    const {user,logout,refreshAuth} = useAuth()
     const toast = useToast();
     const db = offlineDB;
 
@@ -113,7 +113,7 @@ export default function ProfileScreen() {
     };
 
     const loadServiceHistory = () => {
-        apiClient.get(`/req/driver/${user?.id}`)
+        apiClient.get(`/req/driver/${user?._id}`)
             .then((response) => {
                 console.log(response);
                 setServiceHistory(response.data?.data);
@@ -125,17 +125,17 @@ export default function ProfileScreen() {
 
     const handleSaveProfile = async () => {
         try {
-            await user?.update({
-                firstName: editData.name.split(' ')[0] ?? userData.name.split(' ')[0],
-                lastName: editData.name.split(' ')[1] ?? userData.name.split(' ')[1],
-                unsafeMetadata: {
-                    phone: editData.phone ?? userData.phone,
-                    emergencyContactName: userData?.emergencyContact.name,
-                    emergencyContactPhone: userData?.emergencyContact.phone,
-                    relationship: 'Friend'
-                },
+            const response = await apiClient.put(`/users/${user?._id}`,{
+                name: editData.name,
+                phone: editData.phone,
+                emergencyContactName: editData.emergencyContact.name,
+                emergencyContactPhone: editData.emergencyContact.phone,
+                emergencyContactRelationship: editData.emergencyContact.relationship
+
             });
+
             setUserData(editData);
+            refreshAuth();
             toast.show('Success Profile updated successfully!', { type: 'success' });
         } catch (error) {
             console.error(error);
@@ -146,14 +146,14 @@ export default function ProfileScreen() {
 
     const handleSaveEmergencyContact = async () => {
         try {
-            await user?.update({
-                unsafeMetadata: {
-                    phone: userData.phone,
-                    emergencyContactName: editData.emergencyContact.name,
-                    emergencyContactPhone: editData.emergencyContact.phone,
-                    relationship: editData.emergencyContact.relationship
-                },
+            const response = await apiClient.put(`/users/${user?._id}`,{
+                emergencyContactName: editData.emergencyContact.name,
+                emergencyContactPhone: editData.emergencyContact.phone,
+                emergencyContactRelationship: editData.emergencyContact.relationship
+
             });
+
+            refreshAuth();
             setUserData(prev => ({
                 ...prev,
                 emergencyContact: editData.emergencyContact
@@ -187,7 +187,7 @@ export default function ProfileScreen() {
     const handleUpdateVehicle = async (id: number, updates: any) => {
         try {
             await db.updateCar(id, updates);
-            await loadVehicles(); // Refresh the list
+            await loadVehicles();
         } catch (error) {
             throw error;
         }
@@ -196,7 +196,7 @@ export default function ProfileScreen() {
     const handleDeleteVehicle = async (id: number) => {
         try {
             await db.deleteCar(id);
-            await loadVehicles(); // Refresh the list
+            await loadVehicles();
         } catch (error) {
             throw error;
         }

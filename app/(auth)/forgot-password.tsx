@@ -2,10 +2,9 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
-    Alert,
     Animated,
     Dimensions,
-    KeyboardAvoidingView,
+    KeyboardAvoidingView, Linking,
     Platform,
     ScrollView,
     StyleSheet,
@@ -109,10 +108,9 @@ export default function ForgotPassword() {
 
             setIsLoading(false);
             setCurrentStep("otp");
-            Alert.alert("Code Sent!", `We've sent a verification code to ${email}`);
         } catch (err: any) {
             setIsLoading(false);
-            Alert.alert(err.response?.data?.message || "Failed to send reset code.");
+            toast.show(err.response?.data?.message || "Failed to send reset code.", { type: 'danger' });
         }
     };
 
@@ -137,10 +135,10 @@ export default function ForgotPassword() {
             if (attempt.status === "complete") {
                 setCurrentStep("password");
             } else {
-                Alert.alert("Invalid Code", "The verification code is incorrect or expired.");
+                toast.show("The verification code is incorrect or expired.", { type: 'danger' });
             }
         } catch (err: any) {
-            Alert.alert("Verification Failed", err.errors?.[0]?.message || "Invalid or expired code.");
+            toast.show(err.errors?.[0]?.message || "Invalid or expired code.", { type: 'danger' });
         } finally {
             setIsLoading(false);
         }
@@ -179,8 +177,8 @@ export default function ForgotPassword() {
         }
     };
 
-    const handleResendCode = () => {
-        Alert.alert("Code Resent!", "A new verification code has been sent to your email.");
+    const handleResendCode = async () => {
+        await handleSendCode();
     };
 
     const ProgressBar = () => (
@@ -473,7 +471,15 @@ export default function ForgotPassword() {
                 {/* Support Link */}
                 <TouchableOpacity style={styles.supportContainer}>
                     <Text style={styles.supportText}>Need help? </Text>
-                    <Text style={styles.supportLink}>Contact Support</Text>
+                    <Text onPress={async () => {
+                        const supported = await Linking.canOpenURL('https://roadmateassist.co.ke/contact');
+                        if (supported) {
+                            await Linking.openURL('https://roadmateassist.co.ke/contact');
+                        } else {
+                            console.warn(`Cannot open URL`);
+                        }
+
+                    }} style={styles.supportLink}>Contact Support</Text>
                 </TouchableOpacity>
             </ScrollView>
         </KeyboardAvoidingView>

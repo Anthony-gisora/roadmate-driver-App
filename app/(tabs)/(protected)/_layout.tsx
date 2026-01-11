@@ -9,9 +9,13 @@ export default function AppLayout() {
     useEffect(() => {
         const s = getSocket();
         s.on("connect", () => {
-            s.emit("addUser", user?.id);
+            if(user){
+                s.emit("addUser", user?._id);
+            }else{
+                console.log("User not logged in!");
+            }
         });
-    }, []);
+    }, [user]);
 
     return (
         <Stack screenOptions={{ headerShown: false }}>

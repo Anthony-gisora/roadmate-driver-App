@@ -16,12 +16,12 @@ import {ChatManager} from "@/hooks/chat-manager";
 import {apiClient} from "@/hooks/api-client";
 import {sendMessage} from "@/hooks/socket";
 import {socketEvents} from "@/hooks/events-emitter";
-import string from "zod/src/v3/benchmarks/string";
+import {useAuth} from "@/providers/auth-provider";
 
 export default function ChatScreen() {
     const { id, mechanicName, mechanicImage, chatId } = useLocalSearchParams();
     const router = useRouter();
-    const { user } = useUser();
+    const { user } = useAuth();
     const [messages, setMessages] = useState<any[]>([]);
     const [chat_id, setChatId] = useState<string|null>(chatId?.toString());
     const [messageText, setMessageText] = useState('');
@@ -67,14 +67,14 @@ export default function ChatScreen() {
                             console.log(res);
                             setMessages([...res.data]);
                             chatManager.createChat({
-                                driver: user?.firstName as string, mechanic: mechanicName as string, conversationId: chat_id as string,
-                            memberA: user?.id as string,
+                                driver: user?.name as string, mechanic: mechanicName as string, conversationId: chat_id as string,
+                            memberA: user?._id as string,
                             memberB: id as string})
 
                             //save messages
                             messages.forEach((message) => {
                                 chatManager.addMessage({
-                                    driver: user?.firstName as string, mechanic: undefined, memberB: undefined,
+                                    driver: user?.name as string, mechanic: undefined, memberB: undefined,
                                     conversationId:chat_id as string,
                                     messageText: message?.messageText as string,
                                     senderId: message?.senderId as string,
@@ -102,8 +102,8 @@ export default function ChatScreen() {
             //create the chat in the backend then save the chatId and save it locally
             try{
                 const res = await apiClient.post("/conversation", {
-                    receiverId: id, currentUserId: user?.id as string,
-                    mechanicName: mechanicName, driverName: user?.firstName as string,
+                    receiverId: id, currentUserId: user?._id as string,
+                    mechanicName: mechanicName, driverName: user?.name as string,
                 })
                 //update chatId
                 const newChatId = res?.data?.chatId;
@@ -114,7 +114,7 @@ export default function ChatScreen() {
                     conversationId: newChatId,
                     memberA: user?.id as string,
                     memberB: id as string,
-                    driver: user?.firstName as string,
+                    driver: user?.name as string,
                     mechanic: mechanicName as string
                 });
             }catch (e) {
@@ -125,7 +125,7 @@ export default function ChatScreen() {
 
         // send the message using sockets
         sendMessage({
-            senderId: user?.id as string,
+            senderId: user?._id as string,
             conversationId: currentChatId as string,
             messageText: messageText,
             otherUserId: id as string
@@ -134,7 +134,7 @@ export default function ChatScreen() {
         const newMessage = {
             id: Date?.now()?.toString(),
             messageText: messageText.trim(),
-            senderId: user!.id,
+            senderId: user!._id,
             timestamp: Date.now(),
             conversationId: currentChatId as string
         };
@@ -146,12 +146,12 @@ export default function ChatScreen() {
         // Save to database
         try {
             await chatManager.addMessage({
-                driver: user?.firstName as string,
+                driver: user?.name as string,
                 mechanic: mechanicName as string,
                 memberB: id as string,
                 conversationId: currentChatId as string,
                 messageText: messageText.trim(),
-                senderId: user!.id,
+                senderId: user!._id,
                 isViewing: true
             });
         } catch (error) {
@@ -166,7 +166,7 @@ export default function ChatScreen() {
     };
 
     const MessageBubble = ({ message }: { message: any }) => {
-        const isUser = message.senderId === user?.id;
+        const isUser = message.senderId === user?._id;
 
         return (
             <View style={[

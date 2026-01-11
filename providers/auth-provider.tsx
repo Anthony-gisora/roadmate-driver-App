@@ -4,7 +4,7 @@ import { AxiosError } from "axios";
 import {apiClient} from "@/hooks/api-client";
 
 type User = {
-    id: string;
+    _id: string;
     email: string;
     name: string;
     phone: string;
@@ -19,6 +19,7 @@ type AuthContextType = {
     authenticated: boolean;
     user: User | null;
     loading: boolean;
+    login: (token: string, user: User) => Promise<void>;
     logout: () => Promise<void>;
     refreshAuth: () => Promise<void>;
 };
@@ -40,6 +41,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             try {
                 const storedToken = await SecureStore.getItemAsync(TOKEN_KEY);
                 setToken(storedToken ?? null);
+                console.log("stored token:",token ?? 'User not logged in');
+
 
                 if (!storedToken) {
                     setAuthenticated(false);
@@ -47,6 +50,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 } else {
                     setAuthenticated(true);
                     try {
+                        const userD = await SecureStore.getItemAsync(USER_KEY);
+                        if (typeof userD === "string") {
+                            setUser(JSON.parse(userD));
+                        }
                         await validateToken(storedToken);
                     } catch {
                         setAuthenticated(false);
@@ -65,13 +72,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const validateToken = async (token: string) => {
         try {
-            const res = await apiClient.get("/auth", {
+            const res = await apiClient.get(`/users/${user?._id}`, {
                 headers: { Authorization: `Bearer ${token}` },
             });
+            console.log("valid user", res.data);
             const userData: User = res.data;
             setUser(userData);
             await SecureStore.setItemAsync(USER_KEY, JSON.stringify(userData));
         } catch (err) {
+            console.error("AuthProvider error: ", err);
             const error = err as AxiosError;
             if (!error.response) {
                 const userD = await SecureStore.getItemAsync(USER_KEY);
@@ -99,12 +108,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (storedToken) await validateToken(storedToken);
     };
 
+    const login = async (token: string, user: User) => {
+        await SecureStore.setItemAsync(TOKEN_KEY, token);
+        await SecureStore.setItemAsync(USER_KEY, JSON.stringify(user));
+
+        setToken(token);
+        setUser(user);
+        setAuthenticated(true);
+    };
+
     return (
         <AuthContext.Provider
             value={{
                 authenticated,
                 user,
                 loading,
+                login,
                 logout,
                 refreshAuth,
             }}
