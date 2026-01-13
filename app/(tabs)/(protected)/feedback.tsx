@@ -23,7 +23,7 @@ const FeedbackScreen = ({ navigation }) => {
     const [formData, setFormData] = useState({
         title: '',
         feedback: '',
-        subject: '',
+        subject: 'Bug Report',
     });
 
     const [images, setImages] = useState([]);

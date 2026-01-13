@@ -64,7 +64,7 @@ const TechnicianMap: React.FC<Props> = ({
   // Generate HTML for the map with markers
   const generateMapHTML = () => {
     const markers = technicians.map(tech => `
-      L.marker([${tech.location.lat}, ${tech.location.lng}], {
+      L.marker([${tech?.location?.lat}, ${tech?.location?.lng}], {
         icon: L.divIcon({
           html: \`
             <div class="custom-marker" data-id="${tech._id}">
@@ -199,7 +199,7 @@ const TechnicianMap: React.FC<Props> = ({
         
         <script>
           // Initialize map
-          const map = L.map('map').setView([${userLocation.lat}, ${userLocation.lng}], 12);
+          const map = L.map('map').setView([${userLocation?.lat}, ${userLocation?.lng}], 12);
           
           // Add tile layer
           L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
@@ -209,7 +209,7 @@ const TechnicianMap: React.FC<Props> = ({
           }).addTo(map);
           
           // Add user location marker
-          L.marker([${userLocation.lat}, ${userLocation.lng}], {
+          L.marker([${userLocation?.lat}, ${userLocation?.lng}], {
             icon: L.divIcon({
               html: '<div class="user-location"></div>',
               className: 'user-location-icon',

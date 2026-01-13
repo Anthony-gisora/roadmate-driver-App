@@ -115,7 +115,6 @@ export default function ProfileScreen() {
     const loadServiceHistory = () => {
         apiClient.get(`/req/driver/${user?._id}`)
             .then((response) => {
-                console.log(response);
                 setServiceHistory(response.data?.data);
             })
             .catch((error) => {
@@ -211,10 +210,10 @@ export default function ProfileScreen() {
             router.push(`/review?id=${service?._id}`)
         }}>
             <View style={styles.historyCard}>
-                <View style={styles.historyHeader}>
+                <View style={[styles.historyHeader, {marginTop: 10}]}>
                     <View style={styles.serviceType}>
                         <Ionicons name="car-sport" size={16} color="#075538" />
-                        <Text style={styles.serviceTypeText}>{service?.type}</Text>
+                        <Text style={styles.serviceTypeText}>{service?.requestType}</Text>
                     </View>
                     <Text style={styles.servicePrice}>{service?.price}</Text>
                 </View>
@@ -236,7 +235,7 @@ export default function ProfileScreen() {
                     </View>
                 </View>
 
-                <View style={[styles.statusBadge, { backgroundColor: '#10b981' }]}>
+                <View style={[styles.statusBadge, { backgroundColor: '#10b981'}]}>
                     <Text style={styles.statusText}>{service?.status}</Text>
                 </View>
             </View>
@@ -362,7 +361,7 @@ export default function ProfileScreen() {
 
                 <View style={styles.historyContainer}>
                     {serviceHistory?.map(service => (
-                        <ServiceHistoryCard key={service?.id} service={service} />
+                        <ServiceHistoryCard key={service?._id} service={service} />
                     ))}
                 </View>
             </View>
@@ -976,7 +975,7 @@ const styles = StyleSheet.create({
     },
     statusBadge: {
         position: 'absolute',
-        top: 12,
+        top: 5,
         right: 12,
         paddingHorizontal: 8,
         paddingVertical: 4,

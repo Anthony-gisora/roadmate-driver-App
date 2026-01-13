@@ -3,17 +3,17 @@ import { getSocket } from "@/hooks/socket";
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import * as Sentry from '@sentry/react-native';
-import {router, Stack, usePathname, useRouter} from 'expo-router';
+import {Stack, usePathname, useRouter} from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import {useEffect, useState} from "react";
+import {useEffect} from "react";
 import 'react-native-reanimated';
 import { ToastProvider } from 'react-native-toast-notifications';
 import * as Notifications from "expo-notifications";
-import {ActivityIndicator, Platform} from "react-native";
+import {Platform} from "react-native";
 import {ChatManager} from "@/hooks/chat-manager";
 import {AuthProvider} from "@/providers/auth-provider";
 import {AuthGate} from "@/components/auth-guard";
-import * as SecureStore from "expo-secure-store";
+import {SafeAreaProvider} from "react-native-safe-area-context";
 
 Sentry.init({
   dsn: 'https://a127ee337dafa3f316ddd8ad74d0bf2e@o4508255508561920.ingest.de.sentry.io/4510504659255376',
@@ -137,21 +137,23 @@ function RootLayout() {
     
 
     return (
-        <AuthProvider
-        >
+        <SafeAreaProvider>
+            <AuthProvider
+            >
                 <ToastProvider>
-                <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-                    <Stack screenOptions={{ headerShown: false }}>
-                        {/* Public routes */}
-                        <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-                        <AuthGate>
-                            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-                        </AuthGate>
-                    </Stack>
-                    <StatusBar style="auto" />
+                    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+                        <Stack screenOptions={{ headerShown: false }}>
+                            {/* Public routes */}
+                            <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+                            <AuthGate>
+                                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                            </AuthGate>
+                        </Stack>
+                        <StatusBar style="auto" />
                     </ThemeProvider>
                 </ToastProvider>
-        </AuthProvider>
+            </AuthProvider>
+        </SafeAreaProvider>
     );
 }
 

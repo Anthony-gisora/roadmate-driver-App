@@ -17,6 +17,7 @@ import {apiClient} from "@/hooks/api-client";
 import {sendMessage} from "@/hooks/socket";
 import {socketEvents} from "@/hooks/events-emitter";
 import {useAuth} from "@/providers/auth-provider";
+import string from "zod/src/v3/benchmarks/string";
 
 export default function ChatScreen() {
     const { id, mechanicName, mechanicImage, chatId } = useLocalSearchParams();
@@ -58,33 +59,42 @@ export default function ChatScreen() {
         if(chat_id){
             // chatId exists so maybe locally too
             try {
-                const conversationMessages = await chatManager.getMessages(id as string);
+                const conversationMessages = await chatManager.getMessages(chat_id as string);
                 setMessages(conversationMessages);
-                if (conversationMessages.length < 1){
-                    // chat exists but not locally, so fetch from backend
-                    apiClient.get(`/message/${chat_id}`)
-                        .then(res => {
-                            console.log(res);
-                            setMessages([...res.data]);
-                            chatManager.createChat({
-                                driver: user?.name as string, mechanic: mechanicName as string, conversationId: chat_id as string,
-                            memberA: user?._id as string,
-                            memberB: id as string})
 
-                            //save messages
-                            messages.forEach((message) => {
-                                chatManager.addMessage({
-                                    driver: user?.name as string, mechanic: undefined, memberB: undefined,
-                                    conversationId:chat_id as string,
-                                    messageText: message?.messageText as string,
-                                    senderId: message?.senderId as string,
-                                    isViewing: true
+                if (conversationMessages.length < 1){
+                    if(id !== null){
+                        console.log("id is not null", id)
+                        const attempt = await chatManager.getMessageByOtherUserId(id as string);
+                        setMessages(attempt);
+                    }
+
+                    if(messages.length < 1){
+                        apiClient.get(`/message/${chat_id}`)
+                            .then(res => {
+                                console.log(res);
+                                setMessages([...res.data]);
+                                chatManager.createChat({
+                                    lastMessage: "", lastTimestamp: new Date(),
+                                    driver: user?.name as string, mechanic: mechanicName as string, conversationId: chat_id as string,
+                                    memberA: user?._id as string,
+                                    memberB: id as string})
+
+                                //save messages
+                                messages.forEach((message) => {
+                                    chatManager.addMessage({
+                                        driver: user?.name as string, mechanic: undefined, memberB: undefined,
+                                        conversationId:chat_id as string,
+                                        messageText: message?.messageText as string,
+                                        senderId: message?.senderId as string,
+                                        isViewing: true
+                                    })
                                 })
                             })
-                        })
-                        .catch((err) => {
-                            console.log(err);
-                        })
+                            .catch((err) => {
+                                console.log(err);
+                            })
+                    }
                 }
             } catch (error) {
                 console.error('Error loading messages:', error);
@@ -112,10 +122,12 @@ export default function ChatScreen() {
 
                 await chatManager.createChat({
                     conversationId: newChatId,
-                    memberA: user?.id as string,
+                    memberA: user?._id as string,
                     memberB: id as string,
                     driver: user?.name as string,
-                    mechanic: mechanicName as string
+                    mechanic: mechanicName as string,
+                    lastMessage: messageText.trim(),
+                    lastTimestamp: new Date()
                 });
             }catch (e) {
                 console.error(e);

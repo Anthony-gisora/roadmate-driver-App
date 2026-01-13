@@ -74,6 +74,33 @@ export class ChatManager {
     return rows;
   }
 
+  // get all messages for a conversation given the other user id
+  async getMessageByOtherUserId(userId: string): Promise<any[]> {
+    const db = await getDB();
+
+    // 1. Get any message sent by the given senderId
+    const message = await db.getFirstAsync(
+        'SELECT conversationId FROM messages WHERE senderId = ? LIMIT 1',
+        userId
+    );
+
+    // No messages found for this sender
+    if (!message?.conversationId) {
+      return [];
+    }
+
+    const conversationId = message.conversationId;
+
+    // 2 & 3. Get all messages for that conversationId
+    const rows = await db.getAllAsync(
+        'SELECT * FROM messages WHERE conversationId = ? ORDER BY timestamp ASC',
+        conversationId
+    );
+
+    // 4. Return messages
+    return rows;
+  }
+
   // Add a new message to a conversation
   async addMessage({
     conversationId,
@@ -148,13 +175,17 @@ export class ChatManager {
     memberA,
     memberB,
     driver,
-    mechanic
+    mechanic,
+    lastMessage,
+    lastTimestamp,
   }: {
     conversationId: string;
     memberA: string;
     memberB: string;
     driver: string;
     mechanic: string;
+    lastMessage: string;
+    lastTimestamp: Date
   }) {
     const db = await getDB();
     const existing = await db.getFirstAsync(
@@ -170,7 +201,7 @@ export class ChatManager {
       memberB,
       driver,
       mechanic,
-      lastMessage: '',
+      lastMessage: lastMessage,
       lastTimestamp: Date.now(),
     };
 
@@ -181,7 +212,7 @@ export class ChatManager {
       newChat.memberB,
       newChat.driver,
       newChat.mechanic,
-      '',
+      lastMessage,
       newChat.lastTimestamp
     );
 

@@ -60,11 +60,11 @@ export default function ServicesScreen() {
         const mechanics = res?.data?.mechanics || [];
         const normalized = mechanics.map(m => ({
             ...m,
-            specialization: m.data?.join(", ") || "",
+            specialization: m.data.expertise,
             rating: m.rating || 4.5,    // fallback
             reviews: m.reviews || 12,   // fallback
             price: m.price || "KSh 1000",
-            image: "🔧",
+            image: "🧑‍🔧",
             availability: m.isOnline === "online" ? "Available Now" : "Offline",
         }));
         setMechanics(normalized);
@@ -72,7 +72,7 @@ export default function ServicesScreen() {
         const filtered = normalized
         .filter((mechanic) => {
             const name = mechanic.name.toLowerCase();
-            const services = mechanic.data.map(s => s.toLowerCase());
+            const services = (mechanic.data.expertise || []).map(s => s.toLowerCase());
 
             const matchesService =
             selectedService === "all" ||
@@ -306,9 +306,9 @@ export default function ServicesScreen() {
             {activeView === 'list' ? (
                 <FlatList
                     data={filteredMechanics}
-                    keyExtractor={(item) => item?.id}
+                    keyExtractor={(item) => item?._id}
                     renderItem={({ item, index }) => <MechanicCard mechanic={item} index={index} />}
-                    showsVerticalScrollIndicator={false}
+                    showsVerticalScrollIndicator={true}
                     contentContainerStyle={styles.listContent}
                     onScroll={Animated.event(
                         [{ nativeEvent: { contentOffset: { y: scrollY } } }],
@@ -368,26 +368,30 @@ export default function ServicesScreen() {
                                 </View>
                             </View>
 
-                            <View style={styles.detailSection}>
-                                <Text style={styles.sectionTitle}>Skills & Services</Text>
-                                <View style={styles.skillsContainer}>
-                                    {selectedMechanic?.data?.map((skill: string, index: number) => (
-                                        <View key={index} style={styles.skillTag}>
-                                            <Text style={styles.skillText}>{skill}</Text>
+                            {selectedMechanic?.data?.expertise && (
+                                <View style={styles.detailSection}>
+                                    <Text style={styles.sectionTitle}>Skills & Services</Text>
+                                    <View style={styles.skillsContainer}>
+                                        {selectedMechanic?.data?.expertise?.map((skill: string, index: number) => (
+                                            <View key={index} style={styles.skillTag}>
+                                                <Text style={styles.skillText}>{skill}</Text>
+                                            </View>
+                                        ))}
+                                    </View>
+                                </View>
+                            )}
+
+                            {selectedMechanic?.data?.certifications && (
+                                <View style={styles.detailSection}>
+                                    <Text style={styles.sectionTitle}>Certifications</Text>
+                                    {selectedMechanic?.data?.certifications?.map((cert: string, index: number) => (
+                                        <View key={index} style={styles.certificationItem}>
+                                            <Ionicons name="checkmark-circle" size={20} color="#10b981" />
+                                            <Text style={styles.certificationText}>{cert}</Text>
                                         </View>
                                     ))}
                                 </View>
-                            </View>
-
-                            <View style={styles.detailSection}>
-                                <Text style={styles.sectionTitle}>Certifications</Text>
-                                {selectedMechanic?.certifications?.map((cert: string, index: number) => (
-                                    <View key={index} style={styles.certificationItem}>
-                                        <Ionicons name="checkmark-circle" size={20} color="#10b981" />
-                                        <Text style={styles.certificationText}>{cert}</Text>
-                                    </View>
-                                ))}
-                            </View>
+                            )}
 
                             <View style={styles.detailSection}>
                                 <Text style={styles.sectionTitle}>Pricing</Text>
@@ -401,12 +405,12 @@ export default function ServicesScreen() {
                             <View style={styles.statsContainer}>
                                 <View style={styles.stat}>
                                     <Ionicons name="time" size={20} color="#075538" />
-                                    <Text style={styles.statValue}>{selectedMechanic.responseTime}</Text>
+                                    <Text style={styles.statValue}>{selectedMechanic.responseTime ?? '2 mins'}</Text>
                                     <Text style={styles.statLabel}>Avg. Response</Text>
                                 </View>
                                 <View style={styles.stat}>
                                     <Ionicons name="location" size={20} color="#075538" />
-                                    <Text style={styles.statValue}>{selectedMechanic.distance}</Text>
+                                    <Text style={styles.statValue}>{selectedMechanic.distance ?? 'N/A'}</Text>
                                     <Text style={styles.statLabel}>Distance</Text>
                                 </View>
                                 <View style={styles.stat}>
@@ -435,7 +439,7 @@ export default function ServicesScreen() {
 
 const styles = StyleSheet.create({
     container: {
-        //flex: 1
+        //flex: 1,
         backgroundColor: '#f8fafc',
     },
     header: {
@@ -699,7 +703,7 @@ const styles = StyleSheet.create({
         color: '#fff',
     },
     mapContainer: {
-        flex: 1,
+        //flex: 1,
         minHeight: "60%",
         backgroundColor: '#f8fafc',
     },

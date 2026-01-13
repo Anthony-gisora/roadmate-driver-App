@@ -92,8 +92,8 @@ export default function RequestScreen() {
         setProgress(0);
 
         setProgress(15);
-        const lat = loc.toString().split(',')[0];
-        const lng = loc.toString().split(',')[1];
+        const lat = loc?.toString().split(',')[0];
+        const lng = loc?.toString().split(',')[1];
 
         console.log("location", loc);
         await apiClient.get(`/online-mechanics?lat=${lat}&lng=${lng}`)
@@ -106,14 +106,16 @@ export default function RequestScreen() {
                 if(mechanic){
                     //estimate ETA
                     setEta(getETA(distance));
+                    const expertise = mechanic?.data?.expertise as string[];
+
 
                     setMechanic({
-                        id: mechanic.id,
+                        id: mechanic._id,
                         name: mechanic.name,
                         rating: 4.8,
                         reviews: 60,
                         distance: `${distance?.toFixed(2) }KM`,
-                        specialization: problem === "flat-tire" ? "Tire Specialist" : "General Mechanic",
+                        specialization: expertise?.toString(),
                         image: "👨‍🔧",
                         location: loc,
                         price: estimatedPrice()
@@ -152,7 +154,7 @@ export default function RequestScreen() {
                 driverId,
                 requestType,
                 details: JSON.stringify(details),
-                location: mechanic.loc,
+                location: mechanic.location,
                 mechanicId: mechanic.id,
                 price: mechanic.price,
                 vehicleMake: car?.make,

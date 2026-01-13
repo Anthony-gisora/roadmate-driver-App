@@ -84,6 +84,7 @@ export default function HomeScreen() {
     }
   ];
 
+  // open the chat page
   const handlePress = () => {
     router.push({
       pathname: `/messaging/${activeService.mechanicId as string}`,
@@ -104,7 +105,6 @@ export default function HomeScreen() {
 
     apiClient.get(`/req/requests/${user?._id}`)
         .then((res)=>{
-          console.log(res);
           const request = res.data?.data;
           const mechanic = res.data?.mechanic;
 
@@ -117,7 +117,7 @@ export default function HomeScreen() {
             price: request?.price,
             progress: 75,
             mechanicImage: '👨‍🔧',
-            mechanicId: mechanic?.clerkUid,
+            mechanicId: mechanic?._id,
             distance: mechanic?.distance
           })
 
@@ -210,15 +210,39 @@ export default function HomeScreen() {
     );
   };
 
-  const parseDate = (date: any) => {
-    const memberSinceDate = new Date(date);
-    const now = new Date();
+  const parseDate = (date: any): string => {
+    const start = new Date(date).getTime();
+    const now = Date.now();
 
-    const diffMs = now.getTime() - memberSinceDate.getTime();
-    const years = diffMs / (1000 * 60 * 60 * 24 * 365.25);
+    if (isNaN(start)) return "0 hrs";
 
-    return years.toFixed(1);
-  }
+    const diffMs = now - start;
+
+    const hour = 1000 * 60 * 60;
+    const day = hour * 24;
+    const week = day * 7;
+    const month = day * 30.4375;
+    const year = day * 365.25;
+
+    if (diffMs >= year) {
+      return `${(diffMs / year).toFixed(1)} years`;
+    }
+
+    if (diffMs >= month) {
+      return `${(diffMs / month).toFixed(1)} months`;
+    }
+
+    if (diffMs >= week) {
+      return `${Math.floor(diffMs / week)} weeks`;
+    }
+
+    if (diffMs >= day) {
+      return `${Math.floor(diffMs / day)} days`;
+    }
+
+    return `${Math.floor(diffMs / hour)} hrs`;
+  };
+
 
   const StatCard = ({ value, label, icon, color }: { value: string; label: string; icon: string; color: string }) => (
     <Animated.View 
@@ -309,7 +333,7 @@ export default function HomeScreen() {
 
           {/* Stats Overview */}
           <View style={styles.statsContainer}>
-            <StatCard value={`${parseDate(userStats.memberSince)} Yrs`} label="Member" icon="star" color="#f59e0b" />
+            <StatCard value={parseDate(userStats.memberSince)} label="Member" icon="star" color="#f59e0b" />
             <StatCard value={`${user?.trips ?? 0}`} label="Requests" icon="car" color="#2563eb" />
             <StatCard value={`KES ${userStats.savedAmount ?? 0}`} label="Saved" icon="wallet" color="#10b981" />
           </View>

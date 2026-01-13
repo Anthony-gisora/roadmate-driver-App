@@ -52,7 +52,7 @@ export default function NotificationsScreen() {
             const mechs = mechanics.map((m: any) => ({
                 ...m, // keep all API fields
                 rating: m.rating ?? 4.5, // default rating if missing
-                specialization: m.specialization ?? 'General Repair',
+                specialization: m.data?.expertise.toString() ?? 'General Repair',
                 image: m.image ?? '🧑‍🔧', // placeholder emoji
                 distance: m.distance ?? 0, // you can compute later if needed
                 isOnline: m.isOnline === 'online', // convert string to boolean if you want
@@ -79,7 +79,7 @@ export default function NotificationsScreen() {
                     const lastMessage = messages[messages.length - 1];
 
                     // Determine the mechanic based on conversation members
-                    const mechanicId = conv.memberA === user?.id ? conv.memberB : conv.memberA;
+                    const mechanicId = conv.memberA === user?._id ? conv.memberB : conv.memberA;
                     const mechanic = await getMechanicDetails(mechanicId);
 
                     return {
@@ -112,7 +112,7 @@ export default function NotificationsScreen() {
     };
 
     const getMechanicDetails = async (mechanicId: string) => {
-        return mechanics.find((m: any) => m.clerkUid === mechanicId) || {
+        return mechanics.find((m: any) => m._id === mechanicId) || {
             name: 'Unknown Mechanic',
             specialization: 'General Repair',
             rating: 4.5,

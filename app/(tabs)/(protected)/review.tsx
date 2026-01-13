@@ -15,13 +15,14 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useToast } from 'react-native-toast-notifications';
 import {apiClient} from "@/hooks/api-client";
+import {useAuth} from "@/providers/auth-provider";
 
 const { width } = Dimensions.get('window');
 
 export default function ReviewScreen() {
     const { id } = useLocalSearchParams();
     const router = useRouter();
-    const { user } = useUser();
+    const { user } = useAuth();
     const requestId = id;
     const toast = useToast();
     console.log(id);
@@ -68,6 +69,7 @@ export default function ReviewScreen() {
 
             // Fetch request data
             apiClient.get(`/req/history/${id}`).then((requestResponse)=>{
+                console.log(requestResponse.data);
                 setRequestData(requestResponse?.data?.data[0]);
 
                 if(requestResponse?.data?.data[0]?.mechanic){
@@ -135,7 +137,7 @@ export default function ReviewScreen() {
             const reviewPayload = {
                 requestId,
                 rating,
-                userId: user?.id,
+                userId: user?._id,
                 title: titleRef.current.trim(),
                 description: commentRef.current.trim() || '',
             };
@@ -256,7 +258,7 @@ export default function ReviewScreen() {
                     <Ionicons name="cash" size={16} color="#64748b" />
                     <Text style={styles.detailLabel}>Amount Paid</Text>
                     <Text style={styles.detailValue}>
-                        ${Number(requestData?.price ?? 0).toFixed(2)}
+                        {requestData?.price}
                     </Text>
                 </View>
 
@@ -407,20 +409,6 @@ export default function ReviewScreen() {
             {existingReview?.description && (
                 <Text style={styles.reviewDescription}>{existingReview?.description}</Text>
             )}
-
-            <TouchableOpacity
-                style={styles.editReviewButton}
-                onPress={() => {
-                    Alert.alert(
-                        'Edit Review',
-                        'Editing reviews is not currently available. Please contact support if you need to make changes.',
-                        [{ text: 'OK' }]
-                    );
-                }}
-            >
-                <Ionicons name="pencil" size={16} color="#075538" />
-                <Text style={styles.editReviewText}>Edit Review</Text>
-            </TouchableOpacity>
         </Animated.View>
     );
 
