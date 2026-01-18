@@ -1,6 +1,5 @@
 import VehicleDialog from "@/components/add-vehicle";
 import VehicleCard from "@/components/vehicle-card";
-import { offlineDB } from "@/data/db";
 import { apiClient } from "@/hooks/api-client";
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -34,7 +33,6 @@ export default function ProfileScreen() {
     const [failed, setFailed] = React.useState(false);
     const {user,logout,refreshAuth} = useAuth()
     const toast = useToast();
-    const db = offlineDB;
 
     const fadeAnim = useRef(new Animated.Value(0)).current;
     const slideAnim = useRef(new Animated.Value(30)).current;
@@ -105,8 +103,11 @@ export default function ProfileScreen() {
 
     const loadVehicles = async () => {
         try {
-            const cars = await db.getCars();
-            setVehicles(cars);
+            const response = await apiClient.get(`/vehicles/${user?._id}`);
+            console.log(response);
+            if(response.data?.length > 0) {
+                setVehicles(response.data);
+            }
         } catch (error) {
             console.error('Error loading vehicles -:', error);
         }
@@ -183,23 +184,53 @@ export default function ProfileScreen() {
         );
     };
 
-    const handleUpdateVehicle = async (id: number, updates: any) => {
+    const handleUpdateVehicle = async (id: string, vehicle: any) => {
         try {
-            await db.updateCar(id, updates);
-            await loadVehicles();
+            const response = await apiClient.put(`/vehicles/${id}/${user?._id}`,{
+                make: vehicle.make,
+                model: vehicle.model,
+                year: vehicle.year.toString(),
+                color: vehicle.color,
+                plate: vehicle.plate,
+                isDefault: vehicle.isDefault
+            })
+            console.log(response)
         } catch (error) {
-            throw error;
+            console.error(error);
+        }finally {
+            await loadVehicles();
         }
     };
 
-    const handleDeleteVehicle = async (id: number) => {
+    const addCar = async (vehicle) => {
         try {
-            await db.deleteCar(id);
+            const response = await apiClient.post(`/vehicles/${user?._id}`, {
+                make: vehicle.make,
+                model: vehicle.model,
+                year: vehicle.year.toString(),
+                color: vehicle.color,
+                plate: vehicle.plate,
+                isDefault: vehicle.isDefault
+            });
+            console.log(response)
             await loadVehicles();
+            setDialogOpen(false);
         } catch (error) {
-            throw error;
+            console.error(error);
         }
-    };
+    }
+
+    const handleDeleteVehicle = async (vehicleId:string, userId:string) => {
+        try {
+            const response = await apiClient.delete(`/vehicles/${vehicleId}/${userId}`);
+            console.log("response deleting",response)
+        } catch (error) {
+            Alert.alert('error',error.response?.data);
+            console.error(error);
+        }finally {
+            await loadVehicles();
+        }
+    }
 
     const handleAddVehicle = () => {
         setDialogOpen(true);
@@ -327,8 +358,9 @@ export default function ProfileScreen() {
                 <View style={styles.vehiclesContainer}>
                     {vehicles.map(vehicle => (
                         <VehicleCard
-                            key={vehicle.id}
+                            key={vehicle._id}
                             vehicle={vehicle}
+                            userId={user?._id as string}
                             onUpdate={handleUpdateVehicle}
                             onDelete={handleDeleteVehicle}
                         />
@@ -531,8 +563,7 @@ export default function ProfileScreen() {
                 open={dialogOpen}
                 setOpen={setDialogOpen}
                 onSubmit={async (vehicle) => {
-                    await db.addCar(vehicle);
-                    await loadVehicles();
+                    await addCar(vehicle);
                 }}
             />
 

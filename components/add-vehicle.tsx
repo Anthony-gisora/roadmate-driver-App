@@ -74,7 +74,7 @@ const VehicleDialog: React.FC<VehicleDialogProps> = ({
         color: color.trim(),
         isDefault,
       });
-      setOpen(false);
+      //setOpen(false);
     } catch (err) {
       console.error('Failed to add vehicle:', err);
       Alert.alert('Error', 'Failed to add vehicle, please try again.');

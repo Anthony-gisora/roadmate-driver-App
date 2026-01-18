@@ -104,7 +104,7 @@ export default function EmergencyScreen() {
         });
     };
 
-    const PriorityCard = ({ type, title, description, icon, color }: {
+    const PriorityCard = ({ type, title, description, icon, color, enabled = true }: {
         type: 'emergency' | 'normal' | 'other';
         title: string;
         description: string;
@@ -114,9 +114,11 @@ export default function EmergencyScreen() {
         <TouchableOpacity
             style={[
                 styles.priorityCard,
-                selectedPriority === type && { borderColor: color, backgroundColor: `${color}10` }
+                selectedPriority === type && { borderColor: color, backgroundColor: `${color}` }
             ]}
-            onPress={() => setSelectedPriority(type)}
+            onPress={() => {
+                if(enabled){setSelectedPriority(type)}
+            }}
         >
             <View style={[styles.priorityIcon, { backgroundColor: color }]}>
                 <Ionicons name={icon as any} size={24} color="#fff" />
@@ -125,14 +127,18 @@ export default function EmergencyScreen() {
                 <Text style={styles.priorityTitle}>{title}</Text>
                 <Text style={styles.priorityDescription}>{description}</Text>
             </View>
-            <View style={[
-                styles.radioButton,
-                selectedPriority === type && { backgroundColor: color, borderColor: color }
-            ]}>
-                {selectedPriority === type && (
-                    <Ionicons name="checkmark" size={16} color="#fff" />
-                )}
-            </View>
+            {enabled ? (
+                <View style={[
+                    styles.radioButton,
+                    selectedPriority === type && { backgroundColor: color, borderColor: '#ffff' }
+                ]}>
+                    {selectedPriority === type && (
+                        <Ionicons name="checkmark" size={16} color="#fff" />
+                    )}
+                </View>
+            ):(
+                <Text style={styles.priorityDescription}>Coming Soon</Text>
+            )}
         </TouchableOpacity>
     );
 
@@ -150,7 +156,7 @@ export default function EmergencyScreen() {
                                 title="Emergency"
                                 description="Immediate danger or safety concern"
                                 icon="warning"
-                                color="#dc2626"
+                                color="#f50a0a"
                             />
                             <PriorityCard
                                 type="normal"
@@ -165,6 +171,7 @@ export default function EmergencyScreen() {
                                 description="Plan for later today or tomorrow"
                                 icon="calendar"
                                 color="#10b981"
+                                enabled={false}
                             />
                         </View>
                     </View>
@@ -182,7 +189,7 @@ export default function EmergencyScreen() {
                                     key={problem.id}
                                     style={[
                                         styles.problemCard,
-                                        selectedProblem === problem.id && { borderColor: problem.color, backgroundColor: `${problem.color}10` }
+                                        selectedProblem === problem.id && { borderColor: problem.color, backgroundColor: `${problem.color}` }
                                     ]}
                                     onPress={() => setSelectedProblem(problem.id)}
                                 >

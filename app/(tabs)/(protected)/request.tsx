@@ -1,5 +1,5 @@
 import CarSelector from '@/components/car-selector';
-import { Car, offlineDB } from "@/data/db";
+import { Car } from "@/data/db";
 import { apiClient } from "@/hooks/api-client";
 import { getLocation } from "@/hooks/location";
 import { Ionicons } from '@expo/vector-icons';
@@ -23,7 +23,6 @@ export default function RequestScreen() {
     const [price, setPrice] = useState<number>(0);
     const { user } = useAuth();
     const toast = useToast();
-    const db = offlineDB;
 
     const progressAnim = new Animated.Value(0);
     const slideAnim = new Animated.Value(50);
@@ -76,12 +75,19 @@ export default function RequestScreen() {
     }
 
     useEffect(() => {
-        db.getDefaultCar()
+        apiClient.get(`/vehicles/${user?._id}`)
             .then((res)=>{
-                setCar(res);
+                const cars = res.data;
+                for (let i = 0; i < cars?.length; i++) {
+                    const car = cars[i];
+                    if(car.isDefault){
+                        setCar(car);
+                    }
+                }
             })
+            .catch((res)=>console.log(res));
         fetchMechanic();
-    }, []);
+    }, [user]);
 
     const fetchMechanic = async () => {
         setSending(true);
