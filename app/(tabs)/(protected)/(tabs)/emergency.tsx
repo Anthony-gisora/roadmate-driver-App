@@ -207,7 +207,7 @@ export default function EmergencyScreen() {
                         </View>
 
                         {selectedProblem === 'other' && (
-                            <View style={styles.otherInputContainer}>
+                            <View style={[styles.otherInputContainer , {marginBottom: 60}]}>
                                 <Text style={styles.otherInputLabel}>Please describe your problem</Text>
                                 <TextInput
                                     style={styles.otherInput}
@@ -462,7 +462,7 @@ const styles = StyleSheet.create({
     problemsGrid: {
         flexDirection: 'row',
         flexWrap: 'wrap',
-        gap: 12,
+        gap: 6,
         justifyContent: 'center',
     },
     problemCard: {
