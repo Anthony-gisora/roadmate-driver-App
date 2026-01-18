@@ -15,6 +15,7 @@ import {
     TouchableOpacity,
     View
 } from 'react-native';
+import {getLocation} from "@/hooks/location";
 
 const { width } = Dimensions.get('window');
 
@@ -43,9 +44,10 @@ export default function ServicesScreen() {
     const [selectedFilter, setSelectedFilter] = useState('distance');
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedMechanic, setSelectedMechanic] = useState<any>(null);
-    const [showFilters, setShowFilters] = useState(false);
+    const [showFilters, setShowFilters] = useState(true);
     const [showMechanicModal, setShowMechanicModal] = useState(false);
     const [mechanics, setMechanics] = useState([]);
+    const [location,setLocation] = useState<{lat:number,lng:number} | null>(null);
     const [filteredMechanics, setFilteredMechanics] = useState([]);
 
     const handleTechnicianSelect = (technician) => {
@@ -60,6 +62,7 @@ export default function ServicesScreen() {
         const mechanics = res?.data?.mechanics || [];
         const normalized = mechanics.map(m => ({
             ...m,
+            id: m._id,
             specialization: m.data.expertise,
             rating: m.rating || 4.5,    // fallback
             reviews: m.reviews || 12,   // fallback
@@ -100,20 +103,28 @@ export default function ServicesScreen() {
 
         setFilteredMechanics(filtered);
         });
+     setUserLocation();
     }, [selectedService, selectedFilter, searchQuery]);
 
 
     const scrollY = useRef(new Animated.Value(0)).current;
 
+    const setUserLocation = async () => {
+        const loc = (await getLocation()) ?? "";
+        const lat = parseFloat(loc?.toString().split(',')[0]);
+        const lng = parseFloat(loc?.toString().split(',')[1]);
+        setLocation({
+            lat,lng
+        })
+    }
+
     const handleBookService = (mechanic: any) => {
         setShowMechanicModal(false);
         router.push({
-            pathname: '/booking',
+            pathname: `/messaging/${mechanic._id as string}`,
             params: {
-                mechanicId: mechanic.id,
                 mechanicName: mechanic.name,
-                service: mechanic.specialization,
-                price: mechanic.price
+                mechanicImage: ""
             }
         });
     };
@@ -329,7 +340,7 @@ export default function ServicesScreen() {
                     <TechnicianMap 
                             technicians={filteredMechanics}
                             onTechnicianSelect={handleTechnicianSelect}
-                            userLocation={{ lat: -1.2921, lng: 36.8219 }}
+                            userLocation={location}
                         />
                 </View>
             )}
@@ -426,8 +437,8 @@ export default function ServicesScreen() {
                                 style={styles.bookButton}
                                 onPress={() => handleBookService(selectedMechanic)}
                             >
-                                <Ionicons name="calendar" size={20} color="#fff" />
-                                <Text style={styles.bookButtonText}>Book Service</Text>
+                                <Ionicons name="chatbubbles" size={20} color="#fff" />
+                                <Text style={styles.bookButtonText}>Get In Touch</Text>
                             </TouchableOpacity>
                         </View>
                     </View>

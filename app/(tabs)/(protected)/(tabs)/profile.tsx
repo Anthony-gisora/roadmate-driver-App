@@ -225,7 +225,7 @@ export default function ProfileScreen() {
             const response = await apiClient.delete(`/vehicles/${vehicleId}/${userId}`);
             console.log("response deleting",response)
         } catch (error) {
-            Alert.alert('error',error.response?.data);
+            Alert.alert('error',error?.response?.data);
             console.error(error);
         }finally {
             await loadVehicles();

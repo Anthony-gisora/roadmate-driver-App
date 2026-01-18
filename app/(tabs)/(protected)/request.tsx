@@ -8,6 +8,7 @@ import React, { useEffect, useState } from 'react';
 import { Alert, Animated, Dimensions, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useToast } from "react-native-toast-notifications";
 import {useAuth} from "@/providers/auth-provider";
+import {SafeAreaView} from "react-native-safe-area-context";
 
 const { width } = Dimensions.get('window');
 
@@ -147,6 +148,10 @@ export default function RequestScreen() {
         if(sent){
             return null;
         }
+        if(car === undefined){
+            toast.show("Please select a car!", { type: "warning" });
+            return null;
+        }
         setSending(true);
         const driverId = user?._id;
         const requestType = problem;
@@ -213,183 +218,185 @@ export default function RequestScreen() {
     };
 
     return (
-        <View style={styles.container}>
-            {/* Header */}
-            <View style={styles.header}>
-                <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-                    <Ionicons name="arrow-back" size={24} color="#1e293b" />
-                </TouchableOpacity>
-                <Text style={styles.headerTitle}>Request Details</Text>
-                <View style={styles.headerSpacer} />
-            </View>
-
-            <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
-                {/* Status Card */}
-                <View style={styles.statusCard}>
-                    <View style={styles.statusHeader}>
-                        <View style={[styles.priorityBadge, { backgroundColor: priorityColors[params.priority as string] }]}>
-                            <Text style={styles.priorityText}>
-                                {params.priority === 'emergency' ? '🚨 EMERGENCY' :
-                                    params.priority === 'normal' ? '🕐 STANDARD' : '📅 SCHEDULED'}
-                            </Text>
-                        </View>
-                        <Text style={styles.statusTitle}>Assistance Requested</Text>
-                        <Text style={styles.statusDescription}>
-                            We&apos;re finding the best mechanic for your {params.problem} issue
-                        </Text>
-                    </View>
-
-                    {/* Progress Bar */}
-                    <View style={styles.progressContainer}>
-                        <View style={styles.progressBackground}>
-                            <Animated.View
-                                style={[
-                                    styles.progressFill,
-                                    { width: `${progress}%` }
-                                ]}
-                            />
-                        </View>
-                        <Text style={styles.progressText}>{progress}% Complete</Text>
-                    </View>
+        <SafeAreaView style={{ flex: 1 }} edges={["bottom"]}>
+            <View style={styles.container}>
+                {/* Header */}
+                <View style={styles.header}>
+                    <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+                        <Ionicons name="arrow-back" size={24} color="#1e293b" />
+                    </TouchableOpacity>
+                    <Text style={styles.headerTitle}>Request Details</Text>
+                    <View style={styles.headerSpacer} />
                 </View>
 
-                {/* Problem Details */}
-                <View style={styles.detailCard}>
-                    <Text style={styles.cardTitle}>Service Details</Text>
-
-                    <View style={styles.detailRow}>
-                        <View style={styles.detailIcon}>
-                            <Ionicons
-                                name={problemIcons[params.problem as string] || 'help-outline'}
-                                size={20}
-                                color="#2563eb"
-                            />
-                        </View>
-                        <View style={styles.detailContent}>
-                            <Text style={styles.detailLabel}>Problem Type</Text>
-                            <Text style={styles.detailValue}>
-                                {params.problem?.toString().replace('-', ' ').toUpperCase() || 'Unknown'}
+                <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
+                    {/* Status Card */}
+                    <View style={styles.statusCard}>
+                        <View style={styles.statusHeader}>
+                            <View style={[styles.priorityBadge, { backgroundColor: priorityColors[params.priority as string] }]}>
+                                <Text style={styles.priorityText}>
+                                    {params.priority === 'emergency' ? '🚨 EMERGENCY' :
+                                        params.priority === 'normal' ? '🕐 STANDARD' : '📅 SCHEDULED'}
+                                </Text>
+                            </View>
+                            <Text style={styles.statusTitle}>Assistance Requested</Text>
+                            <Text style={styles.statusDescription}>
+                                We&apos;re finding the best mechanic for your {params.problem} issue
                             </Text>
                         </View>
-                    </View>
 
-                    <View style={styles.detailRow}>
-                        <View style={styles.detailIcon}>
-                            <Ionicons name="time" size={20} color="#2563eb" />
-                        </View>
-                        <View style={styles.detailContent}>
-                            <Text style={styles.detailLabel}>Request Time</Text>
-                            <Text style={styles.detailValue}>
-                                {new Date().toLocaleTimeString()}
-                            </Text>
-                        </View>
-                    </View>
-
-                    <View style={styles.detailRow}>
-                        <View style={styles.detailIcon}>
-                            <Ionicons name="cash" size={20} color="#2563eb" />
-                        </View>
-                        <View style={styles.detailContent}>
-                            <Text style={styles.detailLabel}>Estimated Cost</Text>
-                            <Text style={styles.detailValue}>{price}</Text>
+                        {/* Progress Bar */}
+                        <View style={styles.progressContainer}>
+                            <View style={styles.progressBackground}>
+                                <Animated.View
+                                    style={[
+                                        styles.progressFill,
+                                        { width: `${progress}%` }
+                                    ]}
+                                />
+                            </View>
+                            <Text style={styles.progressText}>{progress}% Complete</Text>
                         </View>
                     </View>
 
-                    <CarSelector
-                        onSelectCar={(car) => {
-                            handleSelectCar(car);
-                        }}
-                    />
-                </View>
+                    {/* Problem Details */}
+                    <View style={styles.detailCard}>
+                        <Text style={styles.cardTitle}>Service Details</Text>
 
-                {/* Mechanic Match */}
-                {mechanic && (
-                    <View style={styles.mechanicCard}>
-                        <Text style={styles.cardTitle}>Mechanic Assigned</Text>
+                        <View style={styles.detailRow}>
+                            <View style={styles.detailIcon}>
+                                <Ionicons
+                                    name={problemIcons[params.problem as string] || 'help-outline'}
+                                    size={20}
+                                    color="#2563eb"
+                                />
+                            </View>
+                            <View style={styles.detailContent}>
+                                <Text style={styles.detailLabel}>Problem Type</Text>
+                                <Text style={styles.detailValue}>
+                                    {params.problem?.toString().replace('-', ' ').toUpperCase() || 'Unknown'}
+                                </Text>
+                            </View>
+                        </View>
 
-                        <View style={styles.mechanicInfo}>
-                            <Text style={styles.mechanicEmoji}>{mechanic.image}</Text>
-                            <View style={styles.mechanicDetails}>
-                                <Text style={styles.mechanicName}>{mechanic.name}</Text>
-                                <View style={styles.ratingContainer}>
-                                    <Ionicons name="star" size={16} color="#f59e0b" />
-                                    <Text style={styles.ratingText}>{mechanic.rating} ({mechanic.reviews} reviews)</Text>
+                        <View style={styles.detailRow}>
+                            <View style={styles.detailIcon}>
+                                <Ionicons name="time" size={20} color="#2563eb" />
+                            </View>
+                            <View style={styles.detailContent}>
+                                <Text style={styles.detailLabel}>Request Time</Text>
+                                <Text style={styles.detailValue}>
+                                    {new Date().toLocaleTimeString()}
+                                </Text>
+                            </View>
+                        </View>
+
+                        <View style={styles.detailRow}>
+                            <View style={styles.detailIcon}>
+                                <Ionicons name="cash" size={20} color="#2563eb" />
+                            </View>
+                            <View style={styles.detailContent}>
+                                <Text style={styles.detailLabel}>Estimated Cost</Text>
+                                <Text style={styles.detailValue}>{price}</Text>
+                            </View>
+                        </View>
+
+                        <CarSelector
+                            onSelectCar={(car) => {
+                                handleSelectCar(car);
+                            }}
+                        />
+                    </View>
+
+                    {/* Mechanic Match */}
+                    {mechanic && (
+                        <View style={styles.mechanicCard}>
+                            <Text style={styles.cardTitle}>Mechanic Assigned</Text>
+
+                            <View style={styles.mechanicInfo}>
+                                <Text style={styles.mechanicEmoji}>{mechanic.image}</Text>
+                                <View style={styles.mechanicDetails}>
+                                    <Text style={styles.mechanicName}>{mechanic.name}</Text>
+                                    <View style={styles.ratingContainer}>
+                                        <Ionicons name="star" size={16} color="#f59e0b" />
+                                        <Text style={styles.ratingText}>{mechanic.rating} ({mechanic.reviews} reviews)</Text>
+                                    </View>
+                                    <Text style={styles.mechanicSpecialty}>{mechanic.specialization}</Text>
                                 </View>
-                                <Text style={styles.mechanicSpecialty}>{mechanic.specialization}</Text>
                             </View>
-                        </View>
 
-                        <View style={styles.mechanicStats}>
-                            <View style={styles.stat}>
-                                <Ionicons name="location" size={16} color="#64748b" />
-                                <Text style={styles.statText}>{mechanic?.distance} away</Text>
+                            <View style={styles.mechanicStats}>
+                                <View style={styles.stat}>
+                                    <Ionicons name="location" size={16} color="#64748b" />
+                                    <Text style={styles.statText}>{mechanic?.distance} away</Text>
+                                </View>
+                                <View style={styles.stat}>
+                                    <Ionicons name="time" size={16} color="#64748b" />
+                                    <Text style={styles.statText}>ETA: {eta}</Text>
+                                </View>
                             </View>
-                            <View style={styles.stat}>
-                                <Ionicons name="time" size={16} color="#64748b" />
-                                <Text style={styles.statText}>ETA: {eta}</Text>
-                            </View>
-                        </View>
 
-                        <TouchableOpacity onPress={handlePress} style={styles.contactButton}>
-                            <Ionicons name="chatbubble" size={20} color="#2563eb" />
-                            <Text style={styles.contactButtonText}>Message Mechanic</Text>
+                            <TouchableOpacity onPress={handlePress} style={styles.contactButton}>
+                                <Ionicons name="chatbubble" size={20} color="#2563eb" />
+                                <Text style={styles.contactButtonText}>Message Mechanic</Text>
+                            </TouchableOpacity>
+                        </View>
+                    )}
+
+                    {/* Emergency Contacts */}
+                    <View style={styles.contactsCard}>
+                        <Text style={styles.cardTitle}>Live Tracking</Text>
+                        <Text style={styles.contactsDescription}>
+                            View Live location updates on the homepage by clicking the active request
+                        </Text>
+
+                        <TouchableOpacity onPress={()=>{
+                            router.push('/(tabs)/(protected)/(tabs)/home');
+                        }} style={styles.emergencyButton}>
+                            <Ionicons name="call" size={20} color="#00ff9d" />
+                            <Text style={styles.emergencyButtonText}>Track location</Text>
                         </TouchableOpacity>
                     </View>
-                )}
+                </ScrollView>
 
-                {/* Emergency Contacts */}
-                <View style={styles.contactsCard}>
-                    <Text style={styles.cardTitle}>Live Tracking</Text>
-                    <Text style={styles.contactsDescription}>
-                        View Live location updates on the homepage by clicking the active request
-                    </Text>
+                {/* Fixed Action Buttons */}
+                <View style={styles.actionContainer}>
+                    <TouchableOpacity
+                        style={styles.cancelButton}
+                        onPress={() => Alert.alert(
+                            'Cancel Request',
+                            'Are you sure you want to cancel this assistance request?',
+                            [
+                                { text: 'No', style: 'cancel' },
+                                { text: 'Yes, Cancel', style: 'destructive', onPress: () => router.back() }
+                            ]
+                        )}
+                    >
+                        <Text style={styles.cancelButtonText}>Cancel Request</Text>
+                    </TouchableOpacity>
 
-                    <TouchableOpacity onPress={()=>{
-                        router.push('/(tabs)/(protected)/(tabs)/home');
-                    }} style={styles.emergencyButton}>
-                        <Ionicons name="call" size={20} color="#00ff9d" />
-                        <Text style={styles.emergencyButtonText}>Track location</Text>
+                    <TouchableOpacity
+                        disabled={sending || !mechanic}
+                        onPress={sendRequest}
+                        style={[
+                            styles.updateButton,
+                            (!mechanic || sending) && styles.disabledButton,
+                        ]}
+                    >
+                        {mechanic ? (
+                            <>
+                                <Ionicons name="send" size={20} color="#2563eb" />
+                                <Text style={styles.updateButtonText}>Submit Request</Text>
+                            </>
+                        ) : (
+                            <Text style={styles.updateButtonTextError}>
+                                No mechanic available
+                            </Text>
+                        )}
                     </TouchableOpacity>
                 </View>
-            </ScrollView>
-
-            {/* Fixed Action Buttons */}
-            <View style={styles.actionContainer}>
-                <TouchableOpacity
-                    style={styles.cancelButton}
-                    onPress={() => Alert.alert(
-                        'Cancel Request',
-                        'Are you sure you want to cancel this assistance request?',
-                        [
-                            { text: 'No', style: 'cancel' },
-                            { text: 'Yes, Cancel', style: 'destructive', onPress: () => router.back() }
-                        ]
-                    )}
-                >
-                    <Text style={styles.cancelButtonText}>Cancel Request</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                    disabled={sending || !mechanic}
-                    onPress={sendRequest}
-                    style={[
-                        styles.updateButton,
-                        (!mechanic || sending) && styles.disabledButton,
-                    ]}
-                >
-                    {mechanic ? (
-                        <>
-                            <Ionicons name="send" size={20} color="#2563eb" />
-                            <Text style={styles.updateButtonText}>Submit Request</Text>
-                        </>
-                    ) : (
-                        <Text style={styles.updateButtonTextError}>
-                            No mechanic available
-                        </Text>
-                    )}
-                </TouchableOpacity>
             </View>
-        </View>
+        </SafeAreaView>
     );
 }
 

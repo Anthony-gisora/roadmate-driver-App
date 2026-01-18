@@ -13,7 +13,7 @@ import {Platform} from "react-native";
 import {ChatManager} from "@/hooks/chat-manager";
 import {AuthProvider} from "@/providers/auth-provider";
 import {AuthGate} from "@/components/auth-guard";
-import {SafeAreaProvider} from "react-native-safe-area-context";
+import {SafeAreaProvider, SafeAreaView} from "react-native-safe-area-context";
 
 Sentry.init({
   dsn: 'https://a127ee337dafa3f316ddd8ad74d0bf2e@o4508255508561920.ingest.de.sentry.io/4510504659255376',
@@ -138,7 +138,9 @@ function RootLayout() {
 
     return (
         <SafeAreaProvider>
-            <AuthProvider
+            <SafeAreaView style={{ flex: 1 }} edges={["top", "left", "right"]}>
+                <StatusBar translucent={false} />
+                <AuthProvider
             >
                 <ToastProvider>
                     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
@@ -153,6 +155,7 @@ function RootLayout() {
                     </ThemeProvider>
                 </ToastProvider>
             </AuthProvider>
+            </SafeAreaView>
         </SafeAreaProvider>
     );
 }
