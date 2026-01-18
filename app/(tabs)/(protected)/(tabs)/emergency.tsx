@@ -6,7 +6,7 @@ import {
     Alert,
     Animated,
     Dimensions,
-    Image,
+    Image, KeyboardAvoidingView, Platform,
     ScrollView,
     StyleSheet,
     Text,
@@ -25,6 +25,7 @@ export default function EmergencyScreen() {
     const [otherDescription, setOtherDescription] = useState('');
     const [useAutoLocation, setUseAutoLocation] = useState(true);
     const [location, setLocation] = useState<{latitude:number,longitude:number}>();
+    const scrollRef = useRef<ScrollView>(null);
 
 
     const handleSelect = (coords: { latitude: number; longitude: number }) => {
@@ -46,6 +47,14 @@ export default function EmergencyScreen() {
         { id: 'accident', name: 'Accident', icon: 'warning-outline', color: '#dc2626' },
         { id: 'other', name: 'Other Issue', icon: 'help-outline', color: '#6b7280' },
     ];
+
+    React.useEffect(() => {
+        if (selectedProblem === 'other') {
+            setTimeout(() => {
+                scrollRef.current?.scrollToEnd({ animated: true });
+            }, 300);
+        }
+    }, [selectedProblem]);
 
     React.useEffect(() => {
         Animated.loop(
@@ -158,13 +167,13 @@ export default function EmergencyScreen() {
                                 icon="warning"
                                 color="#f50a0a"
                             />
-                            <PriorityCard
-                                type="normal"
-                                title="Standard"
-                                description="Need assistance within the hour"
-                                icon="time"
-                                color="#f59e0b"
-                            />
+                            {/*<PriorityCard*/}
+                            {/*    type="normal"*/}
+                            {/*    title="Standard"*/}
+                            {/*    description="Need assistance within the hour"*/}
+                            {/*    icon="time"*/}
+                            {/*    color="#f59e0b"*/}
+                            {/*/>*/}
                             <PriorityCard
                                 type="other"
                                 title="Scheduled"
@@ -275,6 +284,11 @@ export default function EmergencyScreen() {
     };
 
     return (
+        <KeyboardAvoidingView
+            style={{ flex: 1 }}
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            keyboardVerticalOffset={Platform.OS === 'ios' ? 80 : 0}
+        >
         <View style={styles.container}>
             {/* Header */}
             <View style={styles.header}>
@@ -292,9 +306,11 @@ export default function EmergencyScreen() {
             </View>
 
             <ScrollView
+                ref={scrollRef}
                 style={styles.scrollView}
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={styles.scrollContent}
+                keyboardShouldPersistTaps="handled"
             >
                 {renderStepContent()}
                 <View style={styles.spacer} />
@@ -345,6 +361,7 @@ export default function EmergencyScreen() {
                 )}
             </View>
         </View>
+        </KeyboardAvoidingView>
     );
 }
 
