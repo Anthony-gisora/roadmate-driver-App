@@ -28,7 +28,7 @@ export default function RequestScreen() {
     const progressAnim = new Animated.Value(0);
     const slideAnim = new Animated.Value(50);
 
-    const { priority, problem, useAutoLocation,timestamp, location } = params;
+    const { priority, problem, useAutoLocation,timestamp, location, otherDescription } = params;
 
     const problemIcons: { [key: string]: string } = {
         'flat-tire': 'car-outline',
@@ -163,6 +163,7 @@ export default function RequestScreen() {
         const details = {
             priority: priority.toString(),
             timestamp: timestamp.toString(),
+            description: otherDescription
         };
 
         try{
