@@ -101,6 +101,10 @@ export default function RequestScreen() {
         setProgress(15);
         const lat = loc?.toString().split(',')[0];
         const lng = loc?.toString().split(',')[1];
+        const newLocation = {
+            lat: lat,
+            lng: lng
+        }
 
         console.log("location", loc);
         await apiClient.get(`/online-mechanics?lat=${lat}&lng=${lng}`)
@@ -124,7 +128,7 @@ export default function RequestScreen() {
                         distance: `${distance?.toFixed(2) }KM`,
                         specialization: expertise?.toString(),
                         image: "👨‍🔧",
-                        location: loc,
+                        location: newLocation,
                         price: estimatedPrice()
                     });
                     console.log("mechanic",mechanic);
@@ -144,6 +148,7 @@ export default function RequestScreen() {
             })
     }
 
+    //send the request
     const sendRequest = async () => {
         if(sent){
             return null;
@@ -197,7 +202,7 @@ export default function RequestScreen() {
 
 
     //update price estimates
-    const estimatedPrice = () => {
+    const estimatedPrice = ():number => {
         const basePrices: { [key: string]: number } = {
             'flat-tire': 500,
             'fuel': 500,
@@ -214,7 +219,7 @@ export default function RequestScreen() {
         const price = (basePrice * priorityMultiplier).toFixed(2);
         setPrice(Number(price));
 
-        return `KES${price}`;
+        return Number(price);
     };
 
     return (
@@ -311,7 +316,7 @@ export default function RequestScreen() {
                     {/* Mechanic Match */}
                     {mechanic && (
                         <View style={styles.mechanicCard}>
-                            <Text style={styles.cardTitle}>Mechanic Assigned</Text>
+                            <Text style={styles.cardTitle}>Nearest Mechanic Found</Text>
 
                             <View style={styles.mechanicInfo}>
                                 <Text style={styles.mechanicEmoji}>{mechanic.image}</Text>

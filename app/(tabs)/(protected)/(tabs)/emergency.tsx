@@ -82,7 +82,7 @@ export default function EmergencyScreen() {
             Alert.alert('Select Problem', 'Please select the type of problem you are experiencing.');
             return;
         }
-        if (currentStep === 2 && selectedProblem === 'other' && !otherDescription.trim()) {
+        if (currentStep === 4 && !otherDescription.trim()) {
             Alert.alert('Describe Problem', 'Please describe your problem.');
             return;
         }
@@ -214,20 +214,6 @@ export default function EmergencyScreen() {
                                 </TouchableOpacity>
                             ))}
                         </View>
-
-                        {selectedProblem === 'other' && (
-                            <View style={[styles.otherInputContainer , {marginBottom: 60}]}>
-                                <Text style={styles.otherInputLabel}>Please describe your problem</Text>
-                                <TextInput
-                                    style={styles.otherInput}
-                                    placeholder="Describe what's happening with your vehicle..."
-                                    multiline
-                                    numberOfLines={4}
-                                    value={otherDescription}
-                                    onChangeText={setOtherDescription}
-                                />
-                            </View>
-                        )}
                     </View>
                 );
 
@@ -273,6 +259,24 @@ export default function EmergencyScreen() {
                         )}
                     </View>
                 );
+            case 4:
+                return (
+                    <View style={styles.stepContainer}>
+                        <Text style={styles.stepTitle}>What&apos;s the problem?</Text>
+                        <Text style={styles.stepDescription}>Provide Additional details so we can better grasp the situation</Text>
+
+                        <View style={[styles.otherInputContainer , {marginBottom: 60}]}>
+                            <TextInput
+                                style={styles.otherInput}
+                                placeholder="Describe what's happening with your vehicle..e.g fuel type."
+                                multiline
+                                numberOfLines={4}
+                                value={otherDescription}
+                                onChangeText={setOtherDescription}
+                            />
+                        </View>
+                    </View>
+                )
 
             default:
                 return null;
@@ -280,7 +284,7 @@ export default function EmergencyScreen() {
     };
 
     const getStepProgress = () => {
-        return (currentStep / 3) * 100;
+        return (currentStep / 4) * 100;
     };
 
     return (
@@ -328,18 +332,18 @@ export default function EmergencyScreen() {
                     </TouchableOpacity>
                 )}
 
-                {currentStep < 3 ? (
+                {currentStep < 4 ? (
                     <TouchableOpacity
                         style={[
                             styles.nextButton,
                             ((currentStep === 1 && !selectedPriority) ||
-                             (currentStep === 2 && (!selectedProblem || (selectedProblem === 'other' && !otherDescription.trim())))) &&
+                             (currentStep === 2 && !selectedProblem)) &&
                             styles.nextButtonDisabled
                         ]}
                         onPress={handleNextStep}
                         disabled={
                             (currentStep === 1 && !selectedPriority) ||
-                            (currentStep === 2 && (!selectedProblem || (selectedProblem === 'other' && !otherDescription.trim())))
+                            (currentStep === 4 && (!selectedProblem || (!otherDescription.trim())))
                         }
                     >
                         <Text style={styles.nextButtonText}>Continue</Text>
@@ -348,8 +352,15 @@ export default function EmergencyScreen() {
                 ) : (
                     <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
                         <TouchableOpacity
-                            style={styles.ctaButton}
+                            style={[
+                                styles.ctaButton,
+                                ((currentStep === 4 && !otherDescription.trim())) &&
+                                styles.nextButtonDisabled
+                            ]}
                             onPress={handleRequestAssistance}
+                            disabled={
+                                (currentStep === 4 && !otherDescription.trim())
+                            }
                         >
                             <Ionicons name="shield-checkmark" size={24} color="#fff" />
                             <Text style={styles.ctaButtonText}>Request Assistance</Text>

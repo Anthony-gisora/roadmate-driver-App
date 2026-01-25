@@ -18,6 +18,9 @@ import {sendMessage} from "@/hooks/socket";
 import {socketEvents} from "@/hooks/events-emitter";
 import {useAuth} from "@/providers/auth-provider";
 import string from "zod/src/v3/benchmarks/string";
+import {SafeAreaView} from "react-native-safe-area-context";
+import {StatusBar} from "expo-status-bar";
+import CustomStatusBar from "@/components/status-bar";
 
 export default function ChatScreen() {
     const { id, mechanicName, mechanicImage, chatId } = useLocalSearchParams();
@@ -207,77 +210,81 @@ export default function ChatScreen() {
     };
 
     return (
-        <KeyboardAvoidingView
-            style={styles.container}
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        >
-            {/* Header */}
-            <View style={styles.header}>
+        <SafeAreaView style={{ flex: 1 }} edges={["bottom"]}>
+            <CustomStatusBar backgroundColor={'#075538'}/>
+            <KeyboardAvoidingView
+                style={styles.container}
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                keyboardVerticalOffset={30}
+            >
+                {/* Header */}
+                <View style={[styles.header]}>
                 <TouchableOpacity
-                    style={styles.backButton}
-                    onPress={() => router.back()}
-                >
-                    <Ionicons name="arrow-back" size={24} color="#fff" />
-                </TouchableOpacity>
+                        style={styles.backButton}
+                        onPress={() => router.back()}
+                    >
+                        <Ionicons name="arrow-back" size={24} color="#fff" />
+                    </TouchableOpacity>
 
-                <View style={styles.mechanicInfo}>
-                    <Text style={styles.avatar}>{mechanicImage}</Text>
-                    <View style={styles.mechanicDetails}>
-                        <Text style={styles.mechanicName}>{mechanicName}</Text>
-                        <Text style={styles.status}>Online</Text>
+                    <View style={styles.mechanicInfo}>
+                        <Text style={styles.avatar}>{mechanicImage}</Text>
+                        <View style={styles.mechanicDetails}>
+                            <Text style={styles.mechanicName}>{mechanicName}</Text>
+                            <Text style={styles.status}>Online</Text>
+                        </View>
                     </View>
+
+                    <TouchableOpacity style={styles.callButton}>
+                        <Ionicons name="call" size={20} color="#fff" />
+                    </TouchableOpacity>
                 </View>
 
-                <TouchableOpacity style={styles.callButton}>
-                    <Ionicons name="call" size={20} color="#fff" />
-                </TouchableOpacity>
-            </View>
-
-            {/* Messages */}
-            <Animated.View
-                style={[
-                    styles.messagesContainer,
-                    { opacity: fadeAnim }
-                ]}
-            >
-                <FlatList
-                    ref={flatListRef}
-                    data={messages}
-                    keyExtractor={(item) => item?.id?.toString()}
-                    renderItem={({ item }) => <MessageBubble message={item} />}
-                    showsVerticalScrollIndicator={false}
-                    contentContainerStyle={styles.messagesContent}
-                    onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
-                />
-            </Animated.View>
-
-            {/* Message Input */}
-            <View style={styles.inputContainer}>
-                <TextInput
-                    style={styles.messageInput}
-                    placeholder="Type a message..."
-                    placeholderTextColor="#94a3b8"
-                    value={messageText}
-                    onChangeText={setMessageText}
-                    multiline
-                    maxLength={500}
-                />
-                <TouchableOpacity
+                {/* Messages */}
+                <Animated.View
                     style={[
-                        styles.sendButton,
-                        !messageText.trim() && styles.sendButtonDisabled
+                        styles.messagesContainer,
+                        { opacity: fadeAnim }
                     ]}
-                    onPress={handleSendMessage}
-                    disabled={!messageText.trim()}
                 >
-                    <Ionicons
-                        name="send"
-                        size={20}
-                        color={messageText.trim() ? "#fff" : "#cbd5e1"}
+                    <FlatList
+                        ref={flatListRef}
+                        data={messages}
+                        keyExtractor={(item) => item?.id?.toString()}
+                        renderItem={({ item }) => <MessageBubble message={item} />}
+                        showsVerticalScrollIndicator={false}
+                        contentContainerStyle={styles.messagesContent}
+                        onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
                     />
-                </TouchableOpacity>
-            </View>
-        </KeyboardAvoidingView>
+                </Animated.View>
+
+                {/* Message Input */}
+                <View style={styles.inputContainer}>
+                    <TextInput
+                        style={styles.messageInput}
+                        placeholder="Type a message..."
+                        placeholderTextColor="#94a3b8"
+                        value={messageText}
+                        onChangeText={setMessageText}
+                        multiline
+                        maxLength={500}
+                    />
+                    <TouchableOpacity
+                        style={[
+                            styles.sendButton,
+                            !messageText.trim() && styles.sendButtonDisabled
+                        ]}
+                        onPress={handleSendMessage}
+                        disabled={!messageText.trim()}
+                    >
+                        <Ionicons
+                            name="send"
+                            size={20}
+                            color={messageText.trim() ? "#fff" : "#cbd5e1"}
+                        />
+                    </TouchableOpacity>
+                </View>
+            </KeyboardAvoidingView>
+        </SafeAreaView>
     );
 }
 

@@ -14,6 +14,9 @@ import {
     View
 } from 'react-native';
 import { useToast } from 'react-native-toast-notifications';
+import CustomStatusBar from "@/components/status-bar";
+import * as NavigationBar from "expo-navigation-bar";
+import {SafeAreaView} from "react-native-safe-area-context";
 
 const { width } = Dimensions.get('window');
 
@@ -177,6 +180,7 @@ export default function NotificationsScreen() {
                     { transform: [{ translateY }], opacity }
                 ]}
             >
+                <CustomStatusBar backgroundColor="#4CAF50" barStyle="light-content" />
                 <TouchableOpacity 
                     style={styles.notificationCardInner}
                     onPress={() => handleNotificationPress(notification)}
@@ -223,210 +227,213 @@ export default function NotificationsScreen() {
     };
 
     return (
-        <View style={styles.container}>
-            {/* Header */}
-            <View style={styles.header}>
-                <View style={styles.headerTop}>
-                    <View>
-                        <Text style={styles.title}>Notifications</Text>
-                        <Text style={styles.subtitle}>
-                            {unreadCount > 0 
-                                ? `${unreadCount} unread notification${unreadCount > 1 ? 's' : ''}`
-                                : 'You\'re all caught up'}
-                        </Text>
-                    </View>
-                    
-                    {unreadCount > 0 && (
-                        <TouchableOpacity 
-                            style={styles.markAllButton}
-                            onPress={handleMarkAllAsRead}
-                        >
-                            <Text style={styles.markAllText}>Mark all as read</Text>
-                        </TouchableOpacity>
-                    )}
-                </View>
-
-                {/* Filter Tabs */}
-                <View style={styles.filterContainer}>
-                    <TouchableOpacity 
-                        style={[styles.filterButton, filter === 'all' && styles.filterButtonActive]}
-                        onPress={() => setFilter('all')}
-                    >
-                        <Text style={[styles.filterText, filter === 'all' && styles.filterTextActive]}>
-                            All
-                        </Text>
-                    </TouchableOpacity>
-                    
-                    <TouchableOpacity 
-                        style={[styles.filterButton, filter === 'unread' && styles.filterButtonActive]}
-                        onPress={() => setFilter('unread')}
-                    >
-                        <View style={styles.filterBadge}>
-                            <Text style={[styles.filterText, filter === 'unread' && styles.filterTextActive]}>
-                                Unread
+        <SafeAreaView style={{ flex: 1 }} edges={["bottom", "left", "right"]}>
+            <View style={styles.container}>
+                {/* Header */}
+                <View style={styles.header}>
+                    <View style={styles.headerTop}>
+                        <View>
+                            <Text style={styles.title}>Notifications</Text>
+                            <Text style={styles.subtitle}>
+                                {unreadCount > 0
+                                    ? `${unreadCount} unread notification${unreadCount > 1 ? 's' : ''}`
+                                    : 'You\'re all caught up'}
                             </Text>
-                            {unreadCount > 0 && (
-                                <View style={styles.filterCountBadge}>
-                                    <Text style={styles.filterCountText}>{unreadCount}</Text>
-                                </View>
-                            )}
                         </View>
-                    </TouchableOpacity>
-                </View>
-            </View>
 
-            {/* Notifications List */}
-            <ScrollView
-                style={styles.scrollView}
-                showsVerticalScrollIndicator={false}
-                refreshControl={
-                    <RefreshControl
-                        refreshing={refreshing}
-                        onRefresh={handleRefresh}
-                        colors={['#075538']}
-                        tintColor="#075538"
-                    />
-                }
-            >
-                <View style={styles.notificationsList}>
-                    {filteredNotifications.length > 0 ? (
-                        filteredNotifications.map((notification, index) => (
-                            <NotificationCard 
-                                key={notification._id} 
-                                notification={notification} 
-                                index={index}
-                            />
-                        ))
-                    ) : (
-                        <Animated.View 
+                        {unreadCount > 0 && (
+                            <TouchableOpacity
+                                style={styles.markAllButton}
+                                onPress={handleMarkAllAsRead}
+                            >
+                                <Text style={styles.markAllText}>Mark all as read</Text>
+                            </TouchableOpacity>
+                        )}
+                    </View>
+
+                    {/* Filter Tabs */}
+                    <View style={styles.filterContainer}>
+                        <TouchableOpacity
+                            style={[styles.filterButton, filter === 'all' && styles.filterButtonActive]}
+                            onPress={() => setFilter('all')}
+                        >
+                            <Text style={[styles.filterText, filter === 'all' && styles.filterTextActive]}>
+                                All
+                            </Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                            style={[styles.filterButton, filter === 'unread' && styles.filterButtonActive]}
+                            onPress={() => setFilter('unread')}
+                        >
+                            <View style={styles.filterBadge}>
+                                <Text style={[styles.filterText, filter === 'unread' && styles.filterTextActive]}>
+                                    Unread
+                                </Text>
+                                {unreadCount > 0 && (
+                                    <View style={styles.filterCountBadge}>
+                                        <Text style={styles.filterCountText}>{unreadCount}</Text>
+                                    </View>
+                                )}
+                            </View>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+
+                {/* Notifications List */}
+                <ScrollView
+                    style={styles.scrollView}
+                    showsVerticalScrollIndicator={false}
+                    refreshControl={
+                        <RefreshControl
+                            refreshing={refreshing}
+                            onRefresh={handleRefresh}
+                            colors={['#075538']}
+                            tintColor="#075538"
+                        />
+                    }
+                >
+                    <View style={styles.notificationsList}>
+                        {filteredNotifications.length > 0 ? (
+                            filteredNotifications.map((notification, index) => (
+                                <NotificationCard
+                                    key={notification._id}
+                                    notification={notification}
+                                    index={index}
+                                />
+                            ))
+                        ) : (
+                            <Animated.View
+                                style={[
+                                    styles.emptyState,
+                                    { opacity: fadeAnim }
+                                ]}
+                            >
+                                <View style={styles.emptyIcon}>
+                                    <Ionicons name="notifications-off" size={64} color="#cbd5e1" />
+                                </View>
+                                <Text style={styles.emptyTitle}>
+                                    {filter === 'unread' ? 'No unread notifications' : 'No notifications'}
+                                </Text>
+                                <Text style={styles.emptyDescription}>
+                                    {filter === 'unread'
+                                        ? 'You\'re all caught up with unread notifications'
+                                        : 'New updates will appear here'}
+                                </Text>
+                            </Animated.View>
+                        )}
+                    </View>
+                </ScrollView>
+
+                {/* Notification Detail Dialog */}
+                <Modal
+                    visible={isDialogVisible}
+                    transparent
+                    animationType="none"
+                    onRequestClose={() => setIsDialogVisible(false)}
+                >
+                    <TouchableOpacity
+                        style={styles.dialogOverlay}
+                        activeOpacity={1}
+                        onPress={() => setIsDialogVisible(false)}
+                    >
+                        <Animated.View
                             style={[
-                                styles.emptyState,
-                                { opacity: fadeAnim }
+                                styles.dialogContent,
+                                {
+                                    opacity: dialogOpacityAnim,
+                                    transform: [{ scale: dialogScaleAnim }]
+                                }
                             ]}
                         >
-                            <View style={styles.emptyIcon}>
-                                <Ionicons name="notifications-off" size={64} color="#cbd5e1" />
-                            </View>
-                            <Text style={styles.emptyTitle}>
-                                {filter === 'unread' ? 'No unread notifications' : 'No notifications'}
-                            </Text>
-                            <Text style={styles.emptyDescription}>
-                                {filter === 'unread' 
-                                    ? 'You\'re all caught up with unread notifications' 
-                                    : 'New updates will appear here'}
-                            </Text>
-                        </Animated.View>
-                    )}
-                </View>
-            </ScrollView>
-
-            {/* Notification Detail Dialog */}
-            <Modal
-                visible={isDialogVisible}
-                transparent
-                animationType="none"
-                onRequestClose={() => setIsDialogVisible(false)}
-            >
-                <TouchableOpacity 
-                    style={styles.dialogOverlay}
-                    activeOpacity={1}
-                    onPress={() => setIsDialogVisible(false)}
-                >
-                    <Animated.View 
-                        style={[
-                            styles.dialogContent,
-                            {
-                                opacity: dialogOpacityAnim,
-                                transform: [{ scale: dialogScaleAnim }]
-                            }
-                        ]}
-                    >
-                        {selectedNotification && (
-                            <>
-                                <View style={styles.dialogHeader}>
-                                    <View style={[
-                                        styles.dialogIcon,
-                                        { backgroundColor: `${getCategoryIcon(selectedNotification.category).color}15` }
-                                    ]}>
-                                        <Ionicons 
-                                            name={getCategoryIcon(selectedNotification.category).icon as any} 
-                                            size={28} 
-                                            color={getCategoryIcon(selectedNotification.category).color} 
-                                        />
-                                    </View>
-                                    <Text style={styles.dialogTitle}>{selectedNotification.title}</Text>
-                                    <Text style={styles.dialogTime}>
-                                        {formatTimeAgo(selectedNotification.createdAt)}
-                                    </Text>
-                                </View>
-
-                                <ScrollView 
-                                    style={styles.dialogBody}
-                                    showsVerticalScrollIndicator={false}
-                                >
-                                    <Text style={styles.dialogMessage}>{selectedNotification.message}</Text>
-                                    
-                                    <View style={styles.dialogMeta}>
-                                        <View style={styles.metaItem}>
-                                            <Ionicons name="time" size={16} color="#64748b" />
-                                            <Text style={styles.metaText}>
-                                                {new Date(selectedNotification.createdAt).toLocaleString()}
-                                            </Text>
-                                        </View>
-                                        <View style={styles.metaItem}>
-                                            <Ionicons name="folder" size={16} color="#64748b" />
-                                            <Text style={styles.metaText}>
-                                                {selectedNotification.category.charAt(0).toUpperCase() + selectedNotification.category.slice(1)}
-                                            </Text>
-                                        </View>
-                                        <View style={styles.metaItem}>
-                                            <Ionicons name={selectedNotification.read ? 'checkmark-circle' : 'ellipse'} 
-                                                size={16} 
-                                                color={selectedNotification.read ? '#10b981' : '#64748b'} 
+                            {selectedNotification && (
+                                <>
+                                    <View style={styles.dialogHeader}>
+                                        <View style={[
+                                            styles.dialogIcon,
+                                            { backgroundColor: `${getCategoryIcon(selectedNotification.category).color}15` }
+                                        ]}>
+                                            <Ionicons
+                                                name={getCategoryIcon(selectedNotification.category).icon as any}
+                                                size={28}
+                                                color={getCategoryIcon(selectedNotification.category).color}
                                             />
-                                            <Text style={styles.metaText}>
-                                                {selectedNotification.read ? 'Read' : 'Unread'}
-                                            </Text>
                                         </View>
+                                        <Text style={styles.dialogTitle}>{selectedNotification.title}</Text>
+                                        <Text style={styles.dialogTime}>
+                                            {formatTimeAgo(selectedNotification.createdAt)}
+                                        </Text>
                                     </View>
-                                </ScrollView>
 
-                                <View style={styles.dialogActions}>
-                                    <TouchableOpacity 
-                                        style={styles.deleteButton}
-                                        onPress={() => handleDeleteNotification(selectedNotification._id)}
+                                    <ScrollView
+                                        style={styles.dialogBody}
+                                        showsVerticalScrollIndicator={false}
                                     >
-                                        <Ionicons name="trash" size={20} color="#dc2626" />
-                                        <Text style={styles.deleteButtonText}>Delete</Text>
-                                    </TouchableOpacity>
+                                        <Text style={styles.dialogMessage}>{selectedNotification.message}</Text>
 
-                                    <View style={styles.primaryActions}>
-                                        <TouchableOpacity 
-                                            style={styles.closeButton}
-                                            onPress={() => setIsDialogVisible(false)}
+                                        <View style={styles.dialogMeta}>
+                                            <View style={styles.metaItem}>
+                                                <Ionicons name="time" size={16} color="#64748b" />
+                                                <Text style={styles.metaText}>
+                                                    {new Date(selectedNotification.createdAt).toLocaleString()}
+                                                </Text>
+                                            </View>
+                                            <View style={styles.metaItem}>
+                                                <Ionicons name="folder" size={16} color="#64748b" />
+                                                <Text style={styles.metaText}>
+                                                    {selectedNotification.category.charAt(0).toUpperCase() + selectedNotification.category.slice(1)}
+                                                </Text>
+                                            </View>
+                                            <View style={styles.metaItem}>
+                                                <Ionicons name={selectedNotification.read ? 'checkmark-circle' : 'ellipse'}
+                                                          size={16}
+                                                          color={selectedNotification.read ? '#10b981' : '#64748b'}
+                                                />
+                                                <Text style={styles.metaText}>
+                                                    {selectedNotification.read ? 'Read' : 'Unread'}
+                                                </Text>
+                                            </View>
+                                        </View>
+                                    </ScrollView>
+
+                                    <View style={styles.dialogActions}>
+                                        <TouchableOpacity
+                                            style={styles.deleteButton}
+                                            onPress={() => handleDeleteNotification(selectedNotification._id)}
                                         >
-                                            <Text style={styles.closeButtonText}>Close</Text>
+                                            <Ionicons name="trash" size={20} color="#dc2626" />
+                                            <Text style={styles.deleteButtonText}>Delete</Text>
                                         </TouchableOpacity>
 
-                                        {selectedNotification.actionTitle && (
-                                            <TouchableOpacity 
-                                                style={styles.actionDialogButton}
-                                                onPress={handleDialogAction}
+                                        <View style={styles.primaryActions}>
+                                            <TouchableOpacity
+                                                style={styles.closeButton}
+                                                onPress={() => setIsDialogVisible(false)}
                                             >
-                                                <Text style={styles.actionDialogButtonText}>
-                                                    {selectedNotification.actionTitle}
-                                                </Text>
-                                                <Ionicons name="arrow-forward" size={18} color="#fff" />
+                                                <Text style={styles.closeButtonText}>Close</Text>
                                             </TouchableOpacity>
-                                        )}
+
+                                            {selectedNotification.actionTitle && (
+                                                <TouchableOpacity
+                                                    style={styles.actionDialogButton}
+                                                    onPress={handleDialogAction}
+                                                >
+                                                    <Text style={styles.actionDialogButtonText}>
+                                                        {selectedNotification.actionTitle}
+                                                    </Text>
+                                                    <Ionicons name="arrow-forward" size={18} color="#fff" />
+                                                </TouchableOpacity>
+                                            )}
+                                        </View>
                                     </View>
-                                </View>
-                            </>
-                        )}
-                    </Animated.View>
-                </TouchableOpacity>
-            </Modal>
-        </View>
+                                </>
+                            )}
+                        </Animated.View>
+                    </TouchableOpacity>
+                </Modal>
+            </View>
+        </SafeAreaView>
+
     );
 }
 
