@@ -3,7 +3,7 @@ import { View, StyleSheet, TouchableOpacity, Text } from "react-native";
 import { WebView } from "react-native-webview";
 import { useNavigation } from "@react-navigation/native";
 import io from "socket.io-client";
-import {DEFAULT_SOCKET_URL} from "@/hooks/api-client";
+import {DEFAULT_SOCKET_URL, getSocketUrl} from "@/hooks/api-client";
 
 type Props = {
     mechanicId: string;
@@ -19,7 +19,7 @@ export default function LiveMechanicMap({ mechanicId, lat, lng }: Props) {
     const [coords, setCoords] = useState({ lat, lng });
 
     useEffect(() => {
-        socketRef.current = io(DEFAULT_SOCKET_URL, { transports: ["websocket"] });
+        socketRef.current = io(getSocketUrl(), { transports: ["websocket"] });
 
         socketRef.current.emit("trackMechanic", mechanicId);
 

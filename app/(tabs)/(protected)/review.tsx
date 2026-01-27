@@ -287,15 +287,7 @@ export default function ReviewScreen() {
                 </View>
                 <View style={styles.mechanicInfo}>
                     <Text style={styles.mechanicName}>{mechanicData?.name || 'Unknown Mechanic'}</Text>
-                    <Text style={styles.mechanicPhone}>{mechanicData?.phone || 'N/A'}</Text>
-                </View>
-                <View style={[
-                    styles.statusBadge,
-                    { backgroundColor: mechanicData?.isOnline === 'online' ? '#10b981' : '#94a3b8' }
-                ]}>
-                    <Text style={styles.statusText}>
-                        {mechanicData?.isOnline === 'online' ? 'Online' : 'Offline'}
-                    </Text>
+                    <Text style={styles.mechanicPhone}>{mechanicData.data['expertise']}</Text>
                 </View>
             </View>
             <Text style={styles.thankYouText}>
@@ -589,7 +581,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#fff',
         borderRadius: 20,
         padding: 20,
-        marginBottom: 16,
+        marginBottom: 8,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.1,

@@ -304,7 +304,7 @@ export default function HomeScreen() {
               </View>
 
               <View style={styles.serviceActions}>
-                <Text style={styles.actionText}>Please wait as we allocate you a mechanic</Text>
+                <Text style={styles.actionButton}>Please wait as we allocate you a mechanic</Text>
               </View>
             </View>
           </Animated.View>

@@ -9,6 +9,7 @@ import { Alert, Animated, Dimensions, ScrollView, StyleSheet, Text, TouchableOpa
 import { useToast } from "react-native-toast-notifications";
 import {useAuth} from "@/providers/auth-provider";
 import {SafeAreaView} from "react-native-safe-area-context";
+import {useNavigation} from "@react-navigation/native";
 
 const { width } = Dimensions.get('window');
 
@@ -24,6 +25,7 @@ export default function RequestScreen() {
     const [price, setPrice] = useState<number>(0);
     const { user } = useAuth();
     const toast = useToast();
+    const navigation = useNavigation<any>();
 
     const progressAnim = new Animated.Value(0);
     const slideAnim = new Animated.Value(50);
@@ -45,17 +47,6 @@ export default function RequestScreen() {
         'emergency': '#dc2626',
         'normal': '#f59e0b',
         'other': '#10b981',
-    };
-
-    const handlePress = () => {
-        console.log(mechanic);
-        router.push({
-            pathname: `/(tabs)/(protected)/messaging/${mechanic.id}`,
-            params: {
-                mechanicName: mechanic?.name,
-                mechanicImage: ""
-            }
-        });
     };
 
     const handleSelectCar = (car) => {
@@ -170,8 +161,8 @@ export default function RequestScreen() {
             apiClient.post("/req/requests", {
                 driverId,
                 requestType,
-                details: JSON.stringify(details),
-                location: mechanic.location,
+                details: details,
+                location: [mechanic.location.lat, mechanic.location.lng],
                 mechanicId: mechanic.id,
                 price: mechanic.price,
                 vehicleMake: car?.make,
@@ -185,6 +176,11 @@ export default function RequestScreen() {
                     toast.show('Request submitted', { type: "success" });
                     setProgress(100);
                     setSent(true);
+
+                    navigation.reset({
+                        index: 0,
+                        routes: [{ name: "home" }],
+                    });
                 })
                 .catch((err)=>{
                     toast.show(err.response.data?.message ?? 'An error occurred', { type: "danger" });
@@ -312,6 +308,16 @@ export default function RequestScreen() {
                                 handleSelectCar(car);
                             }}
                         />
+
+                        <View style={styles.detailRow}>
+                            <View style={styles.detailIcon}>
+                                <Ionicons name="text" size={20} color="#2563eb" />
+                            </View>
+                            <View style={styles.detailContent}>
+                                <Text style={styles.detailLabel}>Problem description</Text>
+                                <Text style={styles.detailValue}>{otherDescription}</Text>
+                            </View>
+                        </View>
                     </View>
 
                     {/* Mechanic Match */}
@@ -341,11 +347,6 @@ export default function RequestScreen() {
                                     <Text style={styles.statText}>ETA: {eta}</Text>
                                 </View>
                             </View>
-
-                            <TouchableOpacity onPress={handlePress} style={styles.contactButton}>
-                                <Ionicons name="chatbubble" size={20} color="#2563eb" />
-                                <Text style={styles.contactButtonText}>Message Mechanic</Text>
-                            </TouchableOpacity>
                         </View>
                     )}
 

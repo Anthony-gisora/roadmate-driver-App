@@ -18,20 +18,20 @@ async function getAuthToken(): Promise<string | null> {
 }
 
 // Base URLs
-const DEFAULT_DEV_BASE_URL = 'http://192.168.100.200:5000/api';
-const DEFAULT_SOCKET_URL = 'http://192.168.100.200:5000';
+const DEFAULT_DEV_BASE_URL = 'http://10.200.107.105:5000/api';
+const DEFAULT_SOCKET_URL = 'http://10.200.107.105:5000';
 const DEFAULT_PROD_SOCKET_URL = 'https://roadmateassist.onrender.com';
 const DEFAULT_PROD_BASE_URL = 'https://roadmateassist.onrender.com/api';
 const DEFAULT_IMAGE_URL = 'https://roadmateassist.onrender.com/api/images'
 
 function getBaseUrl(): string {
-  //return __DEV__ ? DEFAULT_DEV_BASE_URL : DEFAULT_PROD_BASE_URL;
-  return DEFAULT_PROD_BASE_URL;
+  return __DEV__ ? DEFAULT_DEV_BASE_URL : DEFAULT_PROD_BASE_URL;
+  //return DEFAULT_PROD_BASE_URL;
 }
 
 export function getSocketUrl(): string {
-  //return __DEV__ ? DEFAULT_SOCKET_URL : DEFAULT_PROD_SOCKET_URL;
-  return DEFAULT_PROD_SOCKET_URL;
+  return __DEV__ ? DEFAULT_SOCKET_URL : DEFAULT_PROD_SOCKET_URL;
+  //return DEFAULT_PROD_SOCKET_URL;
 }
 
 const apiClient: AxiosInstance = axios.create({

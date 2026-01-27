@@ -100,7 +100,7 @@ export default function EmergencyScreen() {
         const requestData = {
             priority: selectedPriority,
             problem: selectedProblem,
-            otherDescription: selectedProblem === 'other' ? otherDescription : '',
+            otherDescription: otherDescription,
             useAutoLocation,
             location: `${location?.latitude}, ${location?.longitude}`,
             timestamp: new Date().toISOString(),

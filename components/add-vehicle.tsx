@@ -53,7 +53,7 @@ const VehicleDialog: React.FC<VehicleDialogProps> = ({
   }, [open]);
 
   const handleSubmit = async () => {
-    if (!make.trim() || !model.trim() || !plate.trim() || !year.trim()) {
+    if (!make.trim() || !model.trim() || !year.trim()) {
       Alert.alert('Missing Fields', 'Please fill in all required fields.');
       return;
     }
@@ -144,7 +144,7 @@ const VehicleDialog: React.FC<VehicleDialogProps> = ({
 
             {/* Plate */}
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>License Plate *</Text>
+              <Text style={styles.label}>License Plate</Text>
               <TextInput
                 style={styles.input}
                 value={plate}

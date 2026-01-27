@@ -17,9 +17,7 @@ import {apiClient} from "@/hooks/api-client";
 import {sendMessage} from "@/hooks/socket";
 import {socketEvents} from "@/hooks/events-emitter";
 import {useAuth} from "@/providers/auth-provider";
-import string from "zod/src/v3/benchmarks/string";
 import {SafeAreaView} from "react-native-safe-area-context";
-import {StatusBar} from "expo-status-bar";
 import CustomStatusBar from "@/components/status-bar";
 
 export default function ChatScreen() {

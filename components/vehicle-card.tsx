@@ -69,7 +69,7 @@ const VehicleCard = ({ vehicle, userId, onUpdate, onDelete}: {
     };
 
     const handleSave = async () => {
-        if (!editingVehicle.make?.trim() || !editingVehicle.model?.trim() || !editingVehicle.plate?.trim()) {
+        if (!editingVehicle.make?.trim() || !editingVehicle.model?.trim()) {
             Alert.alert('Missing Information', 'Please fill in all required fields.');
             return;
         }

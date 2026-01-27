@@ -9,7 +9,7 @@ const TrackLocationButton: React.FC = () => {
         // Navigate to /home and reset history
         navigation.reset({
             index: 0,
-            routes: [{ name: "home" }], // make sure your stack has a screen named "Home"
+            routes: [{ name: "home" }],
         });
     };
 

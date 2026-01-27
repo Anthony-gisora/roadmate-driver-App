@@ -4,7 +4,6 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import * as Sentry from '@sentry/react-native';
 import {Stack, usePathname, useRouter} from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
 import {useEffect} from "react";
 import 'react-native-reanimated';
 import { ToastProvider } from 'react-native-toast-notifications';
