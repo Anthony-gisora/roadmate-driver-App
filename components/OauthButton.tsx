@@ -25,8 +25,7 @@ export default function GoogleAuthButton({ children }: { children: React.ReactNo
     const router = useRouter();
 
     const [request, response, promptAsync] = Google.useAuthRequest({
-        //TODO('add google cloud client id here')
-        clientId: EXPO_PUBLIC_FIREBASE_WEB_CLIENT_ID,
+        clientId: "986834107956-3koetgnfng3qho0tlvevrcgpl72cob6h.apps.googleusercontent.com",
     });
 
     useEffect(() => {

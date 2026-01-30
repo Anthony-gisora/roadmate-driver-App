@@ -42,7 +42,7 @@ export default function EmergencyScreen() {
         { id: 'fuel', name: 'Out of Fuel', icon: 'flame-outline', color: '#f59e0b' },
         { id: 'battery', name: 'Dead Battery', icon: 'battery-dead-outline', color: '#84cc16' },
         { id: 'lockout', name: 'Locked Out', icon: 'lock-closed-outline', color: '#8b5cf6' },
-        { id: 'towing', name: 'Need Tow', icon: 'trail-sign-outline', color: '#06b6d4' },
+        { id: 'tow', name: 'Need Tow', icon: 'trail-sign-outline', color: '#06b6d4' },
         { id: 'engine', name: 'Engine Issue', icon: 'settings-outline', color: '#dc2626' },
         { id: 'accident', name: 'Accident', icon: 'warning-outline', color: '#dc2626' },
         { id: 'other', name: 'Other Issue', icon: 'help-outline', color: '#6b7280' },

@@ -2,14 +2,14 @@ import CarSelector from '@/components/car-selector';
 import { Car } from "@/data/db";
 import { apiClient } from "@/hooks/api-client";
 import { getLocation } from "@/hooks/location";
+import { useAuth } from "@/providers/auth-provider";
 import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from "@react-navigation/native";
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { Alert, Animated, Dimensions, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useToast } from "react-native-toast-notifications";
-import {useAuth} from "@/providers/auth-provider";
-import {SafeAreaView} from "react-native-safe-area-context";
-import {useNavigation} from "@react-navigation/native";
 
 const { width } = Dimensions.get('window');
 
@@ -37,7 +37,7 @@ export default function RequestScreen() {
         'fuel': 'flame-outline',
         'battery': 'battery-dead-outline',
         'lockout': 'lock-closed-outline',
-        'towing': 'trail-sign-outline',
+        'tow': 'trail-sign-outline',
         'engine': 'settings-outline',
         'accident': 'warning-outline',
         'other': 'help-outline',
