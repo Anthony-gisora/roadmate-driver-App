@@ -177,10 +177,10 @@ export default function RequestScreen() {
                     setProgress(100);
                     setSent(true);
 
-                    navigation.reset({
-                        index: 0,
-                        routes: [{ name: "home" }],
-                    });
+                    setTimeout(() => {
+                        navigation.navigate("home");
+                    }, 300);
+
                 })
                 .catch((err)=>{
                     toast.show(err.response.data?.message ?? 'An error occurred', { type: "danger" });
