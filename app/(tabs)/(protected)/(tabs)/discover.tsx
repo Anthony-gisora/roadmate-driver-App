@@ -15,6 +15,7 @@ import {
     TouchableOpacity,
     View
 } from 'react-native';
+import {getLocation} from "@/hooks/location";
 
 const { width } = Dimensions.get('window');
 
@@ -43,9 +44,11 @@ export default function ServicesScreen() {
     const [selectedFilter, setSelectedFilter] = useState('distance');
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedMechanic, setSelectedMechanic] = useState<any>(null);
-    const [showFilters, setShowFilters] = useState(false);
+    const [showFilters, setShowFilters] = useState(true);
     const [showMechanicModal, setShowMechanicModal] = useState(false);
     const [mechanics, setMechanics] = useState([]);
+    const [location,setLocation] = useState<{lat:number,lng:number} | null>(null);
+    const [userLoc,setUserLoc] = useState<{lat:number,lng:number} | null>(null);
     const [filteredMechanics, setFilteredMechanics] = useState([]);
 
     const handleTechnicianSelect = (technician) => {
@@ -55,9 +58,22 @@ export default function ServicesScreen() {
     };
 
     useEffect(() => {
-    apiClient.get('/mechanics')
+        setLoc();
+    }, []);
+
+    const setLoc = async () => {
+        const loc = (await getLocation()) ?? "";
+        const lat = parseFloat(loc?.toString().split(',')[0]);
+        const lng = parseFloat(loc?.toString().split(',')[1]);
+        setUserLoc({
+            lat, lng
+        })
+    }
+
+    useEffect(() => {
+    apiClient.get(`/discover/mechanics?lat=${userLoc?.lat}&lng=${userLoc?.lng}`)
         .then((res) => {
-        const mechanics = res?.data?.mechanics || [];
+        const mechanics = res?.data || [];
         const normalized = mechanics.map(m => ({
             ...m,
             specialization: m.data.expertise,
@@ -87,8 +103,20 @@ export default function ServicesScreen() {
         })
         .sort((a, b) => {
             switch (selectedFilter) {
-            case "distance":
-                return parseFloat(a.distance) - parseFloat(b.distance);
+                case "distance": {
+                    const da = parseFloat(a.distance);
+                    const db = parseFloat(b.distance);
+
+                    const aInvalid = Number.isNaN(da);
+                    const bInvalid = Number.isNaN(db);
+
+                    // Push "N/A" to the bottom
+                    if (aInvalid && bInvalid) return 0;
+                    if (aInvalid) return 1;
+                    if (bInvalid) return -1;
+
+                    return da - db;
+                }
 
             case "availability":
                 return a.isOnline === "online" ? -1 : 1;
@@ -100,20 +128,28 @@ export default function ServicesScreen() {
 
         setFilteredMechanics(filtered);
         });
-    }, [selectedService, selectedFilter, searchQuery]);
+     setUserLocation();
+    }, [userLoc,selectedService, selectedFilter, searchQuery]);
 
 
     const scrollY = useRef(new Animated.Value(0)).current;
 
+    const setUserLocation = async () => {
+        const loc = (await getLocation()) ?? "";
+        const lat = parseFloat(loc?.toString().split(',')[0]);
+        const lng = parseFloat(loc?.toString().split(',')[1]);
+        setLocation({
+            lat,lng
+        })
+    }
+
     const handleBookService = (mechanic: any) => {
         setShowMechanicModal(false);
         router.push({
-            pathname: '/booking',
+            pathname: `/messaging/${mechanic._id as string}`,
             params: {
-                mechanicId: mechanic.id,
                 mechanicName: mechanic.name,
-                service: mechanic.specialization,
-                price: mechanic.price
+                mechanicImage: ""
             }
         });
     };
@@ -198,7 +234,11 @@ export default function ServicesScreen() {
                         </View>
                         <View style={styles.priceContainer}>
                             <Text style={styles.priceText}>from {mechanic.price}</Text>
-                            <Text style={styles.distanceText}>{mechanic.distance}</Text>
+                            {mechanic.distance !== 'N/A' ? (
+                                <Text style={styles.distanceText}>{mechanic?.distance?.toFixed(2)} Km</Text>
+                            ):(
+                                <Text style={styles.distanceText}>{mechanic?.distance}</Text>
+                            )}
                         </View>
                     </View>
 
@@ -309,7 +349,7 @@ export default function ServicesScreen() {
                     keyExtractor={(item) => item?._id}
                     renderItem={({ item, index }) => <MechanicCard mechanic={item} index={index} />}
                     showsVerticalScrollIndicator={true}
-                    contentContainerStyle={styles.listContent}
+                    contentContainerStyle={[styles.listContent]}
                     onScroll={Animated.event(
                         [{ nativeEvent: { contentOffset: { y: scrollY } } }],
                         { useNativeDriver: false }
@@ -329,7 +369,7 @@ export default function ServicesScreen() {
                     <TechnicianMap 
                             technicians={filteredMechanics}
                             onTechnicianSelect={handleTechnicianSelect}
-                            userLocation={{ lat: -1.2921, lng: 36.8219 }}
+                            userLocation={location}
                         />
                 </View>
             )}
@@ -408,11 +448,13 @@ export default function ServicesScreen() {
                                     <Text style={styles.statValue}>{selectedMechanic.responseTime ?? '2 mins'}</Text>
                                     <Text style={styles.statLabel}>Avg. Response</Text>
                                 </View>
-                                <View style={styles.stat}>
-                                    <Ionicons name="location" size={20} color="#075538" />
-                                    <Text style={styles.statValue}>{selectedMechanic.distance ?? 'N/A'}</Text>
-                                    <Text style={styles.statLabel}>Distance</Text>
-                                </View>
+                                {selectedMechanic.distance !== 'N/A' && (
+                                    <View style={styles.stat}>
+                                        <Ionicons name="location" size={20} color="#075538" />
+                                        <Text style={styles.statValue}>{`${selectedMechanic.distance.toFixed(2)} Km`}</Text>
+                                        <Text style={styles.statLabel}>Distance</Text>
+                                    </View>
+                                )}
                                 <View style={styles.stat}>
                                     <Ionicons name="checkmark-circle" size={20} color="#075538" />
                                     <Text style={styles.statValue}>{selectedMechanic.availability}</Text>
@@ -426,8 +468,8 @@ export default function ServicesScreen() {
                                 style={styles.bookButton}
                                 onPress={() => handleBookService(selectedMechanic)}
                             >
-                                <Ionicons name="calendar" size={20} color="#fff" />
-                                <Text style={styles.bookButtonText}>Book Service</Text>
+                                <Ionicons name="chatbubbles" size={20} color="#fff" />
+                                <Text style={styles.bookButtonText}>Get In Touch</Text>
                             </TouchableOpacity>
                         </View>
                     </View>

@@ -1,26 +1,34 @@
-import { offlineDB } from "@/data/db"; // adjust your path
 import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useState } from "react";
 import { FlatList, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import {apiClient} from "@/hooks/api-client";
+import {useAuth} from "@/providers/auth-provider";
 
 export default function CarSelector({ onSelectCar }) {
   const [cars, setCars] = useState([]);
   const [selectedCar, setSelectedCar] = useState(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const {user} = useAuth();
 
   useEffect(() => {
     loadCars();
   }, []);
 
   const loadCars = async () => {
-    const allCars = await offlineDB.getCars();
-    setCars(allCars);
+    try{
+      const response = await apiClient.get(`/vehicles/${user?._id}`)
+      setCars(response.data);
 
-    // Load default car
-    const defaultCar = await offlineDB.getDefaultCar();
-    if (defaultCar) {
-      setSelectedCar(defaultCar);
-      onSelectCar(defaultCar);
+      const cars = response.data;
+      for (let i = 0; i < cars?.length; i++) {
+        const car = cars[i];
+        if(car.isDefault){
+          setSelectedCar(car);
+          onSelectCar(car);
+        }
+      }
+    } catch (error) {
+      console.log(error)
     }
   };
 
@@ -69,7 +77,7 @@ export default function CarSelector({ onSelectCar }) {
         <View style={styles.dropdown}>
           <FlatList
             data={cars}
-            keyExtractor={(item) => item.id.toString()}
+            keyExtractor={(item) => item._id.toString()}
             renderItem={({ item }) => (
               <TouchableOpacity
                 style={styles.dropdownItem}

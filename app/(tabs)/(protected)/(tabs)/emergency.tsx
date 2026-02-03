@@ -6,7 +6,7 @@ import {
     Alert,
     Animated,
     Dimensions,
-    Image,
+    Image, KeyboardAvoidingView, Platform,
     ScrollView,
     StyleSheet,
     Text,
@@ -25,6 +25,7 @@ export default function EmergencyScreen() {
     const [otherDescription, setOtherDescription] = useState('');
     const [useAutoLocation, setUseAutoLocation] = useState(true);
     const [location, setLocation] = useState<{latitude:number,longitude:number}>();
+    const scrollRef = useRef<ScrollView>(null);
 
 
     const handleSelect = (coords: { latitude: number; longitude: number }) => {
@@ -41,11 +42,19 @@ export default function EmergencyScreen() {
         { id: 'fuel', name: 'Out of Fuel', icon: 'flame-outline', color: '#f59e0b' },
         { id: 'battery', name: 'Dead Battery', icon: 'battery-dead-outline', color: '#84cc16' },
         { id: 'lockout', name: 'Locked Out', icon: 'lock-closed-outline', color: '#8b5cf6' },
-        { id: 'towing', name: 'Need Tow', icon: 'trail-sign-outline', color: '#06b6d4' },
+        { id: 'tow', name: 'Need Tow', icon: 'trail-sign-outline', color: '#06b6d4' },
         { id: 'engine', name: 'Engine Issue', icon: 'settings-outline', color: '#dc2626' },
         { id: 'accident', name: 'Accident', icon: 'warning-outline', color: '#dc2626' },
         { id: 'other', name: 'Other Issue', icon: 'help-outline', color: '#6b7280' },
     ];
+
+    React.useEffect(() => {
+        if (selectedProblem === 'other') {
+            setTimeout(() => {
+                scrollRef.current?.scrollToEnd({ animated: true });
+            }, 300);
+        }
+    }, [selectedProblem]);
 
     React.useEffect(() => {
         Animated.loop(
@@ -73,7 +82,7 @@ export default function EmergencyScreen() {
             Alert.alert('Select Problem', 'Please select the type of problem you are experiencing.');
             return;
         }
-        if (currentStep === 2 && selectedProblem === 'other' && !otherDescription.trim()) {
+        if (currentStep === 4 && !otherDescription.trim()) {
             Alert.alert('Describe Problem', 'Please describe your problem.');
             return;
         }
@@ -91,7 +100,7 @@ export default function EmergencyScreen() {
         const requestData = {
             priority: selectedPriority,
             problem: selectedProblem,
-            otherDescription: selectedProblem === 'other' ? otherDescription : '',
+            otherDescription: otherDescription,
             useAutoLocation,
             location: `${location?.latitude}, ${location?.longitude}`,
             timestamp: new Date().toISOString(),
@@ -104,7 +113,7 @@ export default function EmergencyScreen() {
         });
     };
 
-    const PriorityCard = ({ type, title, description, icon, color }: {
+    const PriorityCard = ({ type, title, description, icon, color, enabled = true }: {
         type: 'emergency' | 'normal' | 'other';
         title: string;
         description: string;
@@ -114,9 +123,11 @@ export default function EmergencyScreen() {
         <TouchableOpacity
             style={[
                 styles.priorityCard,
-                selectedPriority === type && { borderColor: color, backgroundColor: `${color}10` }
+                selectedPriority === type && { borderColor: color, backgroundColor: `${color}` }
             ]}
-            onPress={() => setSelectedPriority(type)}
+            onPress={() => {
+                if(enabled){setSelectedPriority(type)}
+            }}
         >
             <View style={[styles.priorityIcon, { backgroundColor: color }]}>
                 <Ionicons name={icon as any} size={24} color="#fff" />
@@ -125,14 +136,18 @@ export default function EmergencyScreen() {
                 <Text style={styles.priorityTitle}>{title}</Text>
                 <Text style={styles.priorityDescription}>{description}</Text>
             </View>
-            <View style={[
-                styles.radioButton,
-                selectedPriority === type && { backgroundColor: color, borderColor: color }
-            ]}>
-                {selectedPriority === type && (
-                    <Ionicons name="checkmark" size={16} color="#fff" />
-                )}
-            </View>
+            {enabled ? (
+                <View style={[
+                    styles.radioButton,
+                    selectedPriority === type && { backgroundColor: color, borderColor: '#ffff' }
+                ]}>
+                    {selectedPriority === type && (
+                        <Ionicons name="checkmark" size={16} color="#fff" />
+                    )}
+                </View>
+            ):(
+                <Text style={styles.priorityDescription}>Coming Soon</Text>
+            )}
         </TouchableOpacity>
     );
 
@@ -150,21 +165,22 @@ export default function EmergencyScreen() {
                                 title="Emergency"
                                 description="Immediate danger or safety concern"
                                 icon="warning"
-                                color="#dc2626"
+                                color="#f50a0a"
                             />
-                            <PriorityCard
-                                type="normal"
-                                title="Standard"
-                                description="Need assistance within the hour"
-                                icon="time"
-                                color="#f59e0b"
-                            />
+                            {/*<PriorityCard*/}
+                            {/*    type="normal"*/}
+                            {/*    title="Standard"*/}
+                            {/*    description="Need assistance within the hour"*/}
+                            {/*    icon="time"*/}
+                            {/*    color="#f59e0b"*/}
+                            {/*/>*/}
                             <PriorityCard
                                 type="other"
                                 title="Scheduled"
                                 description="Plan for later today or tomorrow"
                                 icon="calendar"
                                 color="#10b981"
+                                enabled={false}
                             />
                         </View>
                     </View>
@@ -182,7 +198,7 @@ export default function EmergencyScreen() {
                                     key={problem.id}
                                     style={[
                                         styles.problemCard,
-                                        selectedProblem === problem.id && { borderColor: problem.color, backgroundColor: `${problem.color}10` }
+                                        selectedProblem === problem.id && { borderColor: problem.color, backgroundColor: `${problem.color}` }
                                     ]}
                                     onPress={() => setSelectedProblem(problem.id)}
                                 >
@@ -198,20 +214,6 @@ export default function EmergencyScreen() {
                                 </TouchableOpacity>
                             ))}
                         </View>
-
-                        {selectedProblem === 'other' && (
-                            <View style={styles.otherInputContainer}>
-                                <Text style={styles.otherInputLabel}>Please describe your problem</Text>
-                                <TextInput
-                                    style={styles.otherInput}
-                                    placeholder="Describe what's happening with your vehicle..."
-                                    multiline
-                                    numberOfLines={4}
-                                    value={otherDescription}
-                                    onChangeText={setOtherDescription}
-                                />
-                            </View>
-                        )}
                     </View>
                 );
 
@@ -257,6 +259,24 @@ export default function EmergencyScreen() {
                         )}
                     </View>
                 );
+            case 4:
+                return (
+                    <View style={styles.stepContainer}>
+                        <Text style={styles.stepTitle}>What&apos;s the problem?</Text>
+                        <Text style={styles.stepDescription}>Provide Additional details so we can better grasp the situation</Text>
+
+                        <View style={[styles.otherInputContainer , {marginBottom: 60}]}>
+                            <TextInput
+                                style={styles.otherInput}
+                                placeholder="Describe what's happening with your vehicle..e.g fuel type."
+                                multiline
+                                numberOfLines={4}
+                                value={otherDescription}
+                                onChangeText={setOtherDescription}
+                            />
+                        </View>
+                    </View>
+                )
 
             default:
                 return null;
@@ -264,10 +284,15 @@ export default function EmergencyScreen() {
     };
 
     const getStepProgress = () => {
-        return (currentStep / 3) * 100;
+        return (currentStep / 4) * 100;
     };
 
     return (
+        <KeyboardAvoidingView
+            style={{ flex: 1 }}
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            keyboardVerticalOffset={Platform.OS === 'ios' ? 80 : 0}
+        >
         <View style={styles.container}>
             {/* Header */}
             <View style={styles.header}>
@@ -285,9 +310,11 @@ export default function EmergencyScreen() {
             </View>
 
             <ScrollView
+                ref={scrollRef}
                 style={styles.scrollView}
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={styles.scrollContent}
+                keyboardShouldPersistTaps="handled"
             >
                 {renderStepContent()}
                 <View style={styles.spacer} />
@@ -305,18 +332,18 @@ export default function EmergencyScreen() {
                     </TouchableOpacity>
                 )}
 
-                {currentStep < 3 ? (
+                {currentStep < 4 ? (
                     <TouchableOpacity
                         style={[
                             styles.nextButton,
                             ((currentStep === 1 && !selectedPriority) ||
-                             (currentStep === 2 && (!selectedProblem || (selectedProblem === 'other' && !otherDescription.trim())))) &&
+                             (currentStep === 2 && !selectedProblem)) &&
                             styles.nextButtonDisabled
                         ]}
                         onPress={handleNextStep}
                         disabled={
                             (currentStep === 1 && !selectedPriority) ||
-                            (currentStep === 2 && (!selectedProblem || (selectedProblem === 'other' && !otherDescription.trim())))
+                            (currentStep === 4 && (!selectedProblem || (!otherDescription.trim())))
                         }
                     >
                         <Text style={styles.nextButtonText}>Continue</Text>
@@ -325,8 +352,15 @@ export default function EmergencyScreen() {
                 ) : (
                     <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
                         <TouchableOpacity
-                            style={styles.ctaButton}
+                            style={[
+                                styles.ctaButton,
+                                ((currentStep === 4 && !otherDescription.trim())) &&
+                                styles.nextButtonDisabled
+                            ]}
                             onPress={handleRequestAssistance}
+                            disabled={
+                                (currentStep === 4 && !otherDescription.trim())
+                            }
                         >
                             <Ionicons name="shield-checkmark" size={24} color="#fff" />
                             <Text style={styles.ctaButtonText}>Request Assistance</Text>
@@ -338,6 +372,7 @@ export default function EmergencyScreen() {
                 )}
             </View>
         </View>
+        </KeyboardAvoidingView>
     );
 }
 
@@ -455,7 +490,7 @@ const styles = StyleSheet.create({
     problemsGrid: {
         flexDirection: 'row',
         flexWrap: 'wrap',
-        gap: 12,
+        gap: 6,
         justifyContent: 'center',
     },
     problemCard: {

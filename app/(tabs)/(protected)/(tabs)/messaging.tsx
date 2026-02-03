@@ -13,6 +13,8 @@ import {
 import {ChatManager} from "@/hooks/chat-manager";
 import {apiClient} from "@/hooks/api-client";
 import {useAuth} from "@/providers/auth-provider";
+import { socketEvents } from "@/hooks/events-emitter";
+import {getSocket} from "@/hooks/socket";
 
 export default function NotificationsScreen() {
     const router = useRouter();
@@ -26,6 +28,10 @@ export default function NotificationsScreen() {
     // Animation values
     const fadeAnim = useRef(new Animated.Value(0)).current;
     const slideAnim = useRef(new Animated.Value(30)).current;
+
+    const listener = async (msg: any) => {
+        await loadChats();
+    }
 
     useEffect(() => {
         loadMechs();
@@ -42,6 +48,10 @@ export default function NotificationsScreen() {
             }),
         ]).start();
         loadChats();
+
+        //getSocket();
+
+        socketEvents.on("newMessage", listener);
     }, []);
 
     const loadMechs = async () => {

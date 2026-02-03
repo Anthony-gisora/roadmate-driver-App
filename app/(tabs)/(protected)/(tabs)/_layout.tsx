@@ -2,111 +2,114 @@ import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
+import {SafeAreaView} from "react-native-safe-area-context";
 
 export default function TabLayout() {
     return (
-        <View style={styles.container}>
-            <Tabs
-                screenOptions={{
-                    headerShown: false,
-                    tabBarStyle: styles.tabBar,
-                    tabBarBackground: () => <View style={styles.tabBarBackground} />,
-                    tabBarShowLabel: true,
-                    tabBarActiveTintColor: '#075538',
-                    tabBarInactiveTintColor: '#6b7280',
-                    tabBarLabelStyle: styles.tabBarLabel,
-                }}>
+        <SafeAreaView style={{ flex: 1 }} edges={["bottom"]}>
+            <View style={styles.container}>
+                <Tabs
+                    screenOptions={{
+                        headerShown: false,
+                        tabBarStyle: styles.tabBar,
+                        tabBarBackground: () => <View style={styles.tabBarBackground} />,
+                        tabBarShowLabel: true,
+                        tabBarActiveTintColor: '#075538',
+                        tabBarInactiveTintColor: '#6b7280',
+                        tabBarLabelStyle: styles.tabBarLabel,
+                    }}>
 
-                {/* Home Tab */}
-                <Tabs.Screen
-                    name="home"
-                    options={{
-                        title: 'Home',
-                        tabBarIcon: ({ focused, color, size }) => (
-                            <View style={focused ? styles.iconContainerActive : styles.iconContainer}>
-                                <Ionicons
-                                    name={focused ? 'home' : 'home-outline'}
-                                    size={focused ? 24 : 22}
-                                    color={color}
-                                />
-                            </View>
-                        ),
-                    }}
-                />
+                    {/* Home Tab */}
+                    <Tabs.Screen
+                        name="home"
+                        options={{
+                            title: 'Home',
+                            tabBarIcon: ({ focused, color, size }) => (
+                                <View style={focused ? styles.iconContainerActive : styles.iconContainer}>
+                                    <Ionicons
+                                        name={focused ? 'home' : 'home-outline'}
+                                        size={focused ? 24 : 22}
+                                        color={color}
+                                    />
+                                </View>
+                            ),
+                        }}
+                    />
 
-                {/* Services Tab */}
-                <Tabs.Screen
-                    name="discover"
-                    options={{
-                        title: 'Discover',
-                        tabBarIcon: ({ focused, color, size }) => (
-                            <View style={focused ? styles.iconContainerActive : styles.iconContainer}>
-                                <Ionicons
-                                    name={focused ? 'map' : 'map-outline'}
-                                    size={focused ? 24 : 22}
-                                    color={color}
-                                />
-                            </View>
-                        ),
-                    }}
-                />
+                    {/* Services Tab */}
+                    <Tabs.Screen
+                        name="discover"
+                        options={{
+                            title: 'Discover',
+                            tabBarIcon: ({ focused, color, size }) => (
+                                <View style={focused ? styles.iconContainerActive : styles.iconContainer}>
+                                    <Ionicons
+                                        name={focused ? 'map' : 'map-outline'}
+                                        size={focused ? 24 : 22}
+                                        color={color}
+                                    />
+                                </View>
+                            ),
+                        }}
+                    />
 
-                {/* Emergency Tab - Central prominent button */}
-                <Tabs.Screen
-                    name="emergency"
-                    options={{
-                        title: 'Emergency',
-                        tabBarIcon: ({ focused, color, size }) => (
-                            <View style={focused ? styles.emergencyIconContainerActive : styles.emergencyIconContainer}>
-                                <Ionicons
-                                    name={focused ? 'warning' : 'warning-outline'}
-                                    size={focused ? 28 : 26}
-                                    color={focused ? '#fff' : '#ef4444'}
-                                />
-                            </View>
-                        ),
-                        tabBarLabel: () => null,
-                    }}
-                />
+                    {/* Emergency Tab - Central prominent button */}
+                    <Tabs.Screen
+                        name="emergency"
+                        options={{
+                            title: 'Emergency',
+                            tabBarIcon: ({ focused, color, size }) => (
+                                <View style={focused ? styles.emergencyIconContainerActive : styles.emergencyIconContainer}>
+                                    <Ionicons
+                                        name={focused ? 'warning' : 'warning-outline'}
+                                        size={focused ? 28 : 26}
+                                        color={focused ? '#fff' : '#ef4444'}
+                                    />
+                                </View>
+                            ),
+                            tabBarLabel: () => null,
+                        }}
+                    />
 
-                {/* Map Tab */}
-                <Tabs.Screen
-                    name="messaging"
-                    options={{
-                        title: 'Messaging',
-                        tabBarIcon: ({ focused, color, size }) => (
-                            <View style={focused ? styles.iconContainerActive : styles.iconContainer}>
-                                <Ionicons
-                                    name={focused ? 'chatbox' : 'chatbox-outline'}
-                                    size={focused ? 24 : 22}
-                                    color={color}
-                                />
-                            </View>
-                        ),
-                    }}
-                />
+                    {/* Map Tab */}
+                    <Tabs.Screen
+                        name="messaging"
+                        options={{
+                            title: 'Messaging',
+                            tabBarIcon: ({ focused, color, size }) => (
+                                <View style={focused ? styles.iconContainerActive : styles.iconContainer}>
+                                    <Ionicons
+                                        name={focused ? 'chatbox' : 'chatbox-outline'}
+                                        size={focused ? 24 : 22}
+                                        color={color}
+                                    />
+                                </View>
+                            ),
+                        }}
+                    />
 
-                {/* Profile Tab */}
-                <Tabs.Screen
-                    name="profile"
-                    options={{
-                        title: 'Profile',
-                        tabBarIcon: ({ focused, color, size }) => (
-                            <View style={focused ? styles.iconContainerActive : styles.iconContainer}>
-                                <Ionicons
-                                    name={focused ? 'person' : 'person-outline'}
-                                    size={focused ? 24 : 22}
-                                    color={color}
-                                />
-                            </View>
-                        ),
-                    }}
-                />
-            </Tabs>
+                    {/* Profile Tab */}
+                    <Tabs.Screen
+                        name="profile"
+                        options={{
+                            title: 'Profile',
+                            tabBarIcon: ({ focused, color, size }) => (
+                                <View style={focused ? styles.iconContainerActive : styles.iconContainer}>
+                                    <Ionicons
+                                        name={focused ? 'person' : 'person-outline'}
+                                        size={focused ? 24 : 22}
+                                        color={color}
+                                    />
+                                </View>
+                            ),
+                        }}
+                    />
+                </Tabs>
 
-            {/* Curved top border */}
-            <View style={styles.curvedBorder} />
-        </View>
+                {/* Curved top border */}
+                <View style={styles.curvedBorder} />
+            </View>
+        </SafeAreaView>
     );
 }
 

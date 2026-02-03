@@ -65,3 +65,8 @@ Accent colour: #ced46a
 - Google Maps API
 - Payment gateways
 ---
+
+
+todo:fix status in review page
+     fix status in discover
+     fix conditionalrender in home active service

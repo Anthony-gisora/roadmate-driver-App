@@ -56,9 +56,13 @@ apiClient.interceptors.request.use(
 );
 
 apiClient.interceptors.response.use(
-  (response: AxiosResponse) => response,
-  (error) => Promise.reject(error)
+    (response) => response,
+    async (error) => {
+      console.error(error.response.data);
+      return Promise.reject(error);
+    }
 );
+
 
 export { apiClient, DEFAULT_IMAGE_URL, DEFAULT_PROD_BASE_URL, DEFAULT_SOCKET_URL };
 

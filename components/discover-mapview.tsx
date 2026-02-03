@@ -16,6 +16,7 @@ import {
     View
 } from 'react-native';
 import { WebView } from 'react-native-webview';
+import {getLocation} from "@/hooks/location";
 
 const { width, height } = Dimensions.get('window');
 
@@ -42,8 +43,8 @@ interface Props {
   userLocation?: LocationData;
 }
 
-const TechnicianMap: React.FC<Props> = ({ 
-  technicians, 
+const TechnicianMap: React.FC<Props> = ({
+  technicians,
   onTechnicianSelect,
   userLocation = { lat: -1.2921, lng: 36.8219 }
 }) => {
@@ -53,13 +54,14 @@ const TechnicianMap: React.FC<Props> = ({
   const [mapLoaded, setMapLoaded] = useState(false);
   const [selectedTab, setSelectedTab] = useState<'all' | 'online'>('all');
   const [isModalVisible, setIsModalVisible] = useState(false);
-  
+
   const sidebarAnimation = useRef(new Animated.Value(-300)).current;
   const modalAnimation = useRef(new Animated.Value(0)).current;
 
-  const filteredTechnicians = selectedTab === 'online' 
+  const filteredTechnicians = selectedTab === 'online'
     ? technicians.filter(t => t.isOnline === 'online')
     : technicians;
+
 
   // Generate HTML for the map with markers
   const generateMapHTML = () => {
@@ -223,8 +225,8 @@ const TechnicianMap: React.FC<Props> = ({
           
           // Fit bounds to include all markers
           const bounds = L.latLngBounds([
-            [${Math.min(...technicians.map(t => t.location.lat))}, ${Math.min(...technicians.map(t => t.location.lng))}],
-            [${Math.max(...technicians.map(t => t.location.lat))}, ${Math.max(...technicians.map(t => t.location.lng))}]
+            [${Math.min(...technicians.map(t => t?.location?.lat))}, ${Math.min(...technicians.map(t => t?.location?.lng))}],
+            [${Math.max(...technicians.map(t => t?.location?.lat))}, ${Math.max(...technicians.map(t => t?.location?.lng))}]
           ]);
           
           map.fitBounds(bounds.pad(0.1));
@@ -247,12 +249,12 @@ const TechnicianMap: React.FC<Props> = ({
   const handleMessage = (event: any) => {
     try {
       const data = JSON.parse(event.nativeEvent.data);
-      
+
       if (data.type === 'map_loaded') {
         setMapLoaded(true);
         return;
       }
-      
+
       if (data.type === 'marker_click') {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         const technician = technicians.find(t => t._id === data.id);
@@ -276,11 +278,11 @@ const TechnicianMap: React.FC<Props> = ({
     if (onTechnicianSelect) {
       onTechnicianSelect(technician);
     }
-    
+
     // Fly to the selected technician's location
     if (webviewRef.current) {
       webviewRef.current.injectJavaScript(`
-        map.flyTo([${technician.location.lat}, ${technician.location.lng}], 15, {
+        map.flyTo([${technician?.location?.lat}, ${technician?.location?.lng}], 15, {
           duration: 1
         });
       `);
@@ -346,7 +348,7 @@ const TechnicianMap: React.FC<Props> = ({
         </View>
         <Text style={styles.distanceText}>{technician.distance} away</Text>
       </View>
-      
+
       <View style={styles.cardBody}>
         <View style={styles.contactInfo}>
           <Ionicons name="call-outline" size={16} color="#666" />
@@ -354,14 +356,14 @@ const TechnicianMap: React.FC<Props> = ({
         </View>
         <Text style={styles.personalNumber}>ID: {technician.personalNumber}</Text>
       </View>
-      
+
       <View style={styles.skillsContainer}>
-        {technician.data.slice(0, 3).map((skill, index) => (
+        {technician?.data?.expertise?.map((skill, index) => (
           <View key={index} style={styles.skillTag}>
             <Text style={styles.skillText}>{skill}</Text>
           </View>
         ))}
-        {technician.data.length > 3 && (
+        {technician?.data?.length > 3 && (
           <View style={styles.moreSkillsTag}>
             <Text style={styles.moreSkillsText}>+{technician.data.length - 3}</Text>
           </View>
@@ -378,12 +380,12 @@ const TechnicianMap: React.FC<Props> = ({
       onRequestClose={closeModal}
     >
       <BlurView intensity={80} style={styles.modalOverlay}>
-        <TouchableOpacity 
-          style={styles.modalCloseArea} 
+        <TouchableOpacity
+          style={styles.modalCloseArea}
           onPress={closeModal}
           activeOpacity={1}
         />
-        <Animated.View 
+        <Animated.View
           style={[
             styles.modalContent,
             {
@@ -405,7 +407,7 @@ const TechnicianMap: React.FC<Props> = ({
                     selectedTechnician.isOnline === 'online' ? styles.onlineAvatar : styles.offlineAvatar
                   ]}>
                     <Text style={styles.avatarText}>
-                      {selectedTechnician.name.split(' ').map(n => n[0]).join('')}
+                      {selectedTechnician.name.split(' ')?.map(n => n[0]).join('')}
                     </Text>
                   </View>
                   <View>
@@ -424,7 +426,7 @@ const TechnicianMap: React.FC<Props> = ({
                   <Ionicons name="close" size={24} color="#333" />
                 </TouchableOpacity>
               </View>
-              
+
               <ScrollView style={styles.modalBody}>
                 <View style={styles.infoSection}>
                   <Text style={styles.sectionTitle}>Contact Information</Text>
@@ -441,33 +443,33 @@ const TechnicianMap: React.FC<Props> = ({
                     <Text style={styles.infoText}>{selectedTechnician.distance} from your location</Text>
                   </View>
                 </View>
-                
+
                 <View style={styles.infoSection}>
                   <Text style={styles.sectionTitle}>Services Offered</Text>
                   <View style={styles.skillsGrid}>
-                    {selectedTechnician.data.map((skill, index) => (
+                    {selectedTechnician?.data?.expertise?.map((skill, index) => (
                       <View key={index} style={styles.modalSkillTag}>
                         <Text style={styles.modalSkillText}>{skill}</Text>
                       </View>
                     ))}
                   </View>
                 </View>
-                
+
                 <View style={styles.infoSection}>
                   <Text style={styles.sectionTitle}>Location</Text>
                   <View style={styles.mapPreview}>
                     {/* Small map preview could be added here */}
                     <Text style={styles.locationText}>
-                      Latitude: {selectedTechnician.location.lat.toFixed(4)}
+                      Latitude: {selectedTechnician?.location?.lat.toFixed(4)}
                       {'\n'}
-                      Longitude: {selectedTechnician.location.lng.toFixed(4)}
+                      Longitude: {selectedTechnician?.location?.lng.toFixed(4)}
                     </Text>
                   </View>
                 </View>
               </ScrollView>
-              
+
               <View style={styles.modalFooter}>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={[
                     styles.actionButton,
                     selectedTechnician.isOnline === 'offline' && styles.disabledButton
@@ -479,10 +481,10 @@ const TechnicianMap: React.FC<Props> = ({
                     closeModal();
                   }}
                 >
-                  <Ionicons 
-                    name={selectedTechnician.isOnline === 'online' ? 'chatbubble' : 'chatbubble-outline'} 
-                    size={20} 
-                    color="white" 
+                  <Ionicons
+                    name={selectedTechnician.isOnline === 'online' ? 'chatbubble' : 'chatbubble-outline'}
+                    size={20}
+                    color="white"
                   />
                   <Text style={styles.actionButtonText}>
                     {selectedTechnician.isOnline === 'online' ? 'Contact Now' : 'Unavailable'}
@@ -499,10 +501,10 @@ const TechnicianMap: React.FC<Props> = ({
   if (Platform.OS === 'web') {
     return (
       <View style={styles.container}>
-        <iframe 
-          title="Technician Map" 
-          srcDoc={generateMapHTML()} 
-          style={{ flex: 1, width: '100%', height: '100%', border: 0 }} 
+        <iframe
+          title="Technician Map"
+          srcDoc={generateMapHTML()}
+          style={{ flex: 1, width: '100%', height: '100%', border: 0 }}
         />
       </View>
     );
@@ -511,7 +513,7 @@ const TechnicianMap: React.FC<Props> = ({
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" />
-      
+
       {/* Main Map View */}
       <View style={styles.mapContainer}>
         {!mapLoaded && (
@@ -520,7 +522,7 @@ const TechnicianMap: React.FC<Props> = ({
             <Text style={styles.loadingText}>Loading Map...</Text>
           </View>
         )}
-        
+
         <WebView
           ref={webviewRef}
           originWhitelist={['*']}
@@ -538,7 +540,7 @@ const TechnicianMap: React.FC<Props> = ({
       </View>
 
       {/* Floating Action Button for Sidebar */}
-      <TouchableOpacity 
+      <TouchableOpacity
         style={styles.fab}
         onPress={toggleSidebar}
         activeOpacity={0.8}
@@ -549,12 +551,12 @@ const TechnicianMap: React.FC<Props> = ({
       {/* Sidebar */}
       {sidebarVisible && (
         <>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.sidebarOverlay}
             onPress={toggleSidebar}
             activeOpacity={0.5}
           />
-          <Animated.View 
+          <Animated.View
             style={[
               styles.sidebar,
               { transform: [{ translateX: sidebarAnimation }] }
@@ -566,9 +568,9 @@ const TechnicianMap: React.FC<Props> = ({
                 {filteredTechnicians.length} available
               </Text>
             </View>
-            
+
             <View style={styles.tabContainer}>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={[
                   styles.tab,
                   selectedTab === 'all' && styles.activeTab
@@ -583,7 +585,7 @@ const TechnicianMap: React.FC<Props> = ({
                   selectedTab === 'all' && styles.activeTabText
                 ]}>All</Text>
               </TouchableOpacity>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={[
                   styles.tab,
                   selectedTab === 'online' && styles.activeTab
@@ -606,9 +608,9 @@ const TechnicianMap: React.FC<Props> = ({
                 </View>
               </TouchableOpacity>
             </View>
-            
+
             <ScrollView style={styles.technicianList}>
-              {filteredTechnicians.map(renderTechnicianCard)}
+              {filteredTechnicians?.map(renderTechnicianCard)}
             </ScrollView>
           </Animated.View>
         </>

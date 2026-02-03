@@ -278,6 +278,89 @@ export default function HomeScreen() {
     </TouchableOpacity>
   );
 
+  const ActiveServiceCard = ({ service }: { service: any }) => {
+    const mechanicId = service.mechanicId;
+
+    if(!mechanicId){
+      return (
+          <Animated.View
+              style={[
+                styles.section,
+                {
+                  opacity: fadeAnim,
+                  transform: [{ translateY: slideAnim }]
+                }
+              ]}
+          >
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Active Service</Text>
+              <Text style={styles.sectionDescription}>Your current assistance request</Text>
+            </View>
+
+            <View style={styles.activeServiceCard}>
+              <View style={styles.serviceHeader}>
+                <Text style={styles.serviceType}>{activeService.type}</Text>
+                <Text style={styles.servicePrice}>{activeService.price}</Text>
+              </View>
+
+              <View style={styles.serviceActions}>
+                <Text style={styles.actionButton}>Please wait as we allocate you a mechanic</Text>
+              </View>
+            </View>
+          </Animated.View>
+      )
+    }else{
+      return (
+          <Animated.View
+              style={[
+                styles.section,
+                {
+                  opacity: fadeAnim,
+                  transform: [{ translateY: slideAnim }]
+                }
+              ]}
+          >
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Active Service</Text>
+              <Text style={styles.sectionDescription}>Your current assistance request</Text>
+            </View>
+
+            <View style={styles.activeServiceCard}>
+              <View style={styles.serviceHeader}>
+                <Text style={styles.serviceType}>{activeService.type}</Text>
+                <Text style={styles.servicePrice}>{activeService.price}</Text>
+              </View>
+
+              <View style={styles.mechanicInfoRow}>
+                <Text style={styles.mechanicImage}>{activeService.mechanicImage}</Text>
+                <View style={styles.mechanicDetails}>
+                  <Text style={styles.mechanicName}>{activeService.mechanic}</Text>
+                  <Text style={styles.serviceStatus}>{activeService.status}</Text>
+                </View>
+                <View style={styles.etaBadge}>
+                  <Text style={styles.etaText}>ETA: {activeService.eta}</Text>
+                </View>
+              </View>
+
+              <View style={styles.progressContainer}>
+                <LiveMechanicMap
+                    mechanicId={activeService?.mechanicId}
+                    lat={activeService?.location?.split(',')[0] ?? '1.2921'}
+                    lng={activeService?.location?.split(',')[1]?? '36.8219'} />
+              </View>
+
+              <View style={styles.serviceActions}>
+                <TouchableOpacity onPress={handlePress} style={styles.actionButton}>
+                  <Ionicons name="chatbubble" size={20} color="#00ff9d" />
+                  <Text style={styles.actionText}>Message Mechanic</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </Animated.View>
+      )
+    }
+  }
+
   const EmergencyContactCard = ({ contact }: { contact: any }) => (
     <TouchableOpacity 
       style={styles.contactCard}
@@ -375,54 +458,9 @@ export default function HomeScreen() {
         </Animated.View>
 
         {/* Active Service */}
-        {activeService != null && (
-          <Animated.View 
-            style={[
-              styles.section,
-              { 
-                opacity: fadeAnim,
-                transform: [{ translateY: slideAnim }]
-              }
-            ]}
-          >
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Active Service</Text>
-              <Text style={styles.sectionDescription}>Your current assistance request</Text>
-            </View>
-            
-            <View style={styles.activeServiceCard}>
-              <View style={styles.serviceHeader}>
-                <Text style={styles.serviceType}>{activeService.type}</Text>
-                <Text style={styles.servicePrice}>{activeService.price}</Text>
-              </View>
-              
-              <View style={styles.mechanicInfoRow}>
-                <Text style={styles.mechanicImage}>{activeService.mechanicImage}</Text>
-                <View style={styles.mechanicDetails}>
-                  <Text style={styles.mechanicName}>{activeService.mechanic}</Text>
-                  <Text style={styles.serviceStatus}>{activeService.status}</Text>
-                </View>
-                <View style={styles.etaBadge}>
-                  <Text style={styles.etaText}>ETA: {activeService.eta}</Text>
-                </View>
-              </View>
-
-              <View style={styles.progressContainer}>
-                <LiveMechanicMap
-                    mechanicId={activeService?.mechanicId}
-                    lat={activeService?.location?.split(',')[0] ?? '1.2921'}
-                    lng={activeService?.location?.split(',')[1]?? '36.8219'} />
-              </View>
-
-              <View style={styles.serviceActions}>
-                <TouchableOpacity onPress={handlePress} style={styles.actionButton}>
-                  <Ionicons name="chatbubble" size={20} color="#00ff9d" />
-                  <Text style={styles.actionText}>Message Mechanic</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </Animated.View>
-        )}
+        {activeService != null &&
+            <ActiveServiceCard service={activeService} />
+        }
 
         {/* Quick Services */}
         <Animated.View 

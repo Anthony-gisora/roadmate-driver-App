@@ -12,11 +12,13 @@ import {
     TouchableOpacity,
     View
 } from 'react-native';
+import {apiClient} from "@/hooks/api-client";
 
-const VehicleCard = ({ vehicle, onUpdate, onDelete }: {
+const VehicleCard = ({ vehicle, userId, onUpdate, onDelete}: {
     vehicle: any;
-    onUpdate: (id: number, updates: any) => Promise<void>;
-    onDelete: (id: number) => Promise<void>;
+    userId: string;
+    onUpdate: (id: string, updates: any) => Promise<void>;
+    onDelete: (id: string, userId: string) => Promise<void>;
 }) => {
     const [modalVisible, setModalVisible] = useState(false);
     const [editingVehicle, setEditingVehicle] = useState(vehicle);
@@ -67,7 +69,7 @@ const VehicleCard = ({ vehicle, onUpdate, onDelete }: {
     };
 
     const handleSave = async () => {
-        if (!editingVehicle.make?.trim() || !editingVehicle.model?.trim() || !editingVehicle.plate?.trim()) {
+        if (!editingVehicle.make?.trim() || !editingVehicle.model?.trim()) {
             Alert.alert('Missing Information', 'Please fill in all required fields.');
             return;
         }
@@ -79,16 +81,15 @@ const VehicleCard = ({ vehicle, onUpdate, onDelete }: {
 
         setIsSaving(true);
         try {
-            await onUpdate(vehicle.id, {
+            await onUpdate(vehicle._id, {
                 make: editingVehicle.make.trim(),
                 model: editingVehicle.model.trim(),
                 plate: editingVehicle.plate.trim().toUpperCase(),
-                year: parseInt(editingVehicle.year),
+                year: editingVehicle.year.toString(),
                 color: editingVehicle.color?.trim() || '',
                 isDefault: editingVehicle.isDefault || false
             });
 
-            Alert.alert('Success', 'Vehicle updated successfully!');
             closeModal();
         } catch (error) {
             console.error('Error updating vehicle:', error);
@@ -110,14 +111,12 @@ const VehicleCard = ({ vehicle, onUpdate, onDelete }: {
                     onPress: async () => {
                         setIsDeleting(true);
                         try {
-                            await onDelete(vehicle.id);
-                            Alert.alert('Success', 'Vehicle deleted successfully!');
+                            await onDelete(vehicle._id, userId);
                             closeModal();
                         } catch (error) {
-                            console.error('Error deleting vehicle:', error);
-                            Alert.alert('Error', 'Failed to delete vehicle. Please try again.');
-                        } finally {
-                            setIsDeleting(false);
+                            console.error(error);
+                        }finally {
+                            setIsDeleting(false)
                         }
                     }
                 }

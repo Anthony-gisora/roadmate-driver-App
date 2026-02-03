@@ -18,7 +18,7 @@ export async function getLocation() {
     });
     return `${coords.latitude},${coords.longitude}`;
   } catch (err) {
-    Alert.alert('Location Error', 'Unable to retrieve your location.');
+    Alert.alert('Error Fetching location', err);
     return null;
   }
 }

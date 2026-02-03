@@ -4,7 +4,6 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import * as Sentry from '@sentry/react-native';
 import {Stack, usePathname, useRouter} from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
 import {useEffect} from "react";
 import 'react-native-reanimated';
 import { ToastProvider } from 'react-native-toast-notifications';
@@ -13,7 +12,9 @@ import {Platform} from "react-native";
 import {ChatManager} from "@/hooks/chat-manager";
 import {AuthProvider} from "@/providers/auth-provider";
 import {AuthGate} from "@/components/auth-guard";
-import {SafeAreaProvider} from "react-native-safe-area-context";
+import {SafeAreaProvider, SafeAreaView} from "react-native-safe-area-context";
+import * as NavigationBar from "expo-navigation-bar";
+import CustomStatusBar from "@/components/status-bar";
 
 Sentry.init({
   dsn: 'https://a127ee337dafa3f316ddd8ad74d0bf2e@o4508255508561920.ingest.de.sentry.io/4510504659255376',
@@ -117,6 +118,9 @@ function RootLayout() {
             if (status !== "granted") {
                 await Notifications.requestPermissionsAsync();
             }
+
+            await NavigationBar.setBackgroundColorAsync("#FFFFFF");
+            await NavigationBar.setButtonStyleAsync("dark");
         })();
 
     }, []);
@@ -134,11 +138,13 @@ function RootLayout() {
 
         return () => sub.remove();
     }, []);
-    
+
 
     return (
         <SafeAreaProvider>
-            <AuthProvider
+            <SafeAreaView style={{ flex: 1 }} edges={["left", "right"]}>
+                <CustomStatusBar backgroundColor={'white'}/>
+                <AuthProvider
             >
                 <ToastProvider>
                     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
@@ -149,10 +155,10 @@ function RootLayout() {
                                 <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
                             </AuthGate>
                         </Stack>
-                        <StatusBar style="auto" />
                     </ThemeProvider>
                 </ToastProvider>
             </AuthProvider>
+            </SafeAreaView>
         </SafeAreaProvider>
     );
 }
