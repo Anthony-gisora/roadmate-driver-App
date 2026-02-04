@@ -1,9 +1,9 @@
-import React, { useEffect, useRef, useState } from "react";
-import { View, StyleSheet, TouchableOpacity, Text } from "react-native";
-import { WebView } from "react-native-webview";
+import { getSocketUrl } from "@/hooks/api-client";
 import { useNavigation } from "@react-navigation/native";
+import React, { useEffect, useRef, useState } from "react";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { WebView } from "react-native-webview";
 import io from "socket.io-client";
-import {DEFAULT_SOCKET_URL, getSocketUrl} from "@/hooks/api-client";
 
 type Props = {
     mechanicId: string;
@@ -24,6 +24,7 @@ export default function LiveMechanicMap({ mechanicId, lat, lng }: Props) {
         socketRef.current.emit("trackMechanic", mechanicId);
 
         socketRef.current.on("mechanicLiveLocation", (data: any) => {
+            console.log(data);
             if (data.mechanicId === mechanicId) {
                 setCoords({ lat: data.lat, lng: data.lng });
 

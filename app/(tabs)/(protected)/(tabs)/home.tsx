@@ -1,4 +1,6 @@
+import LiveMechanicMap from "@/components/locationtile";
 import { apiClient } from "@/hooks/api-client";
+import { useAuth } from "@/providers/auth-provider";
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
@@ -14,8 +16,6 @@ import {
   View
 } from 'react-native';
 import { useToast } from "react-native-toast-notifications";
-import LiveMechanicMap from "@/components/locationtile";
-import {useAuth} from "@/providers/auth-provider";
 
 const { width } = Dimensions.get('window');
 
@@ -118,7 +118,8 @@ export default function HomeScreen() {
             progress: 75,
             mechanicImage: '👨‍🔧',
             mechanicId: mechanic?._id,
-            distance: mechanic?.distance
+            distance: mechanic?.distance,
+            location: mechanic?.location
           })
 
           setEmergencyContacts((prev) => {
@@ -345,8 +346,8 @@ export default function HomeScreen() {
               <View style={styles.progressContainer}>
                 <LiveMechanicMap
                     mechanicId={activeService?.mechanicId}
-                    lat={activeService?.location?.split(',')[0] ?? '1.2921'}
-                    lng={activeService?.location?.split(',')[1]?? '36.8219'} />
+                    lat={activeService?.location?.lat}
+                    lng={activeService?.location?.lng} />
               </View>
 
               <View style={styles.serviceActions}>

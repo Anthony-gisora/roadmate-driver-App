@@ -1,9 +1,9 @@
+import LiveMechanicMap from "@/components/locationtile";
 import { Ionicons } from '@expo/vector-icons';
-import {router, useLocalSearchParams} from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
+import React from "react";
 import { Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import LiveMechanicMap from "@/components/locationtile";
-import React from "react";
 
 export default function FullMapView() {
     const { mechanicId, lat, lng } = useLocalSearchParams();
@@ -40,8 +40,8 @@ export default function FullMapView() {
             {/* MapView */}
             <LiveMechanicMap
                 mechanicId={mechanicId as string}
-                lat={Number(lat) ?? 1.2921}
-                lng={Number(lng) ?? 36.8219} />
+                lat={Number(lat)}
+                lng={Number(lng)} />
         </SafeAreaView>
     );
 }

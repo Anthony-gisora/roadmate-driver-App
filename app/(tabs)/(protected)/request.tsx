@@ -178,8 +178,9 @@ export default function RequestScreen() {
                     setSent(true);
 
                     setTimeout(() => {
-                        navigation.navigate("home");
+                        router.replace("/home");
                     }, 300);
+
 
                 })
                 .catch((err)=>{
